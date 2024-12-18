@@ -197,7 +197,7 @@ def run_from_cmdline(args=None):
         action="store_true")
     parser.add_argument(
         '--neurips23track',
-        choices=['filter', 'ood', 'sparse', 'streaming', 'none'],
+        choices=['filter', 'ood', 'sparse', 'streaming', 'concurrent', 'none'],
         default='none'
     )
     parser.add_argument(
