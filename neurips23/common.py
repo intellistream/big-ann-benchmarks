@@ -34,7 +34,8 @@ RUNNERS = {
     "filter": FilterRunner,
     "sparse": SparseRunner,
     "ood": OODRunner,
-    "streaming": StreamingRunner
+    "streaming": StreamingRunner,
+    "concurrent": ConcurrentRunner
 }
 
 

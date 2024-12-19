@@ -24,7 +24,9 @@ from benchmark.sensors.power_capture import power_capture
 from benchmark.t3.helper import t3_create_container
 
 from neurips23.common import RUNNERS
-from benchmark.streaming.load_runbook import load_runbook
+
+from benchmark.streaming.load_runbook import load_runbook as st_load_runbook
+from benchmark.concurrent.load_runbook import load_runbook as cc_load_runbook
 
 def run(definition, dataset, count, run_count, rebuild,
         upload_index=False, download_index=False,
@@ -49,7 +51,9 @@ def run(definition, dataset, count, run_count, rebuild,
 
     custom_runner = RUNNERS.get(neurips23track, BaseRunner)
     if neurips23track == 'streaming':
-        max_pts, runbook = load_runbook(dataset, ds.nb, runbook_path)
+        max_pts, runbook = st_load_runbook(dataset, ds.nb, runbook_path)
+    elif neurips23track == 'concurrent':
+        max_pts, runbook = cc_load_runbook(dataset, ds.nb, runbook_path)
 
     try:
         # Try loading the index from the file
@@ -100,6 +104,9 @@ def run(definition, dataset, count, run_count, rebuild,
                 if query_arguments:
                     algo.set_query_arguments(*query_arguments)
                 if neurips23track == 'streaming':
+                    descriptor, results = custom_runner.run_task(
+                        algo, ds, distance, count, 1, search_type, private_query, runbook)
+                elif neurips23track == 'concurrent':
                     descriptor, results = custom_runner.run_task(
                         algo, ds, distance, count, 1, search_type, private_query, runbook)
                 else:
