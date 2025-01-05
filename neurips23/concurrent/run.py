@@ -42,18 +42,28 @@ class ConcurrentRunner(BaseRunner):
                     case 'insert_and_search':
                         start = entry['start']
                         end = entry['end']
+                        ids = np.arange(start, end, dtype=np.uint32)
                         
-                        futures.append(executor.submit(algo.insert_data, algo, ds, start, end))
-                        futures.append(executor.submit(algo.search_data, algo, Q, count, result_map, num_searches))
+                        insert_future = executor.submit(algo.insert(ds.get_data_in_range(start, end)))
+                        print(f"Submitted insert task for range {start}-{end}")
+                        
+                        if search_type == 'knn':
+                            search_future = executor.submit(algo.query, Q, count)
+                            print(f"Submitted search task for step {step+1}")
+                        
+                        insert_future.result()
+                        
+                        if search_type == 'knn':
+                            search_result = search_future.result()
+                            all_results.append(search_result)
+                            result_map[num_searches] = step + 1
+                            num_searches += 1
                         
                     case _:
                         raise NotImplementedError(f"Operation '{entry['operation']}' not supported.")
                 
                 step_time = (time.time() - start_time)
                 print(f"Step {step+1} took {step_time}s.")
-            
-            for future in as_completed(futures):
-                all_results.append(future.result())
 
         attrs = {
             "name": str(algo),
