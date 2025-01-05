@@ -7,7 +7,7 @@ def load_runbook(dataset_name, max_pts, runbook_file):
         run_list = []
         while i in runbook:
             entry = runbook.get(i)
-            if entry['operation'] not in {'insert_and_search', 'delete_and_search', 'replace_and_search'}:
+            if entry['operation'] not in {'insert_and_search'}:
                 raise Exception('Undefined runbook operation')
             if entry['operation']  in {'insert_and_search'}:
                 if 'start' not in entry:
@@ -20,10 +20,6 @@ def load_runbook(dataset_name, max_pts, runbook_file):
                     raise Exception('End out of range in runbook')
             i += 1
             run_list.append(entry)
-            
-        # TODO: delete_and_search
-        
-        # TODO: replace_and_search
         
         max_pts = runbook.get('max_pts')
         if max_pts == None:

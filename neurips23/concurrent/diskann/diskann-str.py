@@ -6,9 +6,9 @@ import numpy as np
 
 import diskannpy
 
-from neurips23.streaming.base import BaseStreamingANN
+from neurips23.concurrent.base import BaseConcurrentANN
 
-class diskann(BaseStreamingANN):
+class diskann(BaseConcurrentANN):
     def __init__(self, metric, index_params):
         self.name = "diskann"
         if (index_params.get("R")==None):
@@ -29,7 +29,7 @@ class diskann(BaseStreamingANN):
         return f"R{self.R}_L{self.L}"
         
     def create_index_dir(self, dataset):
-        index_dir = os.path.join(os.getcwd(), "data", "indices", "streaming")
+        index_dir = os.path.join(os.getcwd(), "data", "indices", "concurrent")
         os.makedirs(index_dir, mode=0o777, exist_ok=True)
         index_dir = os.path.join(index_dir, 'diskann')
         os.makedirs(index_dir, mode=0o777, exist_ok=True)

@@ -73,7 +73,7 @@ def run(definition, dataset, count, run_count, rebuild,
         elif rebuild or not algo.load_index(dataset):
             # Build the index if it is not available
             build_time = (custom_runner.build(algo,dataset)
-                          if neurips23track != 'streaming' 
+                          if neurips23track != 'streaming' and neurips23track != 'concurrent'
                           else custom_runner.build(algo, dataset, max_pts))
             print('Built index in', build_time) 
         else:
@@ -209,8 +209,8 @@ def run_from_cmdline(args=None):
     )
     parser.add_argument(
         '--runbook_path',
-        help='runbook yaml path for neurips23 streaming track',
-        default='neurips23/streaming/simple_runbook.yaml'
+        help='runbook yaml path for neurips23 concurrent track',
+        default='neurips23/concurrent/simple_runbook.yaml'
     )
 
     args = parser.parse_args(args)
