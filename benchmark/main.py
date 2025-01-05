@@ -158,7 +158,7 @@ def main():
     )
     parser.add_argument(
         '--neurips23track',
-        choices=['filter', 'ood', 'sparse', 'streaming', 'none'],
+        choices=['filter', 'ood', 'sparse', 'streaming', 'concurrent', 'none'],
         default='none'
     )
     parser.add_argument(

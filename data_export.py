@@ -87,7 +87,7 @@ if __name__ == "__main__":
     datasets = DATASETS.keys()
     dfs = []
 
-    neurips23tracks = ['filter', 'ood', 'sparse', 'streaming', 'none']
+    neurips23tracks = ['filter', 'ood', 'sparse', 'streaming', 'concurrent', 'none']
 
     is_first = True
     for track in neurips23tracks:
