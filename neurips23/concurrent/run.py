@@ -26,7 +26,7 @@ class ConcurrentRunner(BaseRunner):
         """
         ids = np.arange(start, end, dtype=np.uint32)
         data_to_insert = ds.get_data_in_range(start, end)
-        algo.insert(data_to_insert, ids)  # 插入数据
+        algo.insert(data_to_insert, ids)  
         print(f"Inserted {len(ids)} data points from {start} to {end}.")
         
     
