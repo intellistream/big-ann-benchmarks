@@ -19,28 +19,8 @@ class ConcurrentRunner(BaseRunner):
         print('Algorithm set up')
         return time.time() - t0
     
-    
-    def insert_data(algo, ds, start, end):
-        """
-        insert operation
-        """
-        ids = np.arange(start, end, dtype=np.uint32)
-        data_to_insert = ds.get_data_in_range(start, end)
-        algo.insert(data_to_insert, ids)  
-        print(f"Inserted {len(ids)} data points from {start} to {end}.")
         
-    
-    def search_data(algo, Q, count, result_map, num_searches):
-        """
-        search operation
-        """
-        algo.query(Q, count)  
-        results = algo.get_results()  
-        result_map[num_searches] = results
-        return results
-        
-
-    def run_task(self, algo, ds, distance, count, run_count, search_type, private_query, runbook):
+    def run_task(algo, ds, distance, count, run_count, search_type, private_query, runbook):
         best_search_time = float('inf')
         search_times = []
         all_results = []
@@ -63,8 +43,8 @@ class ConcurrentRunner(BaseRunner):
                         start = entry['start']
                         end = entry['end']
                         
-                        futures.append(executor.submit(self.insert_data, algo, ds, start, end))
-                        futures.append(executor.submit(self.search_data, algo, Q, count, result_map, num_searches))
+                        futures.append(executor.submit(algo.insert_data, algo, ds, start, end))
+                        futures.append(executor.submit(algo.search_data, algo, Q, count, result_map, num_searches))
                         
                     case _:
                         raise NotImplementedError(f"Operation '{entry['operation']}' not supported.")

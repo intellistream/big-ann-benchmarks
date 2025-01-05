@@ -107,6 +107,7 @@ def run(definition, dataset, count, run_count, rebuild,
                     descriptor, results = custom_runner.run_task(
                         algo, ds, distance, count, 1, search_type, private_query, runbook)
                 elif neurips23track == 'concurrent':
+                    print(runbook)
                     descriptor, results = custom_runner.run_task(
                         algo, ds, distance, count, 1, search_type, private_query, runbook)
                 else:
