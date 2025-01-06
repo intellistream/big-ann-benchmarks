@@ -33,8 +33,7 @@ class ConcurrentRunner(BaseRunner):
         num_searches = 0
         
         with ThreadPoolExecutor() as executor:
-            futures = []
-            
+
             for step, entry in enumerate(runbook):
                 start_time = time.time()
             
@@ -44,20 +43,20 @@ class ConcurrentRunner(BaseRunner):
                         end = entry['end']
                         ids = np.arange(start, end, dtype=np.uint32)
                         
-                        insert_future = executor.submit(algo.insert(ds.get_data_in_range(start, end)))
+                        insert_future = executor.submit(algo.insert, ds.get_data_in_range(start, end), ids)
                         print(f"Submitted insert task for range {start}-{end}")
                         
-                        if search_type == 'knn':
-                            search_future = executor.submit(algo.query, Q, count)
-                            print(f"Submitted search task for step {step+1}")
+                        # if search_type == 'knn':
+                        #     search_future = executor.submit(algo.query, Q, count)
+                        #     print(f"Submitted search task for step {step+1}")
                         
                         insert_future.result()
                         
-                        if search_type == 'knn':
-                            search_result = search_future.result()
-                            all_results.append(search_result)
-                            result_map[num_searches] = step + 1
-                            num_searches += 1
+                        # if search_type == 'knn':
+                        #     search_result = search_future.result()
+                        #     all_results.append(search_result)
+                        #     result_map[num_searches] = step + 1
+                        #     num_searches += 1
                         
                     case _:
                         raise NotImplementedError(f"Operation '{entry['operation']}' not supported.")
