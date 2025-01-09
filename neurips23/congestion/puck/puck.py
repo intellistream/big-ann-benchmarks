@@ -10,7 +10,7 @@ class Puck(BaseCongestionDropANN):
         super().__init__([Puck_streaming(metric, index_params)], metric, index_params)
         self.metric = metric
         self.indexkey=self.workers[0].my_index_algo.indexkey
-        self.name = self.workers[0].my_index_algo.name
+        self.name = str(self.workers[0].my_index_algo)
 
     def set_query_arguments(self, query_args):
         self.workers[0].my_index_algo.set_query_arguments(query_args)
