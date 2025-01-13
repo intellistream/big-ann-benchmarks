@@ -115,7 +115,9 @@ def pendingWrite(attrs):
     return attrs.get("pendingWrite",-1)
 
 def batchLatency(attrs, count=0):
+
     return attrs.get(f"latency(Insert)_{count}",-1)
+
 
 def latencyQuery(attrs,count=0):
     return attrs.get(f"latencyOfQuery_{count}",-1)
