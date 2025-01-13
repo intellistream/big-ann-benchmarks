@@ -228,5 +228,4 @@ all_metrics = {
         "function": lambda true_nn, run_nn, metrics, run_attrs: totalTime(run_attrs),
         "worst": float("inf")
     }
-
 }
