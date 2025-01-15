@@ -112,7 +112,6 @@ class CongestionRunner(BaseRunner):
         num_searches = 0
         counts = {'initial':0,'batch_insert':0,'insert':0,'delete':0,'search':0}
         print("STARTING IN 5 SECS!")
-        time.sleep(5)
         attrs = {
             "name": str(algo),
             "pendingWrite":0,
@@ -128,6 +127,7 @@ class CongestionRunner(BaseRunner):
                     ids = np.arange(start,end,dtype=np.uint32)
                     algo.initial_load(ds.get_data_in_range(start,end),ids)
                 case 'startHPC':
+                    print(type(algo))
                     algo.startHPC()
                 case 'endHPC':
                     algo.endHPC()
