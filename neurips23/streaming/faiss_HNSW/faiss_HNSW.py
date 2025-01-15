@@ -10,7 +10,7 @@ class faiss_HNSW(BaseStreamingANN):
     def __init__(self, metric, index_params):
         self.indexkey= index_params['indexkey']
         self.metric = metric
-        self.name = "candy_HNSW"
+        self.name = "faiss_HNSW"
         self.ef=16
         self.trained = False
 

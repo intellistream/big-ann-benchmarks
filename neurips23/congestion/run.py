@@ -111,7 +111,8 @@ class CongestionRunner(BaseRunner):
         result_map = {}
         num_searches = 0
         counts = {'initial':0,'batch_insert':0,'insert':0,'delete':0,'search':0}
-
+        print("STARTING IN 5 SECS!")
+        time.sleep(5)
         attrs = {
             "name": str(algo),
             "pendingWrite":0,
