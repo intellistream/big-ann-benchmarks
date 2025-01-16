@@ -5,6 +5,7 @@ from numpy import typing as npt
 
 from neurips23.streaming.base import BaseStreamingANN
 import torch
+import traceback
 
 class faiss_HNSW(BaseStreamingANN):
     def __init__(self, metric, index_params):
@@ -24,10 +25,6 @@ class faiss_HNSW(BaseStreamingANN):
         self.index = index
 
     def insert(self, X,ids):
-        # print(X.shape)
-        # print(ids.shape)
-        # print(type(X))
-        # print(type(ids))
         if(self.trained):
             self.index.add(X.shape[0],X.flatten())
         else:
