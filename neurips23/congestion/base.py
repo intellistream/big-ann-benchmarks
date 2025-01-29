@@ -154,10 +154,22 @@ class CongestionDropWorker(AbstractThread):
 
 
     def insert(self,X,id):
+
+
         if(not self.randomDrop):
             if(self.insert_queue.empty() or (not self.congestion_drop)):
                 if(not self.randomContamination):
-                    self.insert_queue.push(NumpyIdxPair(X,id))
+                    if (self.outOfOrder):
+                        length = X.shape[0]
+                        order = np.random.permutation(length)
+                        new_X = X[order]
+                        new_ids = id[order]
+                        self.insert_queue.push(NumpyIdxPair(new_X, new_ids))
+                        return
+                    else:
+                        self.insert_queue.push(NumpyIdxPair(X,id))
+                        return
+
                 else:
                     rand = random.random()
                     if(rand<self.randomContaminationProb):
@@ -165,19 +177,22 @@ class CongestionDropWorker(AbstractThread):
                         print(f"RANDOM CONTAMINATING DATA {id[0]}:{id[-1]}")
                         # simply replace the current batch with random data
                         self.insert_queue.push(NumpyIdxPair(rand_X, id))
+                        return
                     else:
                         self.insert_queue.push(NumpyIdxPair(X,id))
+                        return
             else:
                 print(f"DROPPING DATA {id[0]}:{id[-1]}")
-                pass
+                return
         else:
             rand_drop =random.random()
             if(rand_drop<self.randomDropProb):
                 print(f"RANDOM DROPPING DATA {id[0]}:{id[-1]}")
-                pass
+                return
             if(self.insert_queue.empty() or (not self.congestion_drop)):
                 if(not self.randomContamination):
                     self.insert_queue.push(NumpyIdxPair(X,id))
+                    return
                 else:
                     rand = random.random()
                     if(rand<self.randomContaminationProb):
@@ -185,11 +200,13 @@ class CongestionDropWorker(AbstractThread):
                         rand_X = np.random.random(X.shape)
                         # simply replace the current batch with random data
                         self.insert_queue.push(NumpyIdxPair(rand_X, id))
+                        return
                     else:
                         self.insert_queue.push(NumpyIdxPair(X,id))
+                        return
             else:
                 print(f"DROPPING DATA {id[0]}:{id[-1]}")
-                pass
+                return
 
         return
 
@@ -213,10 +230,14 @@ class CongestionDropWorker(AbstractThread):
             print("Enabling random dropping!")
         self.randomDrop = randomDrop
 
+        print(f'worker random drop prob {self.randomDropProb}')
+
         self.randomContamination = randomContamination
         if(randomContamination):
             print("Enabling random contamination!")
-        self.randomContaminationprob = randomContaminationProb
+
+        self.randomContaminationProb = randomContaminationProb
+        print(f'worker contamination prob {self.randomContaminationProb}')
 
         if(outOfOrder):
             print("Enabling outta order ingestion!")
@@ -369,7 +390,8 @@ class BaseCongestionDropANN(BaseANN):
     def enableScenario(self, randomContamination=False, randomContaminationProb=0.0, randomDrop=False,
                        randomDropProb=0.0, outOfOrder=False):
         for i in range(self.parallel_workers):
-            self.workers[i].enableScenario(self, randomContamination, randomContaminationProb, randomDrop, randomDropProb, outOfOrder)
+            print(f'ANN contamination{randomContaminationProb}')
+            self.workers[i].enableScenario(randomContamination, randomContaminationProb, randomDrop, randomDropProb, outOfOrder)
 
 
 
