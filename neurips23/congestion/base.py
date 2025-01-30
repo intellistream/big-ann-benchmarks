@@ -158,29 +158,8 @@ class CongestionDropWorker(AbstractThread):
 
         if(not self.randomDrop):
             if(self.insert_queue.empty() or (not self.congestion_drop)):
-                if(not self.randomContamination):
-                    if (self.outOfOrder):
-                        length = X.shape[0]
-                        order = np.random.permutation(length)
-                        new_X = X[order]
-                        new_ids = id[order]
-                        self.insert_queue.push(NumpyIdxPair(new_X, new_ids))
-                        return
-                    else:
-                        self.insert_queue.push(NumpyIdxPair(X,id))
-                        return
-
-                else:
-                    rand = random.random()
-                    if(rand<self.randomContaminationProb):
-                        rand_X = np.random.random(X.shape)
-                        print(f"RANDOM CONTAMINATING DATA {id[0]}:{id[-1]}")
-                        # simply replace the current batch with random data
-                        self.insert_queue.push(NumpyIdxPair(rand_X, id))
-                        return
-                    else:
-                        self.insert_queue.push(NumpyIdxPair(X,id))
-                        return
+                    self.insert_queue.push(NumpyIdxPair(X,id))
+                    return
             else:
                 print(f"DROPPING DATA {id[0]}:{id[-1]}")
                 return
@@ -190,24 +169,11 @@ class CongestionDropWorker(AbstractThread):
                 print(f"RANDOM DROPPING DATA {id[0]}:{id[-1]}")
                 return
             if(self.insert_queue.empty() or (not self.congestion_drop)):
-                if(not self.randomContamination):
-                    self.insert_queue.push(NumpyIdxPair(X,id))
-                    return
-                else:
-                    rand = random.random()
-                    if(rand<self.randomContaminationProb):
-                        print(f"RANDOM CONTAMINATING DATA {id[0]}:{id[-1]}")
-                        rand_X = np.random.random(X.shape)
-                        # simply replace the current batch with random data
-                        self.insert_queue.push(NumpyIdxPair(rand_X, id))
-                        return
-                    else:
-                        self.insert_queue.push(NumpyIdxPair(X,id))
-                        return
+                self.insert_queue.push(NumpyIdxPair(X,id))
+                return
             else:
                 print(f"DROPPING DATA {id[0]}:{id[-1]}")
                 return
-
         return
 
     def delete(self, id):

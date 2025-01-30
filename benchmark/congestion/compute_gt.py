@@ -97,7 +97,7 @@ def output_gt(ds, tag_to_id, step, gt_cmdline, runbook_path):
 
 
 def output_gt_batch(ds, tag_to_id, num_batch_insert, step, gt_cmdline, runbook_path, batchSize):
-    if batchSize==2500 and runbook_path!='neurips23/runbooks/congestion/test_experiment.yaml':
+    if batchSize==2500 and runbook_path!='neurips23/runbooks/congestion/test_experiment.yaml' and runbook_path!="neurips23/runbooks/congestion/general_experiment/general_experiment.yaml":
         return
 
     ids_list = []
