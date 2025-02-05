@@ -63,5 +63,11 @@ for DS in "${DATASETS[@]}"; do
   python3 benchmark/congestion/compute_gt.py --runbook neurips23/runbooks/congestion/wordContamination/wordContamination_experiment.yaml --dataset "$DS"
 done
 
+DATASETS=("coco" "cirr")
+# Iterate through each combination of algorithm and dataset
+for DS in "${DATASETS[@]}"; do
+  python3 benchmark/congestion/compute_gt.py --runbook neurips23/runbooks/congestion/multiModal/multiModal_experiment.yaml --dataset "$DS"
+done
+
 
 
