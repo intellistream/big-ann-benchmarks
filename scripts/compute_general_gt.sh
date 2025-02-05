@@ -22,7 +22,7 @@ done
 DATASETS=("openimage-streaming")
 # Iterate through each combination of algorithm and dataset
 for DS in "${DATASETS[@]}"; do
-  python3 benchmark/congestion/compute_gt.py --runbook neurips23/runbooks/congestion/conceptDrift/conceptDrift_experiment.yaml --dataset "$DS"
+  python3 benchmark/congestion/compute_gt.py --runbook neurips23/runbooks/congestion/conceptDrift/conceptDrift_experiment.yaml --dataset "$DS" --gt_cmdline_tool ~/DiskANN/build/apps/utils/compute_groundtruth
 done
 
 DATASETS=("random-plus-experiment" "sift")
@@ -31,7 +31,7 @@ RUNBOOKS=("100.yaml" "500.yaml" "1000.yaml" "2500.yaml" "5000.yaml" "10000.yaml"
 # Iterate through each combination of algorithm and dataset
 for RUN in "${RUNBOOKS[@]}"; do
   for DS in "${DATASETS[@]}"; do
-    python3 benchmark/congestion/compute_gt.py --runbook neurips23/runbooks/congestion/eventRates/event"$RUN" --dataset "$DS"
+    python3 benchmark/congestion/compute_gt.py --runbook neurips23/runbooks/congestion/eventRates/event"$RUN" --dataset "$DS" --gt_cmdline_tool ~/DiskANN/build/apps/utils/compute_groundtruth
   done
 done
 
@@ -41,7 +41,7 @@ RUNBOOKS=("0.05.yaml" "0.10.yaml" "0.15.yaml" "0.20.yaml" "0.25.yaml")
 
 for RUN in "${RUNBOOKS[@]}"; do
   for DS in "${DATASETS[@]}"; do
-    python3 benchmark/congestion/compute_gt.py --runbook neurips23/runbooks/congestion/randomContamination/randomContamination"$RUN" --dataset "$DS"
+    python3 benchmark/congestion/compute_gt.py --runbook neurips23/runbooks/congestion/randomContamination/randomContamination"$RUN" --dataset "$DS" --gt_cmdline_tool ~/DiskANN/build/apps/utils/compute_groundtruth
   done
 done
 
@@ -53,20 +53,20 @@ RUNBOOKS=("0.05.yaml" "0.10.yaml" "0.15.yaml" "0.20.yaml" "0.25.yaml")
 
 for RUN in "${RUNBOOKS[@]}"; do
   for DS in "${DATASETS[@]}"; do
-    python3 benchmark/congestion/compute_gt.py --runbook neurips23/runbooks/congestion/randomDrop/randomDrop"$RUN" --dataset "$DS"
+    python3 benchmark/congestion/compute_gt.py --runbook neurips23/runbooks/congestion/randomDrop/randomDrop"$RUN" --dataset "$DS" --gt_cmdline_tool ~/DiskANN/build/apps/utils/compute_groundtruth
   done
 done
 
 DATASETS=("wte-0.05" "wte-0.1" "wte-0.2" "wte-0.4" "wte-0.6" "wte-0.8")
 # Iterate through each combination of algorithm and dataset
 for DS in "${DATASETS[@]}"; do
-  python3 benchmark/congestion/compute_gt.py --runbook neurips23/runbooks/congestion/wordContamination/wordContamination_experiment.yaml --dataset "$DS"
+  python3 benchmark/congestion/compute_gt.py --runbook neurips23/runbooks/congestion/wordContamination/wordContamination_experiment.yaml --dataset "$DS" --gt_cmdline_tool ~/DiskANN/build/apps/utils/compute_groundtruth
 done
 
 DATASETS=("coco" "cirr")
 # Iterate through each combination of algorithm and dataset
 for DS in "${DATASETS[@]}"; do
-  python3 benchmark/congestion/compute_gt.py --runbook neurips23/runbooks/congestion/multiModal/multiModal_experiment.yaml --dataset "$DS"
+  python3 benchmark/congestion/compute_gt.py --runbook neurips23/runbooks/congestion/multiModal/multiModal_experiment.yaml --dataset "$DS" --gt_cmdline_tool ~/DiskANN/build/apps/utils/compute_groundtruth
 done
 
 

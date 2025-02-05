@@ -204,7 +204,6 @@ def main():
             output_gt(ds, tag_to_id, step, common_cmd, args.runbook_file)
         if (entry['operation'] == 'batch_insert'):
             batchSize = entry['batchSize']
-            batchSize = 2500
             end = entry['end']
             start = entry['start']
             batch_step = (end - start) // batchSize
