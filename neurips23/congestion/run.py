@@ -359,10 +359,12 @@ class CongestionRunner(BaseRunner):
 
                         t0 = time.time()
                         algo.insert(data, insert_ids)
-                        deletion_ids = ids[(i+1) * batchSize-batchSize*deletion_percentage:(i + 1) * batchSize]
+
+                        deletion_ids = ids[(int)((i+1) * batchSize-batchSize*deletion_percentage):(i + 1) * batchSize]
                         algo.delete(deletion_ids)
                         attrs["latencyInsert"][-1] += (time.time() - t0) * 1e6
                         print(f'delete {deletion_ids[0]}:{deletion_ids[-1]}')
+
                         processedTimeStamps[i * batchSize:(i + 1) * batchSize] = (time.time() - start_time) * 1e6
 
                         # algo.waitPendingOperations()
@@ -406,7 +408,7 @@ class CongestionRunner(BaseRunner):
                         algo.insert(data, insert_ids)
 
 
-                        deletion_ids = ids[end - batchSize * deletion_percentage:end]
+                        deletion_ids = ids[int(end - batchSize * deletion_percentage):end]
                         algo.delete(deletion_ids)
                         attrs["latencyInsert"][-1] += (time.time() - t0) * 1e6
                         print(f'delete {deletion_ids[0]}:{deletion_ids[-1]}')

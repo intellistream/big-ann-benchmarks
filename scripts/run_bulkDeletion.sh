@@ -6,6 +6,7 @@ DATASETS=("sift")
 RUNBOOKS=("0.1.yaml" "0.2.yaml" "0.3.yaml" "0.4.yaml" "0.5.yaml")
 # Iterate through each combination of algorithm and dataset
 
+
 for RUN in "${RUNBOOKS[@]}"; do
   for ALGO in "${ALGORITHMS[@]}"; do
     for DS in "${DATASETS[@]}"; do
