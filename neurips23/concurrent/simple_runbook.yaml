@@ -1,0 +1,11 @@
+random-xs:
+  max_pts: 10000
+  1: 
+    operation: "insert_and_search"
+    start: 0
+    end: 100
+  2:
+    operation: "insert_and_search"
+    start: 0
+    end: 5000
+  gt_url: "https://comp21storage.z5.web.core.windows.net/comp23/str_gt/random10000/10000/simple_runbook.yaml"

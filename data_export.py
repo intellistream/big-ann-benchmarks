@@ -92,8 +92,9 @@ if __name__ == "__main__":
     datasets = DATASETS.keys()
     dfs = []
 
-    neurips23tracks = ['streaming', 'none', 'congestion']
+    neurips23tracks = ['streaming', 'congestion', 'concurrent', 'none']
     tracks = [args.track]
+
     is_first = True
     for track in tracks:
         for dataset_name in datasets:
