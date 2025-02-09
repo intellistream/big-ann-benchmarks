@@ -269,7 +269,7 @@ def run_docker(definition, dataset, count, runs, timeout, rebuild,
         cmd.append("--private-query")
 
     cmd += ["--neurips23track", neurips23track]
-    if neurips23track in ['streaming','congestion']:
+    if neurips23track in ['streaming', 'congestion', 'concurrent']:
         cmd += ["--runbook_path", runbook_path]
 
     cmd.append(json.dumps(definition.arguments))
@@ -277,7 +277,9 @@ def run_docker(definition, dataset, count, runs, timeout, rebuild,
 
     client = docker.from_env()
     if mem_limit is None:
-        mem_limit = psutil.virtual_memory().available if neurips23track not in ['streaming', 'congestion'] else (8*1024*1024*1024)
+        mem_limit = psutil.virtual_memory().available \
+                    if neurips23track not in ['streaming', 'congestion', 'concurrent'] \
+                    else (8*1024*1024*1024)
 
     # ready the container object invoked later in this function
     container = None
@@ -305,7 +307,7 @@ def run_docker(definition, dataset, count, runs, timeout, rebuild,
     # set/override container timeout based on competition flag
     if neurips23track!='none':
         # 1 hour for streaming and 12 hours for other tracks
-        timeout = 60 * 60 if neurips23track in ['streaming', 'congestion'] else 12 * 60 * 60
+        timeout = 60 * 60 if neurips23track in ['streaming', 'congestion', 'concurrent'] else 12 * 60 * 60
         print("Setting container wait timeout to %d seconds" % timeout)       
 
     elif not timeout: 
@@ -382,7 +384,7 @@ def run_no_docker(definition, dataset, count, runs, timeout, rebuild,
         cmd.append("--private-query")
     
     cmd += ["--neurips23track", neurips23track]
-    if neurips23track in ['streaming', 'congestion']:
+    if neurips23track in ['streaming', 'congestion', 'concurrent']:
         cmd += ["--runbook_path", runbook_path]
 
     cmd.append(json.dumps(definition.arguments))

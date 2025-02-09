@@ -85,7 +85,7 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
         dataset_params = get_dataset_params_from_runbook(runbook_path, dataset_name)
 
     try:
-        if neurips23track not in ['streaming', 'congestion']:
+        if neurips23track not in ['streaming', 'congestion', 'concurrent']:
             true_nn = dataset.get_private_groundtruth() if private_query else dataset.get_groundtruth()
         elif neurips23track == 'streaming':
             true_nn_across_steps = []
@@ -96,6 +96,9 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
                     step_gt_path = os.path.join(gt_dir, 'step' + str(step+1) + '.gt100')
                     true_nn = knn_result_read(step_gt_path)
                     true_nn_across_steps.append(true_nn)
+        elif neurips23track == "concurrent":
+            # TODO: cc track
+            pass
         elif neurips23track == "congestion":
             true_nn_across_steps = []
             gt_dir = benchmark.congestion.compute_gt.gt_dir(dataset, runbook_path)
@@ -151,7 +154,7 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
         algo_name = properties['name']
         # cache distances to avoid access to hdf5 file
         if search_type == "knn" or search_type == "knn_filtered":
-            if neurips23track in ['streaming','congestion']:
+            if neurips23track in ['streaming', 'congestion', 'concurrent']:
                 run_nn_across_steps = []
                 run_nn_across_batches = []
                 for i in range(0,properties['num_searches']):
@@ -169,7 +172,7 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
             else:
                 run_nn = numpy.array(run['neighbors'])
         elif search_type == "range":
-            if neurips23track in ['streaming', 'congestion']:
+            if neurips23track in ['streaming', 'congestion', 'concurrent']:
                 run_nn_across_steps = []
                 for i in range(1,run['num_searches']):
                     step_suffix = str(properties['step_' + str(i)])
@@ -208,21 +211,22 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
         run_result = {
             'algorithm': algo,
             'parameters': algo_name,
-            'dataset': dataset_info if neurips23track not in ['streaming', 'congestion'] else dataset_info + '(' + os.path.split(runbook_path)[-1] + ')',
+            'dataset': dataset_info if neurips23track not in ['streaming', 'congestion', 'concurrent'] 
+                        else dataset_info + '(' + os.path.split(runbook_path)[-1] + ')',
             'count': properties['count'],
         }
         for name, metric in metrics.items():
             if search_type == "knn" and name == "ap" or\
                 search_type == "range" and name == "k-nn" or\
                 search_type == "knn_filtered" and name == "ap" or\
-                neurips23track in ["streaming", 'congestion'] and name == "qps" or\
-                neurips23track in ["streaming", 'congestion'] and name == "queriessize":
+                neurips23track in ["streaming", 'congestion', 'concurrent'] and name == "qps" or\
+                neurips23track in ["streaming", 'congestion', 'concurrent'] and name == "queriessize":
                 continue
             if not sensor_metrics and name=="wspq": #don't process power sensor_metrics by default
                 continue
             if not search_times and name=="search_times": #don't process search_times by default
                 continue
-            if neurips23track in ['streaming', 'congestion']:
+            if neurips23track in ['streaming', 'congestion', 'concurrent']:
                 v = []
                 bv=[]
                 assert len(true_nn_across_steps) == len(run_nn_across_steps)

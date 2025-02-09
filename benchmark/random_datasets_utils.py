@@ -244,10 +244,13 @@ def update_runbook_for_dataset(args,
 def get_runbook_paths(args):
     default_streaming_path = 'neurips23/runbooks/streaming/simple_runbook.yaml'
     default_congestion_path = 'neurips23/runbooks/congestion/simple_runbook.yaml'
+    default_concurrent_path = 'neurips23/runbooks/concurrent/simple_runbook.yaml'
 
     if hasattr(args, 'runbook_path'):
         if args.neurips23track == 'congestion':
             return default_streaming_path, args.runbook_path
+        elif args.neurips23track == 'concurrent':
+            return default_concurrent_path, args.runbook_path
         else:
             return args.runbook_path, default_congestion_path
     else:

@@ -12,7 +12,7 @@ def get_result_filename(dataset=None, count=None, definition=None,
     if neurips23track and neurips23track != 'none':
         d.append('neurips23')
         d.append(neurips23track)
-        if neurips23track in ['streaming','congestion']:
+        if neurips23track in ['streaming', 'congestion', 'concurrent']:
             if runbook_path == None:
                 raise RuntimeError('Need runbook_path to store results')
             else:
@@ -69,7 +69,7 @@ def store_results(dataset, count, definition, query_arguments,
     for k, v in attrs.items():
         # TODO: here is one potential bug
         f.attrs[k] = v
-    if neurips23track in ['streaming', 'congestion']:
+    if neurips23track in ['streaming', 'congestion', 'concurrent']:
         for i, step_results in enumerate(results):
             step = attrs['step_' + str(i)]
             add_results_to_h5py(f, search_type, step_results, count, '_step' + str(step))
