@@ -77,6 +77,7 @@ def compute_metrics(true_nn, res, metric_1, metric_2,
 
     return all_results
 
+
 def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False, 
         sensor_metrics=False, search_times=False,
         private_query=False, neurips23track=None, runbook_path=None):
@@ -249,8 +250,6 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
                         val = mean
                         bv[-1].append(val)
 
-
-
             else:
                 v = metric["function"](true_nn, run_nn, metrics_cache, properties)
 
@@ -286,26 +285,6 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
             run_result[name] = numpy.nanmean(v)
         yield run_result
 
-#def compute_all_metrics(true_nn, run, properties, recompute=False):
-#    algo = properties["algo"]
-#    algo_name = properties["name"]
-#    print('--')
-#    print(algo_name)
-#    results = {}
-#    # cache nn to avoid access to hdf5 file
-#    run_nn = numpy.array(run["neighbors"])
-#    if recompute and 'metrics' in run:
-#        del run['metrics']
-#    metrics_cache = get_or_create_metrics(run)
-#
-#    for name, metric in metrics.items():
-#        v = metric["function"](
-#            true_nn, run_nn, metrics_cache, properties)
-#        results[name] = v
-#        if v:
-#            print('%s: %g' % (name, v))
-#    return (algo, algo_name, results)
-#
 
 def generate_n_colors(n):
     vs = numpy.linspace(0.3, 0.9, 7)
