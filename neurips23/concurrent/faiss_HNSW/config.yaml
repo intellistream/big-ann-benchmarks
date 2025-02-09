@@ -1,7 +1,7 @@
 random-xs:
   faiss_HNSW:
-    docker-tag: neurips23-congestion-faiss_HNSW
-    module: neurips23.congestion.faiss_HNSW.faiss_HNSW
+    docker-tag: neurips23-concurrent-faiss_HNSW
+    module: neurips23.concurrent.faiss_HNSW.faiss_HNSW
     constructor: faiss_HNSW
     base-args: ["@metric"]
     run-groups:
@@ -12,8 +12,8 @@ random-xs:
           [{"ef":30}]
 msturing-10M-clustered:
   faiss_HNSW:
-    docker-tag: neurips23-congestion-faiss_HNSW
-    module: neurips23.congestion.faiss_HNSW.faiss_HNSW
+    docker-tag: neurips23-concurrent-faiss_HNSW
+    module: neurips23.concurrent.faiss_HNSW.faiss_HNSW
     constructor: faiss_HNSW
     base-args: ["@metric"]
     run-groups:
