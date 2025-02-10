@@ -1,0 +1,59 @@
+sift:
+  batchSize: 200
+  writeRatio: 0.9
+  1:
+    operation: "initial"
+    start: 0
+    end: 1000
+  2:
+    operation: "insert_and_search"
+    start: 1000
+    end: 1000000
+  3:
+    operation: "search"
+  gt_url: "none"
+
+random-xs:
+  batchSize: 200
+  writeRatio: 0.9
+  1:
+    operation: "initial"
+    start: 0
+    end: 1000
+  2:
+    operation: "insert_and_search"
+    start: 1000
+    end: 1000000
+  3:
+    operation: "search"
+  gt_url: "https://comp21storage.z5.web.core.windows.net/comp23/str_gt/random10000/10000/simple_runbook.yaml"
+
+msturing-10M-clustered:
+  batchSize: 200
+  writeRatio: 0.9
+  1:
+    operation: "initial"
+    start: 0
+    end: 1000
+  2:
+    operation: "insert_and_search"
+    start: 1000
+    end: 1000000
+  3:
+    operation: "search"
+  gt_url: "none"
+
+msturing-30M-clustered:
+  batchSize: 200
+  writeRatio: 0.9
+  1:
+    operation: "initial"
+    start: 0
+    end: 1000
+  2:
+    operation: "insert_and_search"
+    start: 1000
+    end: 3000000
+  3:
+    operation: "search"
+  gt_url: "none"
