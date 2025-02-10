@@ -1,6 +1,6 @@
 sift:
   batchSize: 100
-  writeRatio: 0.1
+  writeRatio: 0.2
   1:
     operation: "initial"
     start: 0
@@ -15,7 +15,7 @@ sift:
 
 random-xs:
   batchSize: 100
-  writeRatio: 0.1
+  writeRatio: 0.2
   1:
     operation: "initial"
     start: 0
@@ -30,7 +30,7 @@ random-xs:
 
 msturing-10M-clustered:
   batchSize: 100
-  writeRatio: 0.1
+  writeRatio: 0.2
   1:
     operation: "initial"
     start: 0
@@ -45,7 +45,7 @@ msturing-10M-clustered:
 
 msturing-30M-clustered:
   batchSize: 100
-  writeRatio: 0.1
+  writeRatio: 0.2
   1:
     operation: "initial"
     start: 0
