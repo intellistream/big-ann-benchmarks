@@ -1,7 +1,7 @@
 random-xs:
     diskann: 
-      docker-tag: neurips23-concurrent-diskann
-      module: neurips23.concurrent.diskann.diskann
+      docker-tag: neurips23-congestion-diskann
+      module: neurips23.congestion.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -12,8 +12,8 @@ random-xs:
             [{"Ls":50, "T":8}]
 random-xs-clustered:
     diskann: 
-      docker-tag: neurips23-concurrent-diskann
-      module: neurips23.concurrent.diskann.diskann
+      docker-tag: neurips23-congestion-diskann
+      module: neurips23.congestion.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -24,8 +24,8 @@ random-xs-clustered:
             [{"Ls":50, "T":8}]
 msspacev-1M:
     diskann: 
-      docker-tag: neurips23-concurrent-diskann
-      module: neurips23.concurrent.diskann.diskann
+      docker-tag: neurips23-congestion-diskann
+      module: neurips23.congestion.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -37,8 +37,8 @@ msspacev-1M:
              {"Ls":100, "T":16}]
 msturing-1M:
     diskann: 
-      docker-tag: neurips23-concurrent-diskann
-      module: neurips23.concurrent.diskann.diskann
+      docker-tag: neurips23-congestion-diskann
+      module: neurips23.congestion.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -50,8 +50,8 @@ msturing-1M:
              {"Ls":100, "T":16}]
 wikipedia-1M:
     diskann: 
-      docker-tag: neurips23-concurrent-diskann
-      module: neurips23.concurrent.diskann.diskann
+      docker-tag: neurips23-congestion-diskann
+      module: neurips23.congestion.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -63,8 +63,8 @@ wikipedia-1M:
              {"Ls":100, "T":32}]
 wikipedia-35M:
     diskann: 
-      docker-tag: neurips23-concurrent-diskann
-      module: neurips23.concurrent.diskann.diskann
+      docker-tag: neurips23-congestion-diskann
+      module: neurips23.congestion.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -76,8 +76,8 @@ wikipedia-35M:
              {"Ls":100, "T":32}]
 msspacev-10M:
     diskann: 
-      docker-tag: neurips23-concurrent-diskann
-      module: neurips23.concurrent.diskann.diskann
+      docker-tag: neurips23-congestion-diskann
+      module: neurips23.congestion.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -88,8 +88,8 @@ msspacev-10M:
             [{"Ls":100, "T":16}]
 msturing-10M:
     diskann: 
-      docker-tag: neurips23-concurrent-diskann
-      module: neurips23.concurrent.diskann.diskann
+      docker-tag: neurips23-congestion-diskann
+      module: neurips23.congestion.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -100,8 +100,8 @@ msturing-10M:
             [{"Ls":100, "T":16}]
 msturing-10M-clustered:
     diskann: 
-      docker-tag: neurips23-concurrent-diskann
-      module: neurips23.concurrent.diskann.diskann
+      docker-tag: neurips23-congestion-diskann
+      module: neurips23.congestion.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -112,8 +112,8 @@ msturing-10M-clustered:
             [{"Ls":100, "T":16}]
 msturing-30M-clustered:
     diskann: 
-      docker-tag: neurips23-concurrent-diskann
-      module: neurips23.concurrent.diskann.diskann
+      docker-tag: neurips23-congestion-diskann
+      module: neurips23.congestion.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -125,8 +125,8 @@ msturing-30M-clustered:
 
 sift-small:
     diskann:
-      docker-tag: neurips23-concurrent-diskann
-      module: neurips23.concurrent.diskann.diskann
+      docker-tag: neurips23-congestion-diskann
+      module: neurips23.congestion.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -138,8 +138,8 @@ sift-small:
 
 glove:
     diskann:
-      docker-tag: neurips23-concurrent-diskann
-      module: neurips23.concurrent.diskann.diskann
+      docker-tag: neurips23-congestion-diskann
+      module: neurips23.congestion.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -151,8 +151,8 @@ glove:
 
 sift:
     diskann:
-      docker-tag: neurips23-concurrent-diskann
-      module: neurips23.concurrent.diskann.diskann
+      docker-tag: neurips23-congestion-diskann
+      module: neurips23.congestion.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -164,8 +164,8 @@ sift:
 
 msong:
     diskann:
-      docker-tag: neurips23-concurrent-diskann
-      module: neurips23.concurrent.diskann.diskann
+      docker-tag: neurips23-congestion-diskann
+      module: neurips23.congestion.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -177,8 +177,8 @@ msong:
 
 sun:
     diskann:
-      docker-tag: neurips23-concurrent-diskann
-      module: neurips23.concurrent.diskann.diskann
+      docker-tag: neurips23-congestion-diskann
+      module: neurips23.congestion.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -190,8 +190,8 @@ sun:
 
 dpr:
     diskann:
-      docker-tag: neurips23-concurrent-diskann
-      module: neurips23.concurrent.diskann.diskann
+      docker-tag: neurips23-congestion-diskann
+      module: neurips23.congestion.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -203,8 +203,8 @@ dpr:
 
 reddit:
     diskann:
-      docker-tag: neurips23-concurrent-diskann
-      module: neurips23.concurrent.diskann.diskann
+      docker-tag: neurips23-congestion-diskann
+      module: neurips23.congestion.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -216,8 +216,8 @@ reddit:
 
 coco:
     diskann:
-      docker-tag: neurips23-concurrent-diskann
-      module: neurips23.concurrent.diskann.diskann
+      docker-tag: neurips23-congestion-diskann
+      module: neurips23.congestion.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -229,8 +229,8 @@ coco:
 
 trevi:
     diskann:
-      docker-tag: neurips23-concurrent-diskann
-      module: neurips23.concurrent.diskann.diskann
+      docker-tag: neurips23-congestion-diskann
+      module: neurips23.congestion.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -242,8 +242,8 @@ trevi:
 
 wte-0.05:
     diskann:
-      docker-tag: neurips23-concurrent-diskann
-      module: neurips23.concurrent.diskann.diskann
+      docker-tag: neurips23-congestion-diskann
+      module: neurips23.congestion.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -255,8 +255,8 @@ wte-0.05:
 
 wte-0.1:
     diskann:
-      docker-tag: neurips23-concurrent-diskann
-      module: neurips23.concurrent.diskann.diskann
+      docker-tag: neurips23-congestion-diskann
+      module: neurips23.congestion.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -268,8 +268,8 @@ wte-0.1:
 
 wte-0.2:
     diskann:
-      docker-tag: neurips23-concurrent-diskann
-      module: neurips23.concurrent.diskann.diskann
+      docker-tag: neurips23-congestion-diskann
+      module: neurips23.congestion.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -281,8 +281,8 @@ wte-0.2:
 
 wte-0.4:
     diskann:
-      docker-tag: neurips23-concurrent-diskann
-      module: neurips23.concurrent.diskann.diskann
+      docker-tag: neurips23-congestion-diskann
+      module: neurips23.congestion.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -294,8 +294,8 @@ wte-0.4:
 
 wte-0.6:
     diskann:
-      docker-tag: neurips23-concurrent-diskann
-      module: neurips23.concurrent.diskann.diskann
+      docker-tag: neurips23-congestion-diskann
+      module: neurips23.congestion.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -307,8 +307,8 @@ wte-0.6:
 
 openimage-streaming:
     diskann:
-      docker-tag: neurips23-concurrent-diskann
-      module: neurips23.concurrent.diskann.diskann
+      docker-tag: neurips23-congestion-diskann
+      module: neurips23.congestion.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -320,8 +320,8 @@ openimage-streaming:
 
 wte-0.8:
     diskann:
-      docker-tag: neurips23-concurrent-diskann
-      module: neurips23.concurrent.diskann.diskann
+      docker-tag: neurips23-congestion-diskann
+      module: neurips23.congestion.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -335,8 +335,8 @@ wte-0.8:
 
 random-plus:
   diskann:
-    docker-tag: neurips23-concurrent-diskann
-    module: neurips23.concurrent.diskann.diskann
+    docker-tag: neurips23-congestion-diskann
+    module: neurips23.congestion.diskann.diskann
     constructor: diskann
     base-args: [ "@metric" ]
     run-groups:

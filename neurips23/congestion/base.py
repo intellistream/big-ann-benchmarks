@@ -221,12 +221,8 @@ class BaseCongestionDropANN(BaseANN):
         self.workers=[]
         self.verbose = False
 
-
-
         for i in range(parallel_workers):
             self.workers.append(CongestionDropWorker(my_index_algo=my_index_algos[i]))
-
-
 
     def setup(self, dtype, max_pts, ndims) -> None:
         for i in range(self.parallel_workers):
