@@ -1,25 +1,33 @@
 import PyCANDYAlgo
-from PyCANDYAlgo import ConfigMap
+import os
 
 from benchmark.algorithms.base import BaseANN
 
 class BaseConcurrentANN(BaseANN): 
     def __init__(self, metric, index_params):
         self.indexkey= index_params['indexkey']
+        self.batch_size = index_params['batch_size']
+        self.write_ratio = index_params['write_ratio']
+        
+        if 'num_threads' in index_params:
+            self.num_threads = os.cpu_count()
+        else:
+            self.num_threads = index_params['num_threads']
+        
         self.metric = metric
         
     def track(self):
         return "concurrent"
 
-    def setup(self, dtype, ndim):
-        self.index = PyCANDYAlgo.creatIndex("ConcurrentIndex", ndim)
+    def setup(self, dtype, max_pts, ndim):
+        self.index = PyCANDYAlgo.createIndex("ConcurrentIndex", ndim)
         
-        cm = ConfigMap()
+        cm = PyCANDYAlgo.ConfigMap()
         cm.edit("concurrentAlgoTag", self.indexkey)  
         cm.edit("vecDim", ndim)
-        cm.edit("concurrentWriteRatio", self.config.get("write_ratio", 0.5))
-        cm.edit("concurrentBatchSize", self.config.get("batch_size", 100))
-        cm.edit("concurrentNumThreads", self.config.get("num_threads", 1))
+        cm.edit("concurrentWriteRatio", self.write_ratio)
+        cm.edit("concurrentBatchSize", self.batch_size)
+        cm.edit("concurrentNumThreads", self.num_threads)
 
         metric_type = "L2" if self.metric == "euclidean" else "IP"
         cm.edit("metricType", metric_type)

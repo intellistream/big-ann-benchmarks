@@ -1,14 +1,10 @@
 import numpy as np
 import time
 import yaml
-import queue
-import concurrent.futures
+import os
 
 from benchmark.algorithms.base_runner import BaseRunner
 from benchmark.datasets import DATASETS
-
-from benchmark.results import get_result_filename
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 def generateTimestamps(rows, eventRate=4000):
@@ -88,78 +84,67 @@ def storeTimestampsToCsv(filename, ids, eventTimeStamps, arrivalTimeStamps, proc
     
 
 class ConcurrentRunner(BaseRunner):
-    def build(algo, dataset):
+    def build(algo, dataset, max_pts):
         '''
         Return set up time
         '''
         t0 = time.time()
         ds = DATASETS[dataset]()
         ndims = ds.d
-        algo.setup(ds.dtype, ndims)
+        algo.setup(ds.dtype, max_pts, ndims)
         print('Algorithm set up')
         return time.time() - t0
     
         
-    def run_task(algo, ds, distance, count, run_count, search_type, private_query, runbook, write_ratio=0.5, num_threads=16, batch_size=100):
-        search_results = []
+    def run_task(algo, ds, distance, count, run_count, search_type, private_query, runbook, definition, query_arguments, runbook_path, dataset):
+        best_search_time = float('inf')
         search_times = []
-        result_map = {}
-        num_searches = 0
+        all_results = []
+        
+        write_ratio = runbook.get('write_ratio')
+        if write_ratio == None:
+            raise Exception('write threads ratio not listed in runbook')
+
+        batch_size = runbook.get('batch_size')
+        if batch_size == None:
+            raise Exception('batch size not listed in runbook')
+
+        num_threads = runbook.get('num_threads')
+        if num_threads == None:
+            num_threads = os.cpu_count()
+            print(f"number of threads not listed in runbook, use default threads {num_threads}")
 
         Q = ds.get_queries() if not private_query else ds.get_private_queries()
         print(fr"Got {Q.shape[0]} queries")  
 
+        # Load Runbook
+        result_map = {}
         num_searches = 0
-        
-        num_write_threads = max(1, int(num_threads * write_ratio))
-        num_read_threads = max(1, num_threads - num_write_threads)
-        print(f"Total Threads: {num_threads} → {num_write_threads} Write Threads, {num_read_threads} Read Threads (write_ratio={write_ratio})")
-        
-        task_queue = queue.Queue()
-        
         for step, entry in enumerate(runbook):
+            start_time = time.time()
             match entry['operation']:
-                case 'insert_and_search':
+                case 'insert':
                     start = entry['start']
                     end = entry['end']
-                    
-                    for batch_start in range(start, end, batch_size):
-                        batch_end = min(batch_start + batch_size, end)
-                        batch_ids = np.arange(batch_start, batch_end, dtype=np.uint32)
-                        
-                        task_queue.put(("insert_and_s", batch_start, batch_end, batch_ids))
-        
-                case _:
-                    raise NotImplementedError(f"Operation '{entry['operation']}' not supported.")
-        
-        with concurrent.futures.ThreadPoolExecutor(max_workers=num_threads) as executor:
-            while not task_queue.empty():
-                write_futures = []
-                
-                for _ in range(min(batch_size, task_queue.qsize())):
-                    try:
-                        task_type, batch_start, batch_end, batch_ids = task_queue.get(timeout=1)
-                    except queue.Empty:
-                        break
-                  
-                    if task_type == 'insert_and_search':
-                        future = executor.submit(algo.insert, ds.get_data_in_range(batch_start, batch_end), batch_ids)
-                        write_futures.append(future)
-                        print(f"Submitted Insert Task: {batch_start} to {batch_end}")
-                        
-                search_futures = [executor.submit(algo.query, Q, count) for _ in range(num_read_threads)]
-                print(f"Submitted {num_read_threads} Search Tasks")
-                
-                for search_future in search_futures:
-                    search_result = search_future.result()
-                    search_results.append(search_result)
+                    ids = np.arange(start, end, dtype=np.uint32)
+                    algo.insert(ds.get_data_in_range(start, end), ids)
+                case 'search':
+                    if search_type == 'knn':
+                        algo.query(Q, count)
+                        results = algo.get_results()
+                    elif search_type == 'range':
+                        algo.range_query(Q, count)
+                        results = algo.get_range_results()
+                    else:
+                        raise NotImplementedError(f"Search type {search_type} not available.")
+                    all_results.append(results)
+                    result_map[num_searches] = step + 1
                     num_searches += 1
-                    
-                print(f"Completed {num_read_threads} Queries after {batch_end} insertions.")
-                
-        # recall_accuracy = algo.evaluate_recall_accuracy(search_results)
-        # print(f"Final Recall Accuracy: {recall_accuracy:.4f}")
-        
+                case _:
+                    raise NotImplementedError('Invalid runbook operation.')
+            step_time = (time.time() - start_time)
+            print(f"Step {step+1} took {step_time}s.")
+
         attrs = {
             "name": str(algo),
             "run_count": run_count,
@@ -168,9 +153,16 @@ class ConcurrentRunner(BaseRunner):
             "count": int(count),
             "search_times": search_times,
             "num_searches": num_searches,
-            "private_queries": private_query,
-            # "recall_accuracy": recall_accuracy,  
+            "private_queries": private_query, 
         }
 
-        # print(f"Final Accuracy: {recall_accuracy * 100:.2f}%")
-        return attrs, search_results
+        for k, v in result_map.items():
+            attrs['step_' + str(k)] = v
+
+        additional = algo.get_additional()
+        for k in additional:
+            attrs[k] = additional[k]
+        return (attrs, all_results)
+    
+    
+    

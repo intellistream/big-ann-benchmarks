@@ -1,6 +1,6 @@
 sift:
-  batchSize: 200
-  writeRatio: 0.5
+  batch_size: 200
+  write_ratio: 0.5
   max_pts: 1000000
   1:
     operation: "initial"
@@ -15,8 +15,8 @@ sift:
   gt_url: "none"
 
 random-xs:
-  batchSize: 200
-  writeRatio: 0.5
+  batch_size: 200
+  write_ratio: 0.5
   max_pts: 1000000
   1:
     operation: "initial"
@@ -31,8 +31,8 @@ random-xs:
   gt_url: "https://comp21storage.z5.web.core.windows.net/comp23/str_gt/random10000/10000/simple_runbook.yaml"
 
 msturing-10M-clustered:
-  batchSize: 200
-  writeRatio: 0.5
+  batch_size: 200
+  write_ratio: 0.5
   max_pts: 1000000
   1:
     operation: "initial"
@@ -47,8 +47,8 @@ msturing-10M-clustered:
   gt_url: "none"
 
 msturing-30M-clustered:
-  batchSize: 200
-  writeRatio: 0.5
+  batch_size: 200
+  write_ratio: 0.5
   max_pts: 1000000
   1:
     operation: "initial"
