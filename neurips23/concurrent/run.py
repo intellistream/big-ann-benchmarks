@@ -88,14 +88,14 @@ def storeTimestampsToCsv(filename, ids, eventTimeStamps, arrivalTimeStamps, proc
     
 
 class ConcurrentRunner(BaseRunner):
-    def build(algo, dataset, max_pts):
+    def build(algo, dataset):
         '''
         Return set up time
         '''
         t0 = time.time()
         ds = DATASETS[dataset]()
         ndims = ds.d
-        algo.setup(ds.dtype, max_pts, ndims)
+        algo.setup(ds.dtype, ndims)
         print('Algorithm set up')
         return time.time() - t0
     

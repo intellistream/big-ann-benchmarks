@@ -5,15 +5,15 @@ from benchmark.algorithms.base import BaseANN
 
 class BaseConcurrentANN(BaseANN): 
     def __init__(self, metric, index_params):
-        self.index = PyCANDYAlgo.ConcurrentIndex()
         self.indexkey= index_params['indexkey']
         self.metric = metric
-        self._setup_index()
         
     def track(self):
         return "concurrent"
 
-    def _setup_index(self, ndim):
+    def setup(self, dtype, ndim):
+        self.index = PyCANDYAlgo.creatIndex("ConcurrentIndex", ndim)
+        
         cm = ConfigMap()
         cm.edit("concurrentAlgoTag", self.indexkey)  
         cm.edit("vecDim", ndim)
@@ -23,6 +23,7 @@ class BaseConcurrentANN(BaseANN):
 
         metric_type = "L2" if self.metric == "euclidean" else "IP"
         cm.edit("metricType", metric_type)
+        
         self.index.setConfig(cm)
         
     def cc_insert_and_query(self, t, qt, k):

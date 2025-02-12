@@ -10,6 +10,7 @@ random-xs:
           [{"indexkey": "HNSW32"}]
         query-args: |
           [{"ef":30}]
+          
 msturing-10M-clustered:
   faiss_HNSW:
     docker-tag: neurips23-concurrent-faiss_HNSW

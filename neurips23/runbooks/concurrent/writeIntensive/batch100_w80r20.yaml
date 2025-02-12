@@ -1,6 +1,7 @@
 sift:
   batchSize: 100
   writeRatio: 0.8
+  max_pts: 1000000
   1:
     operation: "initial"
     start: 0
@@ -31,6 +32,7 @@ random-xs:
 msturing-10M-clustered:
   batchSize: 100
   writeRatio: 0.8
+  max_pts: 1000000
   1:
     operation: "initial"
     start: 0
@@ -46,6 +48,7 @@ msturing-10M-clustered:
 msturing-30M-clustered:
   batchSize: 100
   writeRatio: 0.8
+  max_pts: 1000000
   1:
     operation: "initial"
     start: 0
