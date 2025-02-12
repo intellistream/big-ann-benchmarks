@@ -58,10 +58,6 @@ class CongestionDropWorker(AbstractThread):
 
         self.outOfOrder = False
 
-
-
-
-
     def setup(self, dtype, max_pts, ndim):
         self.vec_dim=ndim
         self.my_index_algo.setup(dtype, max_pts, ndim)
