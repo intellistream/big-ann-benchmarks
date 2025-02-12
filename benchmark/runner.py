@@ -104,9 +104,15 @@ def run(definition, dataset, count, run_count, rebuild=True,
 
                 if query_arguments:
                     algo.set_query_arguments(*query_arguments)
-                if neurips23track in ['streaming', 'congestion']:
+                if neurips23track in ['streaming']:
                     descriptor, results = custom_runner.run_task(
                         algo, ds, distance, count, 1, search_type, private_query, runbook, definition, query_arguments, runbook_path, dataset)
+                elif neurips23track in ['congestion']:
+                    if pos > 1:
+                        print("Query arguments updated in continuous query phase; Out")
+                        break
+                    descriptor, results = custom_runner.run_task(
+                        algo, ds, distance, count, 1, search_type, private_query, runbook, definition, query_arguments, runbook_path, dataset, query_argument_groups)
                 else:
                     descriptor, results = custom_runner.run_task(
                         algo, ds, distance, count, run_count, search_type, private_query)

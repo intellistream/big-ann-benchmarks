@@ -81,6 +81,7 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
         sensor_metrics=False, search_times=False,
         private_query=False, neurips23track=None, runbook_path=None):
 
+
     if neurips23track == 'congestion' and runbook_path:
         dataset_params = get_dataset_params_from_runbook(runbook_path, dataset_name)
 
@@ -239,11 +240,24 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
                 assert len(true_nn_across_batches) == len(run_nn_across_batches)
                 for(true_nn, run_nn) in zip(true_nn_across_batches, run_nn_across_batches):
                     bv.append([])
-                    assert(len(true_nn)==len(run_nn))
-                    for(t,r) in zip(true_nn, run_nn):
-                        mean, std, recalls, queries_with_ties = get_recall_values(t, r, properties['count'])
-                        val = mean
-                        bv[-1].append(val)
+                    multi_args= False
+                    if len(run_nn) % len(true_nn) == 0:
+                        multi_args=True
+                    assert(len(true_nn)==len(run_nn) or multi_args)
+                    for i in range(len(true_nn)):
+                        t = true_nn[i]
+                        if multi_args:
+                            num_args = len(run_nn)//len(true_nn)
+                            for j in range(num_args):
+                                r = run_nn[i*num_args+j]
+                                mean, std, recalls, queries_with_ties = get_recall_values(t, r, properties['count'])
+                                val = mean
+                                bv[-1].append(val)
+                        else:
+                            r = run_nn[i]
+                            mean, std, recalls, queries_with_ties = get_recall_values(t, r, properties['count'])
+                            val = mean
+                            bv[-1].append(val)
 
 
 
