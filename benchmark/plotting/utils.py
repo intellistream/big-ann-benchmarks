@@ -260,6 +260,12 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
                     for j in range(len(bv[i])):
                         recall_sum+=bv[i][j]
                         latency_sum+=properties['continuousQueryLatencies'][i][j]
+                        run_result['batchRecall_'+str(j)]=bv[i][j]
+                        run_result['batchLatency_'+str(j)]=properties['continuousQueryLatencies'][i][j]
+                        run_result['batchThroughput_'+str(j)]=properties['querySize']/((run_result['batchLatency_'+str(j)])/1e6)
+
+
+
                     run_result['continuousRecall_'+str(i)] = recall_sum/len(bv[i])
                     run_result['continuousLatency_'+str(i)] = latency_sum/len(bv[i])
                     run_result['continuousThroughput_'+str(i)] = properties['querySize']/((run_result['continuousLatency_'+str(i)])/1e6)
