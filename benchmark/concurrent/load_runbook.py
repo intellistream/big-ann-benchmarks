@@ -1,6 +1,8 @@
+import os
 import yaml
+from collections import namedtuple
 
-def load_runbook(dataset_name, max_pts, runbook_file):
+def load_runbook_concurrent(dataset_name, max_pts, runbook_file):
     with open(runbook_file) as fd:
         runbook = yaml.safe_load(fd)[dataset_name] 
 
@@ -26,8 +28,27 @@ def load_runbook(dataset_name, max_pts, runbook_file):
     max_pts = runbook.get('max_pts')
     if max_pts == None:
         raise Exception('max points not listed for dataset in runbook')
+    
+    write_ratio = runbook.get('write_ratio')
+    if write_ratio == None:
+        raise Exception('write threads ratio not listed in runbook')
 
-    return max_pts, run_list
+    batch_size = runbook.get('batch_size')
+    if batch_size == None:
+        raise Exception('batch size not listed in runbook')
+
+    num_threads = runbook.get('num_threads')
+    if num_threads == None:
+        num_threads = os.cpu_count()
+        print(f"number of threads not listed in runbook, use default threads {num_threads}")
+    
+    cc_config = {
+        'write_ratio': write_ratio,
+        'batch_size': batch_size,
+        'num_threads': num_threads
+    }
+
+    return max_pts, cc_config, run_list
 
 def get_gt_url(dataset_name, runbook_file):
     with open(runbook_file) as fd:

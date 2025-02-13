@@ -27,7 +27,7 @@ from neurips23.common import RUNNERS
 
 from benchmark.streaming.load_runbook import load_runbook_streaming
 from benchmark.congestion.load_runbook import load_runbook_congestion
-from benchmark.concurrent.load_runbook import load_runbook as load_runbook_concurrent
+from benchmark.concurrent.load_runbook import load_runbook_concurrent
 
 
 def run(definition, dataset, count, run_count, rebuild=True,
@@ -51,14 +51,17 @@ def run(definition, dataset, count, run_count, rebuild=True,
     build_time = -1 # default value used to indicate that the index was loaded from file
     print(f"Running {definition.algorithm} on {dataset}")
 
+    max_pts = 0
+    runbook = None
+    cc_config = None
+
     custom_runner = RUNNERS.get(neurips23track, BaseRunner)
     if neurips23track == 'streaming':
         max_pts, runbook = load_runbook_streaming(dataset, ds.nb, runbook_path)
     elif neurips23track == 'congestion':
         max_pts, runbook = load_runbook_congestion(dataset, ds.nb, runbook_path)
     elif neurips23track == 'concurrent':
-        max_pts, runbook = load_runbook_concurrent(dataset, ds.nb, runbook_path)
-
+        max_pts, cc_config, runbook = load_runbook_concurrent(dataset, ds.nb, runbook_path)
 
     try:
         # Try loading the index from the file
@@ -77,9 +80,14 @@ def run(definition, dataset, count, run_count, rebuild=True,
                 print("Index load failed.")
         elif rebuild or not algo.load_index(dataset):
             # Build the index if it is not available
-            build_time = (custom_runner.build(algo,dataset)
-                          if neurips23track not in ['streaming', 'congestion', 'concurrent']
-                          else custom_runner.build(algo, dataset, max_pts))
+            build_time = 0
+            if neurips23track in ['streaming', 'congestion']:
+                build_time = custom_runner.build(algo, dataset, max_pts)
+            elif neurips23track == "concurrent":
+                build_time = custom_runner.build(algo, dataset, max_pts, cc_config)
+            else:
+                build_time = custom_runner.build(algo,dataset)
+            
             print('Built index in', build_time) 
         else:
             print("Loaded existing index")
@@ -105,8 +113,11 @@ def run(definition, dataset, count, run_count, rebuild=True,
 
                 if query_arguments:
                     algo.set_query_arguments(*query_arguments)
-                if neurips23track in ['streaming', 'congestion', 'concurrent']:
+                if neurips23track in ['streaming', 'congestion']:
                     descriptor, results = custom_runner.run_task(
+                        algo, ds, distance, count, 1, search_type, private_query, runbook, definition, query_arguments, runbook_path, dataset)
+                elif neurips23track == 'concurrent':
+                    descriptor, cc_results, results = custom_runner.run_task(
                         algo, ds, distance, count, 1, search_type, private_query, runbook, definition, query_arguments, runbook_path, dataset)
                 else:
                     descriptor, results = custom_runner.run_task(

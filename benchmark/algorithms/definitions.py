@@ -21,13 +21,6 @@ def instantiate_algorithm(definition):
     print('Trying to instantiate %s.%s(%s)' %
           (definition.module, definition.constructor, definition.arguments))
     module = importlib.import_module(definition.module)
-    # print("-------")
-    # print(definition)
-    # import neurips23.concurrent.faiss_HNSW.faiss_HNSW as faiss_HNSW
-    # print("-------")
-    # print(dir(faiss_HNSW))
-    print("-------")
-    print(module, "***", definition.constructor)
     constructor = getattr(module, definition.constructor)
     return constructor(*definition.arguments)
 
