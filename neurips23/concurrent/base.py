@@ -1,57 +1,46 @@
-import numpy as np
-import numpy.typing as npt
+import PyCANDYAlgo
+import os
+
 from benchmark.algorithms.base import BaseANN
 
-class BaseConcurrentANN(BaseANN):
+class BaseConcurrentANN(BaseANN): 
+    def __init__(self, metric, index_params):
+        self.indexkey= index_params['indexkey']
+        self.batch_size = index_params['batch_size']
+        self.write_ratio = index_params['write_ratio']
+        
+        if 'num_threads' in index_params:
+            self.num_threads = os.cpu_count()
+        else:
+            self.num_threads = index_params['num_threads']
+        
+        self.metric = metric
+        
     def track(self):
         return "concurrent"
-    
-    def setup(self, dtype, max_pts, ndims) -> None:
-        '''
-        Initialize the data structures for your algorithm
-        dtype can be 'uint8', 'int8 'or 'float32'
-        max_pts is an upper bound on non-deleted points that the index must support
-        ndims is the size of the dataset
-        '''
-        raise NotImplementedError
+
+    def setup(self, dtype, max_pts, ndim):
+        self.index = PyCANDYAlgo.createIndex("ConcurrentIndex", ndim)
         
-    def insert(self, X: np.array, ids: npt.NDArray[np.uint32]) -> None:
-        '''
-        Implement this for your algorithm
-        X is num_vectos * num_dims matrix 
-        ids is num_vectors-sized array which indicates ids for each vector
-        '''
-        raise NotImplementedError
-    
-    def delete(self, ids: npt.NDArray[np.uint32]) -> None:
-        '''
-        Implement this for your algorithm
-        delete the vectors labelled with ids.
-        '''
-        raise NotImplementedError
+        cm = PyCANDYAlgo.ConfigMap()
+        cm.edit("concurrentAlgoTag", self.indexkey)  
+        cm.edit("vecDim", ndim)
+        cm.edit("concurrentWriteRatio", self.write_ratio)
+        cm.edit("concurrentBatchSize", self.batch_size)
+        cm.edit("concurrentNumThreads", self.num_threads)
 
-
-    def fit(self, dataset):
-        '''
-        Do not override this method
-        '''
-        raise NotImplementedError
+        metric_type = "L2" if self.metric == "euclidean" else "IP"
+        cm.edit("metricType", metric_type)
+        
+        self.index.setConfig(cm)
+        
+    def cc_insert_and_query(self, t, qt, k):
+        return self.index.ccInsertAndSearchTensor(t, qt, k)
     
-    def load_index(self, dataset):
-        """
-        Do not override
-        """
-        return False
+    def query(self, qt, k):
+        return self.index.searchTensor(qt, k)
     
-    def get_index_components(self, dataset):
-        """
-        Does not apply to streaming indices
-        """
-        raise NotImplementedError
-
-    def index_files_to_store(self, dataset):
-        """
-        Does not apply to streaming indices
-        """
-        raise NotImplementedError
+        
     
+    
+        

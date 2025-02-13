@@ -13,6 +13,7 @@ import sys
 import traceback
 
 from benchmark.datasets import DATASETS
+from benchmark.random_datasets_utils import parse_dataset, normalize_dataset_name
 from benchmark.algorithms.definitions import (get_all_definitions, 
                                               get_definitions,
                                               list_algorithms,
@@ -71,7 +72,8 @@ def main():
         metavar='NAME',
         help='the dataset to load training points from',
         default='sift-1M',
-        choices=DATASETS.keys())
+        # choices=DATASETS.keys())
+        )
     parser.add_argument(
         "-k", "--count",
         default=-1,
@@ -158,7 +160,7 @@ def main():
     )
     parser.add_argument(
         '--neurips23track',
-        choices=['filter', 'ood', 'sparse', 'streaming', 'concurrent', 'none'],
+        choices=['filter', 'ood', 'sparse', 'streaming', 'concurrent', 'congestion', 'none'],
         default='none'
     )
     parser.add_argument(
@@ -166,8 +168,19 @@ def main():
         help='runbook yaml path for neurips23 streaming track',
         default='neurips23/streaming/simple_runbook.yaml'
     )
+    parser.add_argument(
+        '--eventrate',
+        type=int,
+        help='Event rate for congestion scenarios'
+    )
+    parser.add_argument(
+        '--batchsize',
+        type=int,
+        help='Batch size for congestion scenarios'
+    )
 
     args = parser.parse_args()
+
     if args.timeout == -1:
         args.timeout = None
 
@@ -183,7 +196,8 @@ def main():
     logging.config.fileConfig("logging.conf")
     logger = logging.getLogger("annb")
 
-    dataset = DATASETS[args.dataset]()
+    # dataset = DATASETS[args.dataset]()
+    dataset = parse_dataset(args)
     dataset.prepare(args.neurips23track == 'none') # prepare dataset, but skip potentially huge base vectors
     dimension = dataset.d
     point_type = 'float'
@@ -192,11 +206,11 @@ def main():
         args.count = dataset.default_count()
     if args.neurips23track == 'none':
         definitions = get_definitions(
-            args.definitions, dimension, args.dataset, distance, args.count)
+            args.definitions, dimension, normalize_dataset_name(args.dataset), distance, args.count)
     else:
         definitions = get_all_definitions(
             neurips23.common.track_path(args.neurips23track), 
-            dimension, args.dataset, distance, args.count)
+            dimension, normalize_dataset_name(args.dataset), distance, args.count)
 
     # Filter out, from the loaded definitions, all those query argument groups
     # that correspond to experiments that have already been run. (This might

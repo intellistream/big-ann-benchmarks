@@ -1,6 +1,6 @@
 import yaml
 
-def load_runbook(dataset_name, max_pts, runbook_file):
+def load_runbook_streaming(dataset_name, max_pts, runbook_file):
     with open(runbook_file) as fd:
         runbook = yaml.safe_load(fd)[dataset_name]
         i=1

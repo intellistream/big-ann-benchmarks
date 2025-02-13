@@ -30,7 +30,6 @@ class BaseStreamingANN(BaseANN):
         '''
         raise NotImplementedError
 
-
     def fit(self, dataset):
         '''
         Do not override this method

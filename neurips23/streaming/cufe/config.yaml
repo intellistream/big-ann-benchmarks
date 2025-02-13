@@ -1,7 +1,7 @@
 random-xs:
     cufe: 
       docker-tag: neurips23-streaming-cufe
-      module: neurips23.streaming.cufe.diskann-str
+      module: neurips23.streaming.cufe.cufe
       constructor: diskannCUFE
       base-args: ["@metric"]
       run-groups:
@@ -13,7 +13,7 @@ random-xs:
 random-xs-clustered:
     cufe: 
       docker-tag: neurips23-streaming-cufe
-      module: neurips23.streaming.cufe.diskann-str
+      module: neurips23.streaming.cufe.cufe
       constructor: diskannCUFE
       base-args: ["@metric"]
       run-groups:
@@ -25,7 +25,7 @@ random-xs-clustered:
 msspacev-1M:
     cufe: 
       docker-tag: neurips23-streaming-cufe
-      module: neurips23.streaming.cufe.diskann-str
+      module: neurips23.streaming.cufe.cufe
       constructor: diskannCUFE
       base-args: ["@metric"]
       run-groups:
@@ -38,7 +38,7 @@ msspacev-1M:
 msturing-1M:
     cufe: 
       docker-tag: neurips23-streaming-cufe
-      module: neurips23.streaming.cufe.diskann-str
+      module: neurips23.streaming.cufe.cufe
       constructor: diskannCUFE
       base-args: ["@metric"]
       run-groups:
@@ -51,7 +51,7 @@ msturing-1M:
 msspacev-10M:
     cufe: 
       docker-tag: neurips23-streaming-cufe
-      module: neurips23.streaming.cufe.diskann-str
+      module: neurips23.streaming.cufe.cufe
       constructor: diskannCUFE
       base-args: ["@metric"]
       run-groups:
@@ -63,7 +63,7 @@ msspacev-10M:
 msturing-10M:
     cufe: 
       docker-tag: neurips23-streaming-cufe
-      module: neurips23.streaming.cufe.diskann-str
+      module: neurips23.streaming.cufe.cufe
       constructor: diskannCUFE
       base-args: ["@metric"]
       run-groups:
@@ -75,7 +75,7 @@ msturing-10M:
 msturing-10M-clustered:
     cufe: 
       docker-tag: neurips23-streaming-cufe
-      module: neurips23.streaming.cufe.diskann-str
+      module: neurips23.streaming.cufe.cufe
       constructor: diskannCUFE
       base-args: ["@metric"]
       run-groups:
@@ -87,7 +87,7 @@ msturing-10M-clustered:
 msturing-30M-clustered:
     cufe: 
       docker-tag: neurips23-streaming-cufe
-      module: neurips23.streaming.cufe.diskann-str
+      module: neurips23.streaming.cufe.cufe
       constructor: diskannCUFE
       base-args: ["@metric"]
       run-groups:

@@ -1,7 +1,7 @@
 random-xs:
     diskann: 
       docker-tag: neurips23-streaming-diskann
-      module: neurips23.streaming.diskann.diskann-str
+      module: neurips23.streaming.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -13,7 +13,7 @@ random-xs:
 random-xs-clustered:
     diskann: 
       docker-tag: neurips23-streaming-diskann
-      module: neurips23.streaming.diskann.diskann-str
+      module: neurips23.streaming.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -25,7 +25,7 @@ random-xs-clustered:
 msspacev-1M:
     diskann: 
       docker-tag: neurips23-streaming-diskann
-      module: neurips23.streaming.diskann.diskann-str
+      module: neurips23.streaming.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -38,7 +38,7 @@ msspacev-1M:
 msturing-1M:
     diskann: 
       docker-tag: neurips23-streaming-diskann
-      module: neurips23.streaming.diskann.diskann-str
+      module: neurips23.streaming.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -51,7 +51,7 @@ msturing-1M:
 wikipedia-1M:
     diskann: 
       docker-tag: neurips23-streaming-diskann
-      module: neurips23.streaming.diskann.diskann-str
+      module: neurips23.streaming.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -64,7 +64,7 @@ wikipedia-1M:
 wikipedia-35M:
     diskann: 
       docker-tag: neurips23-streaming-diskann
-      module: neurips23.streaming.diskann.diskann-str
+      module: neurips23.streaming.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -77,7 +77,7 @@ wikipedia-35M:
 msspacev-10M:
     diskann: 
       docker-tag: neurips23-streaming-diskann
-      module: neurips23.streaming.diskann.diskann-str
+      module: neurips23.streaming.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -89,7 +89,7 @@ msspacev-10M:
 msturing-10M:
     diskann: 
       docker-tag: neurips23-streaming-diskann
-      module: neurips23.streaming.diskann.diskann-str
+      module: neurips23.streaming.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -101,7 +101,7 @@ msturing-10M:
 msturing-10M-clustered:
     diskann: 
       docker-tag: neurips23-streaming-diskann
-      module: neurips23.streaming.diskann.diskann-str
+      module: neurips23.streaming.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -113,7 +113,7 @@ msturing-10M-clustered:
 msturing-30M-clustered:
     diskann: 
       docker-tag: neurips23-streaming-diskann
-      module: neurips23.streaming.diskann.diskann-str
+      module: neurips23.streaming.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -124,3 +124,226 @@ msturing-30M-clustered:
              {"R":50, "L":50, "insert_threads":16, "consolidate_threads":16}]
           query-args: |
             [{"Ls":70, "T":16}]
+
+sift-small:
+    diskann:
+      docker-tag: neurips23-streaming-diskann
+      module: neurips23.streaming.diskann.diskann
+      constructor: diskann
+      base-args: ["@metric"]
+      run-groups:
+        base:
+          args: |
+            [{"R":32, "L":50, "insert_threads":16, "consolidate_threads":16}]
+          query-args: |
+            [{"Ls":50, "T":8}]
+
+glove:
+    diskann:
+      docker-tag: neurips23-streaming-diskann
+      module: neurips23.streaming.diskann.diskann
+      constructor: diskann
+      base-args: ["@metric"]
+      run-groups:
+        base:
+          args: |
+            [{"R":32, "L":50, "insert_threads":16, "consolidate_threads":16}]
+          query-args: |
+            [{"Ls":50, "T":8}]
+
+sift:
+    diskann:
+      docker-tag: neurips23-streaming-diskann
+      module: neurips23.streaming.diskann.diskann
+      constructor: diskann
+      base-args: ["@metric"]
+      run-groups:
+        base:
+          args: |
+            [{"R":32, "L":50, "insert_threads":16, "consolidate_threads":16}]
+          query-args: |
+            [{"Ls":50, "T":8}]
+
+msong:
+    diskann:
+      docker-tag: neurips23-streaming-diskann
+      module: neurips23.streaming.diskann.diskann
+      constructor: diskann
+      base-args: ["@metric"]
+      run-groups:
+        base:
+          args: |
+            [{"R":32, "L":50, "insert_threads":16, "consolidate_threads":16}]
+          query-args: |
+            [{"Ls":50, "T":8}]
+
+sun:
+    diskann:
+      docker-tag: neurips23-streaming-diskann
+      module: neurips23.streaming.diskann.diskann
+      constructor: diskann
+      base-args: ["@metric"]
+      run-groups:
+        base:
+          args: |
+            [{"R":32, "L":50, "insert_threads":16, "consolidate_threads":16}]
+          query-args: |
+            [{"Ls":50, "T":8}]
+
+dpr:
+    diskann:
+      docker-tag: neurips23-streaming-diskann
+      module: neurips23.streaming.diskann.diskann
+      constructor: diskann
+      base-args: ["@metric"]
+      run-groups:
+        base:
+          args: |
+            [{"R":32, "L":50, "insert_threads":16, "consolidate_threads":16}]
+          query-args: |
+            [{"Ls":50, "T":8}]
+
+reddit:
+    diskann:
+      docker-tag: neurips23-streaming-diskann
+      module: neurips23.streaming.diskann.diskann
+      constructor: diskann
+      base-args: ["@metric"]
+      run-groups:
+        base:
+          args: |
+            [{"R":32, "L":50, "insert_threads":16, "consolidate_threads":16}]
+          query-args: |
+            [{"Ls":50, "T":8}]
+
+coco:
+    diskann:
+      docker-tag: neurips23-streaming-diskann
+      module: neurips23.streaming.diskann.diskann
+      constructor: diskann
+      base-args: ["@metric"]
+      run-groups:
+        base:
+          args: |
+            [{"R":32, "L":50, "insert_threads":16, "consolidate_threads":16}]
+          query-args: |
+            [{"Ls":50, "T":8}]
+
+trevi:
+    diskann:
+      docker-tag: neurips23-streaming-diskann
+      module: neurips23.streaming.diskann.diskann
+      constructor: diskann
+      base-args: ["@metric"]
+      run-groups:
+        base:
+          args: |
+            [{"R":32, "L":50, "insert_threads":16, "consolidate_threads":16}]
+          query-args: |
+            [{"Ls":50, "T":8}]
+
+wte-0.05:
+    diskann:
+      docker-tag: neurips23-streaming-diskann
+      module: neurips23.streaming.diskann.diskann
+      constructor: diskann
+      base-args: ["@metric"]
+      run-groups:
+        base:
+          args: |
+            [{"R":32, "L":50, "insert_threads":16, "consolidate_threads":16}]
+          query-args: |
+            [{"Ls":50, "T":8}]
+
+wte-0.1:
+    diskann:
+      docker-tag: neurips23-streaming-diskann
+      module: neurips23.streaming.diskann.diskann
+      constructor: diskann
+      base-args: ["@metric"]
+      run-groups:
+        base:
+          args: |
+            [{"R":32, "L":50, "insert_threads":16, "consolidate_threads":16}]
+          query-args: |
+            [{"Ls":50, "T":8}]
+
+wte-0.2:
+    diskann:
+      docker-tag: neurips23-streaming-diskann
+      module: neurips23.streaming.diskann.diskann
+      constructor: diskann
+      base-args: ["@metric"]
+      run-groups:
+        base:
+          args: |
+            [{"R":32, "L":50, "insert_threads":16, "consolidate_threads":16}]
+          query-args: |
+            [{"Ls":50, "T":8}]
+
+wte-0.4:
+    diskann:
+      docker-tag: neurips23-streaming-diskann
+      module: neurips23.streaming.diskann.diskann
+      constructor: diskann
+      base-args: ["@metric"]
+      run-groups:
+        base:
+          args: |
+            [{"R":32, "L":50, "insert_threads":16, "consolidate_threads":16}]
+          query-args: |
+            [{"Ls":50, "T":8}]
+
+wte-0.6:
+    diskann:
+      docker-tag: neurips23-streaming-diskann
+      module: neurips23.streaming.diskann.diskann
+      constructor: diskann
+      base-args: ["@metric"]
+      run-groups:
+        base:
+          args: |
+            [{"R":32, "L":50, "insert_threads":16, "consolidate_threads":16}]
+          query-args: |
+            [{"Ls":50, "T":8}]
+
+openimage-streaming:
+    diskann:
+      docker-tag: neurips23-streaming-diskann
+      module: neurips23.streaming.diskann.diskann
+      constructor: diskann
+      base-args: ["@metric"]
+      run-groups:
+        base:
+          args: |
+            [{"R":32, "L":50, "insert_threads":16, "consolidate_threads":16}]
+          query-args: |
+            [{"Ls":50, "T":8}]
+
+wte-0.8:
+    diskann:
+      docker-tag: neurips23-streaming-diskann
+      module: neurips23.streaming.diskann.diskann
+      constructor: diskann
+      base-args: ["@metric"]
+      run-groups:
+        base:
+          args: |
+            [{"R":32, "L":50, "insert_threads":16, "consolidate_threads":16}]
+          query-args: |
+            [{"Ls":50, "T":8}]
+
+
+
+random-plus:
+  diskann:
+    docker-tag: neurips23-streaming-diskann
+    module: neurips23.streaming.diskann.diskann
+    constructor: diskann
+    base-args: [ "@metric" ]
+    run-groups:
+      base:
+        args: |
+          [{"R":32, "L":50, "insert_threads":16, "consolidate_threads":16}]
+        query-args: |
+          [{"Ls":50, "T":8}]

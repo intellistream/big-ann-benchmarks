@@ -55,6 +55,11 @@ if __name__ == "__main__":
         '--output',
         help='Path to the output csv file',
         required=True)
+
+    parser.add_argument(
+        '--track',
+        choices=['streaming', 'congestion', 'concurrent'],
+        required=True)
     parser.add_argument(
         '--recompute',
         action='store_true',
@@ -87,31 +92,79 @@ if __name__ == "__main__":
     datasets = DATASETS.keys()
     dfs = []
 
-    neurips23tracks = ['filter', 'ood', 'sparse', 'streaming', 'concurrent', 'none']
+    neurips23tracks = ['streaming', 'congestion', 'concurrent', 'none']
+    tracks = [args.track]
 
     is_first = True
-    for track in neurips23tracks:
+    for track in tracks:
         for dataset_name in datasets:
             print(f"Looking at track:{track}, dataset:{dataset_name}")
             dataset = DATASETS[dataset_name]()
             runbook_paths = [None]
             if track == 'streaming':
-                runbook_paths = ['neurips23/runbooks/simple_runbook.yaml',
-                                    'neurips23/runbooks/simple_replace_runbook.yaml',
-                                    'neurips23/runbooks/random_replace_runbook.yaml',
-                                    'neurips23/runbooks/clustered_replace_runbook.yaml',
-                                    'neurips23/runbooks/clustered_runbook.yaml',
-                                    'neurips23/runbooks/clustered_runbook.yaml',
-                                    'neurips23/runbooks/delete_runbook.yaml',
-                                    'neurips23/runbooks/final_runbook.yaml',
-                                    'neurips23/runbooks/msturing-10M_slidingwindow_runbook.yaml',
-                                    'neurips23/runbooks/wikipedia-35M_expirationtime_runbook.yaml',
-                                    'neurips23/runbooks/wikipedia-1M_expiration_time_runbook.yaml',
-                                    'neurips23/runbooks/wikipedia-35M_expiration_time_replace_only_runbook.yaml',
-                                    'neurips23/runbooks/wikipedia-1M_expiration_time_replace_only_runbook.yaml',
-                                    'neurips23/runbooks/wikipedia-35M_expiration_time_replace_delete_runbook.yaml',
-                                    'neurips23/runbooks/wikipedia-1M_expiration_time_replace_delete_runbook.yaml',
-                                    'neurips23/runbooks/msmarco-100M_expirationtime_runbook.yaml']
+                runbook_paths = ['neurips23/runbooks/streaming/simple_runbook.yaml'
+                                ]
+            if track == 'concurrent':
+                runbook_paths = ['neurips23/runbooks/concurrent/simple_runbook.yaml'
+                                ]
+            if track == 'congestion':
+                runbook_paths = []
+                if args.output == "gen":
+                    runbook_paths = ['neurips23/runbooks/congestion/general_experiment/general_experiment.yaml'
+                                    ]
+                if args.output == "batch":
+                    runbook_paths = ['neurips23/runbooks/congestion/batchSizes/batch100.yaml',
+                                     'neurips23/runbooks/congestion/batchSizes/batch500.yaml',
+                                     'neurips23/runbooks/congestion/batchSizes/batch1000.yaml',
+                                     'neurips23/runbooks/congestion/batchSizes/batch2500.yaml',
+                                     'neurips23/runbooks/congestion/batchSizes/batch5000.yaml',
+                                     'neurips23/runbooks/congestion/batchSizes/batch10000.yaml',
+                                     'neurips23/runbooks/congestion/batchSizes/batch20000.yaml',
+                                     'neurips23/runbooks/congestion/batchSizes/batch50000.yaml',
+                                     ]
+                if args.output == "event":
+                    runbook_paths = ['neurips23/runbooks/congestion/eventRates/event100.yaml',
+                                     'neurips23/runbooks/congestion/eventRates/event500.yaml',
+                                     'neurips23/runbooks/congestion/eventRates/event1000.yaml',
+                                     'neurips23/runbooks/congestion/eventRates/event2500.yaml',
+                                     'neurips23/runbooks/congestion/eventRates/event5000.yaml',
+                                     'neurips23/runbooks/congestion/eventRates/event10000.yaml',
+                                     'neurips23/runbooks/congestion/eventRates/event20000.yaml',
+                                     'neurips23/runbooks/congestion/eventRates/event50000.yaml'
+                                     ]
+                if args.output=='conceptDrift':
+                    runbook_paths=['neurips23/runbooks/congestion/conceptDrift/conceptDrift_experiment.yaml']
+                if args.output=='randomContamination':
+                    runbook_paths=['neurips23/runbooks/congestion/randomContamination/randomContamination0.05.yaml',
+                                   'neurips23/runbooks/congestion/randomContamination/randomContamination0.10.yaml',
+                                   'neurips23/runbooks/congestion/randomContamination/randomContamination0.15.yaml',
+                                   'neurips23/runbooks/congestion/randomContamination/randomContamination0.20.yaml',
+                                   'neurips23/runbooks/congestion/randomContamination/randomContamination0.25.yaml']
+                if args.output == 'randomDrop':
+                    runbook_paths=['neurips23/runbooks/congestion/randomDrop/randomDrop0.05.yaml',
+                                   'neurips23/runbooks/congestion/randomDrop/randomDrop0.10.yaml',
+                                   'neurips23/runbooks/congestion/randomDrop/randomDrop0.15.yaml',
+                                   'neurips23/runbooks/congestion/randomDrop/randomDrop0.20.yaml',
+                                   'neurips23/runbooks/congestion/randomDrop/randomDrop0.25.yaml']
+                if args.output == 'wordContamination':
+                    runbook_paths=['neurips23/runbooks/congestion/wordContamination/wordContamination_experiment.yaml']
+                if args.output == 'bulkDeletion':
+                    runbook_paths = ['neurips23/runbooks/congestion/bulkDeletion/bulkDeletion0.1.yaml',
+                                     'neurips23/runbooks/congestion/bulkDeletion/bulkDeletion0.2.yaml',
+                                     'neurips23/runbooks/congestion/bulkDeletion/bulkDeletion0.3.yaml',
+                                     'neurips23/runbooks/congestion/bulkDeletion/bulkDeletion0.4.yaml',
+                                     'neurips23/runbooks/congestion/bulkDeletion/bulkDeletion0.5.yaml']
+                if args.output == 'batchDeletion':
+                    runbook_paths = ['neurips23/runbooks/congestion/batchDeletion/batchDeletion0.1.yaml',
+                                     'neurips23/runbooks/congestion/batchDeletion/batchDeletion0.2.yaml',
+                                     'neurips23/runbooks/congestion/batchDeletion/batchDeletion0.3.yaml',
+                                     'neurips23/runbooks/congestion/batchDeletion/batchDeletion0.4.yaml',
+                                     'neurips23/runbooks/congestion/batchDeletion/batchDeletion0.5.yaml']
+                if args.output == "curseDim":
+                    runbook_paths = ['neurips23/runbooks/congestion/dimensions/dimensions_experiment.yaml']
+                if args.output == "multiModal":
+                    runbook_paths = ['neurips23/runbooks/congestion/multiModal/multiModal_experiment.yaml']
+
             for runbook_path in runbook_paths:
                 print("Looking for runbook ", runbook_path)
                 results = load_all_results(dataset_name, neurips23track=track, runbook_path=runbook_path)
@@ -126,4 +179,4 @@ if __name__ == "__main__":
     if len(dfs) > 0:
         data = pd.concat(dfs)
         data = data.sort_values(by=["algorithm", "dataset", "recall/ap"])        
-        data.to_csv(args.output, index=False)
+        data.to_csv(args.output+"-"+args.track+".csv", index=False)
