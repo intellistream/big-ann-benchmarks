@@ -15,7 +15,7 @@ class BaseConcurrentANN(BaseANN):
 
     def setup(self, dtype, max_pts, write_ratio, batch_size, num_threads, ndim):
         self.max_pts = max_pts
-        self.index = PyCANDYAlgo.createIndex("ConcurrentIndex", ndim)
+        self.index = PyCANDYAlgo.createIndex("Concurrent", ndim)
         
         cm = PyCANDYAlgo.ConfigMap()
         cm.edit("concurrentAlgoTag", self.indexkey)  
