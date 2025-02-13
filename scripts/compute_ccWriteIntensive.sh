@@ -9,6 +9,6 @@ RUNBOOKS=("batch100_w50r50.yaml" "batch100_w80r20.yaml" "batch100_w90r10.yaml"
 # Iterate through each combination of algorithm and dataset
 for RUN in "${RUNBOOKS[@]}"; do
   for DS in "${DATASETS[@]}"; do
-    python3 benchmark/concurrent/compute_gt.py --runbook neurips23/runbooks/concurrent/writeIntensive/batch"$RUN" --dataset "$DS" --gt_cmdline_tool ~/DiskANN/build/apps/utils/compute_groundtruth
+    python3 benchmark/concurrent/compute_gt.py --runbook neurips23/runbooks/concurrent/writeIntensive/"$RUN" --dataset "$DS" --gt_cmdline_tool ~/DiskANN/build/apps/utils/compute_groundtruth
   done
 done
