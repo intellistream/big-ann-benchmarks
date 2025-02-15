@@ -13,16 +13,17 @@ class BaseConcurrentANN(BaseANN):
     def track(self):
         return "concurrent"
 
-    def setup(self, dtype, max_pts, write_ratio, batch_size, num_threads, ndim):
+    def setup(self, dtype, max_pts, cc_config, ndim):
         self.max_pts = max_pts
         self.index = PyCANDYAlgo.createIndex("Concurrent", ndim)
         
         cm = PyCANDYAlgo.ConfigMap()
         cm.edit("concurrentAlgoTag", self.indexkey)  
         cm.edit("vecDim", ndim)
-        cm.edit("concurrentWriteRatio", write_ratio)
-        cm.edit("concurrentBatchSize", batch_size)
-        cm.edit("concurrentNumThreads", num_threads)
+        cm.edit("ccWriteRatio", cc_config['write_ratio'])
+        cm.edit("ccBatchSize", cc_config['batch_size'])
+        cm.edit("ccNumThreads", cc_config['num_threads'])
+        cm.edit("ccRandomMode", cc_config['random_mnode'])
 
         metric_type = "L2" if self.metric == "euclidean" else "IP"
         cm.edit("metricType", metric_type)

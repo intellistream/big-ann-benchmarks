@@ -13,7 +13,7 @@ class ConcurrentRunner(BaseRunner):
         t0 = time.time()
         ds = DATASETS[dataset]()
         ndims = ds.d
-        algo.setup(ds.dtype, max_pts, cc_config['write_ratio'], cc_config['batch_size'], cc_config['num_threads'], ndims)
+        algo.setup(ds.dtype, max_pts, cc_config, ndims)
         print('Algorithm set up')
         return time.time() - t0
         
