@@ -29,7 +29,6 @@ from benchmark.streaming.load_runbook import load_runbook_streaming
 from benchmark.congestion.load_runbook import load_runbook_congestion
 from benchmark.concurrent.load_runbook import load_runbook_concurrent
 
-
 def run(definition, dataset, count, run_count, rebuild=True,
         upload_index=False, download_index=False,
         blob_prefix="", sas_string="", private_query=False,
@@ -117,7 +116,7 @@ def run(definition, dataset, count, run_count, rebuild=True,
                     descriptor, results = custom_runner.run_task(
                         algo, ds, distance, count, 1, search_type, private_query, runbook, definition, query_arguments, runbook_path, dataset)
                 elif neurips23track == 'concurrent':
-                    descriptor, cc_results, results = custom_runner.run_task(
+                    descriptor, results = custom_runner.run_task(
                         algo, ds, distance, count, 1, search_type, private_query, runbook, definition, query_arguments, runbook_path, dataset)
                 else:
                     descriptor, results = custom_runner.run_task(

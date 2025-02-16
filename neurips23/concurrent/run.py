@@ -17,7 +17,7 @@ class ConcurrentRunner(BaseRunner):
     def run_task(algo, ds, distance, count, run_count, search_type, private_query, runbook, definition, query_arguments, runbook_path, dataset):
         all_cc_results = []
         all_results = []
-        step_times = []
+        cc_time = 0
 
         Q = ds.get_queries() if not private_query else ds.get_private_queries()
         print(fr"Got {Q.shape[0]} queries")  
@@ -29,22 +29,34 @@ class ConcurrentRunner(BaseRunner):
                     start = entry['start']
                     end = entry['end']
                     algo.cc_insert_and_query(ds.get_data_in_range(start, end), Q, count)
-                    all_cc_results.append(algo.get_cc_results())
+                    cc_time += (time.time() - start_time)
                 case 'search':
                     algo.query(Q, count)
                     all_results.append(results = algo.get_results())
                 case _:
                     raise NotImplementedError('Invalid runbook operation.')
             step_time = (time.time() - start_time)
-            step_times[step] = step_time
             print(f"Step {step+1} took {step_time}s.")
-
+            
+        cc_res_file = algo.get_cc_results()
+        
+        cc_config = algo.get_cc_config()
+        
         attrs = {
             "name": str(algo),
+            "run_count": run_count,
+            "distance": distance,
             "type": search_type,
+            "count": int(count),
+            "private_queries": private_query,
+            "cc_time": cc_time, 
+            "num_threads": cc_config["num_threads"],
+            "write_batch": cc_config["batch_size"],
+            "write_ratio": cc_config["write_ratio"],
+            "cc_result_filemae": cc_res_file,
         }
             
-        return (attrs, all_cc_results, all_results)
+        return (attrs, all_results)
     
     
     

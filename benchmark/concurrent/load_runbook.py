@@ -55,7 +55,3 @@ def load_runbook_concurrent(dataset_name, max_pts, runbook_file):
 
     return max_pts, cc_config, run_list
 
-def get_gt_url(dataset_name, runbook_file):
-    with open(runbook_file) as fd:
-        runbook = yaml.safe_load(fd)[dataset_name]
-        return runbook.get('gt_url', "none")  
