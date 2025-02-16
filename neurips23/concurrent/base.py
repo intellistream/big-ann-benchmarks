@@ -23,7 +23,7 @@ class BaseConcurrentANN(BaseANN):
         cm.edit("ccWriteRatio", cc_config['write_ratio'])
         cm.edit("ccBatchSize", cc_config['batch_size'])
         cm.edit("ccNumThreads", cc_config['num_threads'])
-        cm.edit("ccRandomMode", cc_config['random_mnode'])
+        cm.edit("ccRandomMode", cc_config['random_mode'])
 
         metric_type = "L2" if self.metric == "euclidean" else "IP"
         cm.edit("metricType", metric_type)
@@ -43,8 +43,7 @@ class BaseConcurrentANN(BaseANN):
         return self.result
     
     def set_query_arguments(self, query_args):
-        # TODO:
-        pass
+        raise NotImplementedError()
     
         
     

@@ -7,9 +7,6 @@ from benchmark.datasets import DATASETS
     
 class ConcurrentRunner(BaseRunner):
     def build(algo, dataset, max_pts, cc_config):
-        '''
-        Return set up time
-        '''
         t0 = time.time()
         ds = DATASETS[dataset]()
         ndims = ds.d

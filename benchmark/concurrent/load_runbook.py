@@ -11,7 +11,7 @@ def load_runbook_concurrent(dataset_name, max_pts, runbook_file):
     while str(i) in runbook:  
         entry = runbook[str(i)]
         
-        if entry['operation'] not in {'insert_and_search'}:
+        if entry['operation'] not in {'initial', 'insert_and_search', 'search'}:
             raise Exception('Undefined runbook operation')
 
         if 'start' not in entry or 'end' not in entry:
@@ -41,11 +41,16 @@ def load_runbook_concurrent(dataset_name, max_pts, runbook_file):
     if num_threads == None:
         num_threads = os.cpu_count()
         print(f"number of threads not listed in runbook, use default threads {num_threads}")
+        
+    random_mode = runbook.get('random_mode')
+    if random_mode == None:
+        raise Exception('random mode not listed in runbook')
     
     cc_config = {
         'write_ratio': write_ratio,
         'batch_size': batch_size,
-        'num_threads': num_threads
+        'num_threads': num_threads,
+        'random_mode': random_mode
     }
 
     return max_pts, cc_config, run_list
