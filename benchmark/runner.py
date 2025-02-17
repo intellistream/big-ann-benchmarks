@@ -61,6 +61,7 @@ def run(definition, dataset, count, run_count, rebuild=True,
         max_pts, runbook = load_runbook_congestion(dataset, ds.nb, runbook_path)
     elif neurips23track == 'concurrent':
         max_pts, cc_config, runbook = load_runbook_concurrent(dataset, ds.nb, runbook_path)
+        print("loading ... ", runbook)
 
     try:
         # Try loading the index from the file
@@ -85,7 +86,7 @@ def run(definition, dataset, count, run_count, rebuild=True,
             elif neurips23track == "concurrent":
                 build_time = custom_runner.build(algo, dataset, max_pts, cc_config)
             else:
-                build_time = custom_runner.build(algo,dataset)
+                build_time = custom_runner.build(algo, dataset)
             
             print('Built index in', build_time) 
         else:

@@ -8,22 +8,26 @@ def load_runbook_concurrent(dataset_name, max_pts, runbook_file):
 
     run_list = []
     i = 1
-    while str(i) in runbook:  
-        entry = runbook[str(i)]
+    
+    while i in runbook:  
+        entry = runbook[i]
         
         if entry['operation'] not in {'initial', 'insert_and_search', 'search'}:
             raise Exception('Undefined runbook operation')
-
-        if 'start' not in entry or 'end' not in entry:
-            raise Exception(f'Start/End missing in runbook at entry {i}')
         
-        if entry['start'] < 0 or entry['start'] >= max_pts:
-            raise Exception(f'Start out of range at entry {i}')
-        if entry['end'] < 0 or entry['end'] > max_pts:
-            raise Exception(f'End out of range at entry {i}')
+        if entry['operation'] in {'initial', 'insert_and_search'}:
+            if 'start' not in entry or 'end' not in entry:
+                raise Exception(f'Start/End missing in runbook at entry {i}')
+            
+            if entry['start'] < 0 or entry['start'] >= max_pts:
+                raise Exception(f'Start out of range at entry {i}')
+            if entry['end'] < 0 or entry['end'] > max_pts:
+                raise Exception(f'End out of range at entry {i}')
 
         run_list.append(entry)
         i += 1
+        
+    print("run_List : ", run_list)
         
     max_pts = runbook.get('max_pts')
     if max_pts == None:

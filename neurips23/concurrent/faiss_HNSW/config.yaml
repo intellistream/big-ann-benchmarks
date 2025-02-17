@@ -1,3 +1,22 @@
+sift:
+  faiss_HNSW:
+    docker-tag: neurips23-concurrent-faiss_HNSW
+    module: neurips23.concurrent.faiss_HNSW.faiss_HNSW
+    constructor: faiss_HNSW
+    base-args: ["@metric"]
+    run-groups:
+      base:
+        args: |
+          [
+            {"indexkey": "faiss"},
+            {"faissIndexTag": "HNSW"},
+            {"maxConnection": 64}
+          ]
+        query-args: |
+          [
+            {"ef":30}
+          ]
+
 random-xs:
   faiss_HNSW:
     docker-tag: neurips23-concurrent-faiss_HNSW
@@ -7,9 +26,15 @@ random-xs:
     run-groups:
       base:
         args: |
-          [{"indexkey": "HNSW32"}]
+          [
+            {"indexkey": "faiss"},
+            {"faissIndexTag": "HNSW"},
+            {"maxConnection": 64}
+          ]
         query-args: |
-          [{"ef":30}]
+          [
+            {"ef":30}
+          ]
           
 msturing-10M-clustered:
   faiss_HNSW:
@@ -20,8 +45,31 @@ msturing-10M-clustered:
     run-groups:
       base:
         args: |
-          [{"indexkey": "HNSW32"}]
+          [
+            {"indexkey": "faiss"},
+            {"faissIndexTag": "HNSW"},
+            {"maxConnection": 64}
+          ]
         query-args: |
           [
-          {"ef":100}
+            {"ef":100}
+          ]
+
+msturing-30M-clustered:
+  faiss_HNSW:
+    docker-tag: neurips23-concurrent-faiss_HNSW
+    module: neurips23.concurrent.faiss_HNSW.faiss_HNSW
+    constructor: faiss_HNSW
+    base-args: ["@metric"]
+    run-groups:
+      base:
+        args: |
+          [
+            {"indexkey": "faiss"},
+            {"faissIndexTag": "HNSW"},
+            {"maxConnection": 64}
+          ]
+        query-args: |
+          [
+            {"ef":100}
           ]

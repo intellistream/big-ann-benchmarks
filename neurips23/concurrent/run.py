@@ -22,9 +22,14 @@ class ConcurrentRunner(BaseRunner):
         Q = ds.get_queries() if not private_query else ds.get_private_queries()
         print(fr"Got {Q.shape[0]} queries")  
 
+        print(runbook)
         for step, entry in enumerate(runbook):
             start_time = time.time()
             match entry['operation']:
+                case 'initial':
+                    start = entry['start']
+                    end = entry['end']
+                    algo.initial(ds.get_data_in_range(start, end))
                 case 'insert_and_search':
                     start = entry['start']
                     end = entry['end']

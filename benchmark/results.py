@@ -78,8 +78,6 @@ def store_results(dataset, count, definition, query_arguments,
     f.close()
 
 
-
-
 def load_all_results(dataset=None, count=None, neurips23track="congestion", runbook_path=None):
     """
     A generator for all result files.
