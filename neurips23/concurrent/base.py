@@ -27,8 +27,11 @@ class BaseConcurrentANN(BaseANN):
         self.cm.edit("ccBatchSize", cc_config['batch_size'])
         self.cm.edit("ccNumThreads", cc_config['num_threads'])
         self.cm.edit("ccRandomMode", cc_config['random_mode'])
+        self.cm.edit("maxElements", max_pts)
+        
         metric_type = "L2" if self.metric == "euclidean" else "IP"
         self.cm.edit("metricType", metric_type)
+        
         self.index.setConfig(self.cm)
         
         ratio_suffix = f"w{int(cc_config['write_ratio'] * 100)}r{int((1 - cc_config['write_ratio']) * 100)}"

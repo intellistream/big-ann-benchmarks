@@ -27,10 +27,12 @@ class ConcurrentRunner(BaseRunner):
             start_time = time.time()
             match entry['operation']:
                 case 'initial':
+                    print("initial")
                     start = entry['start']
                     end = entry['end']
                     algo.initial(ds.get_data_in_range(start, end))
                 case 'insert_and_search':
+                    print("ccc ing ")
                     start = entry['start']
                     end = entry['end']
                     algo.cc_insert_and_query(ds.get_data_in_range(start, end), Q, count)
