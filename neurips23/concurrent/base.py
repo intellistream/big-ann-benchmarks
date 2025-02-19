@@ -48,7 +48,8 @@ class BaseConcurrentANN(BaseANN):
         return self.index.ccInsertAndSearchTensor(tensor, qtensor, k)
     
     def query(self, qt, k):
-        self.result = self.index.searchTensor(qt, k)
+        qtensor = torch.from_numpy(qt)
+        self.result = self.index.searchTensor(qtensor, k)
     
     def get_cc_results(self):
         print(self.cc_res_filename)
@@ -56,7 +57,7 @@ class BaseConcurrentANN(BaseANN):
             raise ValueError("Result save failed")
         return self.cc_res_filename 
     
-    def get_result(self):
+    def get_results(self):
         return self.result
     
     def get_cc_config(self):

@@ -15,14 +15,14 @@ class ConcurrentRunner(BaseRunner):
         return time.time() - t0
         
     def run_task(algo, ds, distance, count, run_count, search_type, private_query, runbook, definition, query_arguments, runbook_path, dataset):
-        all_cc_results = []
         all_results = []
         cc_time = 0
 
         Q = ds.get_queries() if not private_query else ds.get_private_queries()
         print(fr"Got {Q.shape[0]} queries")  
 
-        print(runbook)
+        result_map = {}
+        num_searches = 0
         for step, entry in enumerate(runbook):
             start_time = time.time()
             match entry['operation']:
@@ -32,14 +32,15 @@ class ConcurrentRunner(BaseRunner):
                     end = entry['end']
                     algo.initial(ds.get_data_in_range(start, end))
                 case 'insert_and_search':
-                    print("ccc ing ")
                     start = entry['start']
                     end = entry['end']
                     algo.cc_insert_and_query(ds.get_data_in_range(start, end), Q, count)
                     cc_time += (time.time() - start_time)
                 case 'search':
                     algo.query(Q, count)
-                    all_results.append(results = algo.get_results())
+                    all_results.append(algo.get_results())
+                    result_map[num_searches] = step + 1
+                    num_searches += 1
                 case _:
                     raise NotImplementedError('Invalid runbook operation.')
             step_time = (time.time() - start_time)
@@ -62,6 +63,13 @@ class ConcurrentRunner(BaseRunner):
             "write_ratio": cc_config["write_ratio"],
             "cc_result_filemae": cc_res_file,
         }
+        
+        for k, v in result_map.items():
+            attrs['step_' + str(k)] = v
+
+        additional = algo.get_additional()
+        for k in additional:
+            attrs[k] = additional[k]
             
         return (attrs, all_results)
     

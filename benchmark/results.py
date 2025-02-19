@@ -40,7 +40,7 @@ def get_result_filename(dataset=None, count=None, definition=None,
 
 
 def add_results_to_h5py(f, search_type, results, count, suffix = ''):
-    if search_type == "knn" or search_type == "knn_filtered":
+    if search_type in ["knn", "knn_filtered"]:
         neighbors = f.create_dataset('neighbors' + suffix, (len(results), count), 'i', data = results)
     elif search_type == "range":
         lims, D, I= results
@@ -49,6 +49,19 @@ def add_results_to_h5py(f, search_type, results, count, suffix = ''):
         f.create_dataset('distances' + suffix, data=D)
     else:
         raise NotImplementedError()
+    
+
+def add_cc_results_to_h5py(f, search_type, results, count, suffix = ''):
+    if search_type in ["knn", "knn_filtered"]:
+        neighbors = f.create_dataset('neighbors' + suffix, (len(results), count), 'i', data = results)
+    elif search_type == "range":
+        lims, D, I= results
+        f.create_dataset('neighbors' + suffix, data=I)
+        f.create_dataset('lims' + suffix, data=lims)
+        f.create_dataset('distances' + suffix, data=D)
+    else:
+        raise NotImplementedError()
+
 
 def store_results(dataset, count, definition, query_arguments,
         attrs, results, search_type, neurips23track=None, runbook_path=None):
@@ -69,10 +82,16 @@ def store_results(dataset, count, definition, query_arguments,
     for k, v in attrs.items():
         # TODO: here is one potential bug
         f.attrs[k] = v
-    if neurips23track in ['streaming', 'congestion', 'concurrent']:
+    if neurips23track in ['streaming', 'congestion']:
         for i, step_results in enumerate(results):
             step = attrs['step_' + str(i)]
+            # store labels
             add_results_to_h5py(f, search_type, step_results, count, '_step' + str(step))
+    elif neurips23track == 'concurrent':
+        for i, step_results in enumerate(results):
+            step = attrs['step_' + str(i)]
+            # store tensors
+            add_cc_results_to_h5py(f, search_type, step_results, count, '_step' + str(step))
     else:
         add_results_to_h5py(f, search_type, results, count)
     f.close()
