@@ -90,12 +90,17 @@ if __name__ == "__main__":
     datasets = DATASETS.keys()
     dfs = []
 
-    neurips23tracks = ['streaming', 'congestion', 'concurrent', 'none']
+    # neurips23tracks = ['streaming', 'congestion', 'concurrent', 'none']
+    neurips23tracks = ['concurrent', 'none']
     tracks = [args.track]
 
     is_first = True
     for track in tracks:
         for dataset_name in datasets:
+            if dataset_name == "sift":
+                  print("\n\n\n\n\n\n ************** \n\n\n\n\n\n") 
+            else:
+                continue
             print(f"Looking at track:{track}, dataset:{dataset_name}")
             dataset = DATASETS[dataset_name]()
             runbook_paths = [None]
@@ -106,17 +111,17 @@ if __name__ == "__main__":
                 runbook_paths = []
                 if args.output == "writeIntensive":
                     runbook_paths = ['neurips23/runbooks/concurrent/writeIntensive/batch100_w50r50.yaml',
-                                     'neurips23/runbooks/concurrent/writeIntensive/batch100_w80r20.yaml',
-                                     'neurips23/runbooks/concurrent/writeIntensive/batch100_w90r10.yaml',
-                                     'neurips23/runbooks/concurrent/writeIntensive/batch200_w50r50.yaml',
-                                     'neurips23/runbooks/concurrent/writeIntensive/batch200_w80r20.yaml',
-                                     'neurips23/runbooks/concurrent/writeIntensive/batch200_w90r10.yaml',
-                                     'neurips23/runbooks/concurrent/writeIntensive/batch500_w50r50.yaml',
-                                     'neurips23/runbooks/concurrent/writeIntensive/batch500_w80r20.yaml',
-                                     'neurips23/runbooks/concurrent/writeIntensive/batch500_w90r10.yaml',
-                                     'neurips23/runbooks/concurrent/writeIntensive/batch1000_w50r50.yaml',
-                                     'neurips23/runbooks/concurrent/writeIntensive/batch1000_w80r20.yaml',
-                                     'neurips23/runbooks/concurrent/writeIntensive/batch1000_w90r10.yaml',
+                                    #  'neurips23/runbooks/concurrent/writeIntensive/batch100_w80r20.yaml',
+                                    #  'neurips23/runbooks/concurrent/writeIntensive/batch100_w90r10.yaml',
+                                    #  'neurips23/runbooks/concurrent/writeIntensive/batch200_w50r50.yaml',
+                                    #  'neurips23/runbooks/concurrent/writeIntensive/batch200_w80r20.yaml',
+                                    #  'neurips23/runbooks/concurrent/writeIntensive/batch200_w90r10.yaml',
+                                    #  'neurips23/runbooks/concurrent/writeIntensive/batch500_w50r50.yaml',
+                                    #  'neurips23/runbooks/concurrent/writeIntensive/batch500_w80r20.yaml',
+                                    #  'neurips23/runbooks/concurrent/writeIntensive/batch500_w90r10.yaml',
+                                    #  'neurips23/runbooks/concurrent/writeIntensive/batch1000_w50r50.yaml',
+                                    #  'neurips23/runbooks/concurrent/writeIntensive/batch1000_w80r20.yaml',
+                                    #  'neurips23/runbooks/concurrent/writeIntensive/batch1000_w90r10.yaml',
                                     ]
                 if args.output == "readIntensive":
                     runbook_paths = ['neurips23/runbooks/concurrent/readIntensive/batch100_w05r95.yaml',
@@ -193,15 +198,19 @@ if __name__ == "__main__":
             for runbook_path in runbook_paths:
                 print("Looking for runbook ", runbook_path)
                 results = load_all_results(dataset_name, neurips23track=track, runbook_path=runbook_path)
+                print("Looked runbook ", runbook_path)
                 results = compute_metrics_all_runs(dataset, dataset_name, results, args.recompute, \
                     args.sensors, args.search_times, args.private_query, \
                     neurips23track=track, runbook_path=runbook_path)
                 results = cleaned_run_metric(results)
                 if len(results) > 0:
-                    dfs.append(pd.DataFrame(results))
+                    dfs.append(pd.DataFrame(results))         
+
+            print("finish")
 
     dfs = [e for e in dfs if len(e) > 0]
     if len(dfs) > 0:
         data = pd.concat(dfs)
         data = data.sort_values(by=["algorithm", "dataset", "recall/ap"])        
         data.to_csv(args.output+"-"+args.track+".csv", index=False)
+        print(args.output+"-"+args.track+".csv")

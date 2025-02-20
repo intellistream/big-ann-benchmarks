@@ -59,6 +59,7 @@ class ConcurrentRunner(BaseRunner):
             "type": search_type,
             "count": int(count),
             "private_queries": private_query,
+            "num_searches": num_searches,
             "cc_time": cc_time, 
             "batch_size": cc_config["batch_size"],
             "write_ratio": cc_config["write_ratio"],

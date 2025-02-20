@@ -15,6 +15,8 @@ import benchmark.streaming.compute_gt
 import benchmark.congestion.compute_gt
 from benchmark.streaming.load_runbook import load_runbook_streaming
 from benchmark.congestion.load_runbook import load_runbook_congestion
+from benchmark.concurrent.load_runbook import load_runbook_concurrent
+
 
 def get_or_create_metrics(run):
     if 'metrics' not in run:
@@ -87,7 +89,9 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
         dataset_params = get_dataset_params_from_runbook(runbook_path, dataset_name)
 
     try:
-        if neurips23track not in ['streaming', 'congestion']:
+        print("ccococococo1")
+        if neurips23track not in ['streaming', 'congestion', 'concurrent']:
+            true_nn_across_steps = []
             true_nn = dataset.get_private_groundtruth() if private_query else dataset.get_groundtruth()
         elif neurips23track == 'streaming':
             true_nn_across_steps = []
@@ -101,6 +105,12 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
         elif neurips23track == "concurrent":
             true_nn_across_steps = []
             gt_dir = benchmark.concurrent.compute_gt.gt_dir(dataset, runbook_path)
+            max_pts, cc_config, runbook = load_runbook_concurrent(dataset_name, dataset.nb, runbook_path)
+            for step, entry in enumerate(runbook):
+                if entry['operation'] == 'search':
+                    step_gt_path = os.path.join(gt_dir, 'step' + str(step+1) + '.gt100')
+                    true_nn = knn_result_read(step_gt_path)
+                    true_nn_across_steps.append(true_nn)
         elif neurips23track == "congestion":
             true_nn_across_steps = []
             gt_dir = benchmark.congestion.compute_gt.gt_dir(dataset, runbook_path)
@@ -143,20 +153,19 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
                             true_nn = knn_result_read(step_gt_path)
                             true_nn_across_batches[-1].append(true_nn)
                     num_batch_insert += 1
-
-
+                    
     except:
         print(f"Groundtruth for {dataset} not found.")
-        #traceback.print_exc()
+        traceback.print_exc()
         return
-
+    
     search_type = dataset.search_type()
     for i, (properties, run) in enumerate(res):
         algo = properties['algo']
         algo_name = properties['name']
         # cache distances to avoid access to hdf5 file
         if search_type == "knn" or search_type == "knn_filtered":
-            if neurips23track in ['streaming', 'congestion', 'concurrent']:
+            if neurips23track in ['streaming', 'congestion']:
                 run_nn_across_steps = []
                 run_nn_across_batches = []
                 for i in range(0,properties['num_searches']):
@@ -168,6 +177,13 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
                     for j in range(len(properties['continuousQueryResults'][i])):
                         temp = numpy.array(properties['continuousQueryResults'][i][j])
                         run_nn_across_batches[i].append(temp)
+            elif neurips23track == 'concurrent':
+                run_nn_across_steps = []
+                run_nn_across_batches = []
+                print("******** ", properties.keys())
+                for i in range(0, properties['num_searches']):
+                   step_suffix = str(properties['step_' + str(i)])
+                   run_nn_across_steps.append(numpy.array(run['neighbors_step' +  step_suffix]))
             else:
                 run_nn = numpy.array(run['neighbors'])
         elif search_type == "range":
@@ -199,7 +215,6 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
         except:
             pass
 
-
         dataset_info = dataset
         if neurips23track == 'congestion' and dataset_params:
             batchsize = dataset_params.get('batchSize', None)
@@ -225,20 +240,20 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
                 continue
             if not search_times and name=="search_times": #don't process search_times by default
                 continue
-            if neurips23track in ['streaming', 'congestion', 'concurrent']:
+            if neurips23track in ['streaming', 'congestion']:
                 v = []
-                bv=[]
+                bv = []
                 assert len(true_nn_across_steps) == len(run_nn_across_steps)
                 for (true_nn, run_nn) in zip(true_nn_across_steps, run_nn_across_steps):
-                  clear_cache = True
+                    clear_cache = True
 
-                  if clear_cache and 'knn' in metrics_cache:
-                    del metrics_cache['knn']
-                  val = metric["function"](true_nn, run_nn, metrics_cache, properties)
-                  v.append(val)
+                    if clear_cache and 'knn' in metrics_cache:
+                        del metrics_cache['knn']
+                    val = metric["function"](true_nn, run_nn, metrics_cache, properties)
+                    v.append(val)
                 if name == 'k-nn':
-                  print('Recall: ', v)
-                #v = numpy.mean(v)
+                    print('Recall: ', v)
+
                 assert len(true_nn_across_batches) == len(run_nn_across_batches)
                 for(true_nn, run_nn) in zip(true_nn_across_batches, run_nn_across_batches):
                     bv.append([])
@@ -247,36 +262,51 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
                         mean, std, recalls, queries_with_ties = get_recall_values(t, r, properties['count'])
                         val = mean
                         bv[-1].append(val)
-            # elif neurips23track == 'concurrent':
-                
+            elif neurips23track == 'concurrent':
+                v = []
+                bv = []
+                assert len(true_nn_across_steps) == len(run_nn_across_steps)
+                for (true_nn, run_nn) in zip(true_nn_across_steps, run_nn_across_steps):
+                    clear_cache = True
+
+                    if clear_cache and 'knn' in metrics_cache:
+                        del metrics_cache['knn']
+                    val = metric["function"](true_nn, run_nn, metrics_cache, properties)
+                    v.append(val)
+                if name == 'k-nn':
+                    print('Recall: ', v)
             else:
                 v = metric["function"](true_nn, run_nn, metrics_cache, properties)
 
-            if(name=="k-nn"):
-                for i in range(len(v)):
-                    run_result['knn_'+str(i)] = v[i]
+            
+            if name=="k-nn":
+                if neurips23track != "concurrent":
+                    for i in range(len(v)):
+                        run_result['knn_'+str(i)] = v[i]
 
-                for i in range(len(bv)):
-                    recall_sum = 0
-                    latency_sum = 0
-                    for j in range(len(bv[i])):
-                        recall_sum+=bv[i][j]
-                        latency_sum+=properties['continuousQueryLatencies'][i][j]
-                    run_result['continuousRecall_'+str(i)] = recall_sum/len(bv[i])
-                    run_result['continuousLatency_'+str(i)] = latency_sum/len(bv[i])
-                    run_result['continuousThroughput_'+str(i)] = properties['querySize']/((run_result['continuousLatency_'+str(i)])/1e6)
+                    for i in range(len(bv)):
+                        recall_sum = 0
+                        latency_sum = 0
+                        for j in range(len(bv[i])):
+                            recall_sum+=bv[i][j]
+                            latency_sum+=properties['continuousQueryLatencies'][i][j]
+                        run_result['continuousRecall_'+str(i)] = recall_sum/len(bv[i])
+                        run_result['continuousLatency_'+str(i)] = latency_sum/len(bv[i])
+                        run_result['continuousThroughput_'+str(i)] = properties['querySize']/((run_result['continuousLatency_'+str(i)])/1e6)
 
-                for i in range(len(properties['latencyInsert'])):
-                    run_result['latencyInsert_'+str(i)] = properties['latencyInsert'][i]
-                    run_result['insertThroughput' + str(i)] = properties['insertThroughput'][i]
-                for i in range(len(properties['latencyQuery'])):
-                    run_result['latencyQuery_'+str(i)] = properties['latencyQuery'][i]
-                    run_result['queryThroughput'+str(i)] = properties['querySize']/(properties['latencyQuery'][i]/1e6)
+                    for i in range(len(properties['latencyInsert'])):
+                        run_result['latencyInsert_'+str(i)] = properties['latencyInsert'][i]
+                        run_result['insertThroughput' + str(i)] = properties['insertThroughput'][i]
+                    for i in range(len(properties['latencyQuery'])):
+                        run_result['latencyQuery_'+str(i)] = properties['latencyQuery'][i]
+                        run_result['queryThroughput'+str(i)] = properties['querySize']/(properties['latencyQuery'][i]/1e6)
 
 
-                run_result['updateMemFPRT'] = properties['updateMemoryFootPrint']
-                run_result['searchMemFPRT'] = properties['searchMemoryFootPrint']
-                run_result['querySize'] = properties['querySize']
+                    run_result['updateMemFPRT'] = properties['updateMemoryFootPrint']
+                    run_result['searchMemFPRT'] = properties['searchMemoryFootPrint']
+                    run_result['querySize'] = properties['querySize']
+                else:
+                    pass
 
             run_result[name] = numpy.nanmean(v)
         yield run_result

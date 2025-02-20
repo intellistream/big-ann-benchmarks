@@ -116,7 +116,7 @@ def store_results(dataset, count, definition, query_arguments,
     fn = ""
     fn_attr = ""
     
-    if not neurips23track == "concurrent":
+    if neurips23track != "concurrent":
         fn = get_result_filename(
             dataset, count, definition, query_arguments, neurips23track, runbook_path) + '.hdf5'
         fn_attr = get_result_filename(
@@ -167,10 +167,15 @@ def load_all_results(dataset=None, count=None, neurips23track="congestion", runb
         for fn in files:
             if os.path.splitext(fn)[-1] != '.hdf5':
                 continue
+            full_path = os.path.join(root, fn)
+            print(f"Found HDF5 file: {full_path}")
             try:
-                print(root)
                 f = h5py.File(name=os.path.join(root, fn), mode='r+', libver='latest')
+                
+                print("===== ")
                 properties = dict(f.attrs)
+                print("Properties:", properties.keys())
+                print("===== ")
                 yield properties, f
                 f.close()
             except:
