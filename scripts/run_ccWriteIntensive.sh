@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the algorithms and datasets
-ALGORITHMS=("linear" "candy_flann" "candy_lshapg" "candy_mnru" "candy_sptag" "cufe" "diskann" "faiss_fast_scan" "faiss_HNSW" "faiss_IVFPQ" "faiss_lsh" "faiss_NSW" "faiss_onlinepq" "faiss_pq" "puck" "pyanns")
+ALGORITHMS=("nswlib_HNSW" "candy_flann" "candy_lshapg" "candy_mnru" "candy_sptag" "cufe" "diskann" "faiss_fast_scan" "faiss_HNSW" "faiss_IVFPQ" "faiss_lsh" "faiss_NSW" "faiss_onlinepq" "faiss_pq" "puck" "pyanns")
 DATASETS=("sift" "random-xs" "msturing-10M-clustered" "msturing-30M-clustered")
 RUNBOOKS=("batch100_w50r50.yaml" "batch100_w80r20.yaml" "batch100_w90r10.yaml"
           "batch200_w50r50.yaml" "batch200_w80r20.yaml" "batch200_w90r10.yaml"

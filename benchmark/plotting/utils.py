@@ -7,6 +7,7 @@ import yaml
 import traceback
 import sys
 
+import benchmark.concurrent
 from benchmark.plotting.metrics import all_metrics as metrics, get_recall_values
 from benchmark.sensors.power_capture import power_capture
 from benchmark.dataset_io import knn_result_read
@@ -86,7 +87,7 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
         dataset_params = get_dataset_params_from_runbook(runbook_path, dataset_name)
 
     try:
-        if neurips23track not in ['streaming', 'congestion', 'concurrent']:
+        if neurips23track not in ['streaming', 'congestion']:
             true_nn = dataset.get_private_groundtruth() if private_query else dataset.get_groundtruth()
         elif neurips23track == 'streaming':
             true_nn_across_steps = []
@@ -98,8 +99,8 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
                     true_nn = knn_result_read(step_gt_path)
                     true_nn_across_steps.append(true_nn)
         elif neurips23track == "concurrent":
-            # TODO: cc track
-            pass
+            true_nn_across_steps = []
+            gt_dir = benchmark.concurrent.compute_gt.gt_dir(dataset, runbook_path)
         elif neurips23track == "congestion":
             true_nn_across_steps = []
             gt_dir = benchmark.congestion.compute_gt.gt_dir(dataset, runbook_path)
@@ -167,9 +168,6 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
                     for j in range(len(properties['continuousQueryResults'][i])):
                         temp = numpy.array(properties['continuousQueryResults'][i][j])
                         run_nn_across_batches[i].append(temp)
-
-
-
             else:
                 run_nn = numpy.array(run['neighbors'])
         elif search_type == "range":
@@ -249,7 +247,8 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
                         mean, std, recalls, queries_with_ties = get_recall_values(t, r, properties['count'])
                         val = mean
                         bv[-1].append(val)
-
+            # elif neurips23track == 'concurrent':
+                
             else:
                 v = metric["function"](true_nn, run_nn, metrics_cache, properties)
 
@@ -278,9 +277,6 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
                 run_result['updateMemFPRT'] = properties['updateMemoryFootPrint']
                 run_result['searchMemFPRT'] = properties['searchMemoryFootPrint']
                 run_result['querySize'] = properties['querySize']
-
-
-
 
             run_result[name] = numpy.nanmean(v)
         yield run_result

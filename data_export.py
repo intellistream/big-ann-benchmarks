@@ -55,7 +55,6 @@ if __name__ == "__main__":
         '--output',
         help='Path to the output csv file',
         required=True)
-
     parser.add_argument(
         '--track',
         choices=['streaming', 'congestion', 'concurrent'],
@@ -65,7 +64,6 @@ if __name__ == "__main__":
         action='store_true',
         help='Path to the output csv file')
     parser.add_argument(
-
         '--private-query',
         help='Use the private queries and ground truth',
         action='store_true')
@@ -105,8 +103,35 @@ if __name__ == "__main__":
                 runbook_paths = ['neurips23/runbooks/streaming/simple_runbook.yaml'
                                 ]
             if track == 'concurrent':
-                runbook_paths = ['neurips23/runbooks/concurrent/simple_runbook.yaml'
-                                ]
+                runbook_paths = []
+                if args.output == "writeIntensive":
+                    runbook_paths = ['neurips23/runbooks/concurrent/writeIntensive/batch100_w50r50.yaml',
+                                     'neurips23/runbooks/concurrent/writeIntensive/batch100_w80r20.yaml',
+                                     'neurips23/runbooks/concurrent/writeIntensive/batch100_w90r10.yaml',
+                                     'neurips23/runbooks/concurrent/writeIntensive/batch200_w50r50.yaml',
+                                     'neurips23/runbooks/concurrent/writeIntensive/batch200_w80r20.yaml',
+                                     'neurips23/runbooks/concurrent/writeIntensive/batch200_w90r10.yaml',
+                                     'neurips23/runbooks/concurrent/writeIntensive/batch500_w50r50.yaml',
+                                     'neurips23/runbooks/concurrent/writeIntensive/batch500_w80r20.yaml',
+                                     'neurips23/runbooks/concurrent/writeIntensive/batch500_w90r10.yaml',
+                                     'neurips23/runbooks/concurrent/writeIntensive/batch1000_w50r50.yaml',
+                                     'neurips23/runbooks/concurrent/writeIntensive/batch1000_w80r20.yaml',
+                                     'neurips23/runbooks/concurrent/writeIntensive/batch1000_w90r10.yaml',
+                                    ]
+                if args.output == "readIntensive":
+                    runbook_paths = ['neurips23/runbooks/concurrent/readIntensive/batch100_w05r95.yaml',
+                                     'neurips23/runbooks/concurrent/readIntensive/batch100_w10r90.yaml',
+                                     'neurips23/runbooks/concurrent/readIntensive/batch100_w20r80.yaml',
+                                     'neurips23/runbooks/concurrent/readIntensive/batch200_w05r95.yaml',
+                                     'neurips23/runbooks/concurrent/readIntensive/batch200_w10r90.yaml',
+                                     'neurips23/runbooks/concurrent/readIntensive/batch200_w20r80.yaml',
+                                     'neurips23/runbooks/concurrent/readIntensive/batch500_w05r95.yaml',
+                                     'neurips23/runbooks/concurrent/readIntensive/batch500_w10r90.yaml',
+                                     'neurips23/runbooks/concurrent/raedIntensive/batch500_w20r80.yaml',
+                                     'neurips23/runbooks/concurrent/readIntensive/batch1000_w05r95.yaml',
+                                     'neurips23/runbooks/concurrent/readIntensive/batch1000_w10r90.yaml',
+                                     'neurips23/runbooks/concurrent/readIntensive/batch1000_w20r80.yaml',
+                                    ]
             if track == 'congestion':
                 runbook_paths = []
                 if args.output == "gen":
