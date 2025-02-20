@@ -34,8 +34,6 @@ class BaseConcurrentANN(BaseANN):
         
         self.index.setConfig(self.cm)
         
-        ratio_suffix = f"w{int(cc_config['write_ratio'] * 100)}r{int((1 - cc_config['write_ratio']) * 100)}"
-        self.cc_res_filename = f"batch{cc_config['batch_size']}_{ratio_suffix}"
         self.cc_config = cc_config
         
     def initial(self, t):
@@ -51,11 +49,9 @@ class BaseConcurrentANN(BaseANN):
         qtensor = torch.from_numpy(qt)
         self.result = self.index.searchTensor(qtensor, k)
     
-    def get_cc_results(self):
-        print(self.cc_res_filename)
-        if not self.index.ccSaveResultAsFile(self.cc_res_filename):
+    def save_cc_results(self, cc_res_filename):
+        if not self.index.ccSaveResultAsFile(cc_res_filename):
             raise ValueError("Result save failed")
-        return self.cc_res_filename 
     
     def get_results(self):
         return self.result

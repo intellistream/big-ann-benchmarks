@@ -2,7 +2,7 @@ sift:
   batch_size: 100
   write_ratio: 0.5
   random_mode: 0
-  max_pts: 1000000
+  max_pts: 100000
   1:
     operation: "initial"
     start: 0
@@ -10,7 +10,7 @@ sift:
   2:
     operation: "insert_and_search"
     start: 1000
-    end: 1000000
+    end: 100000
   3:
     operation: "search"
   gt_url: "none"

@@ -4,6 +4,7 @@ import os
 
 from benchmark.algorithms.base_runner import BaseRunner
 from benchmark.datasets import DATASETS
+from benchmark.results import get_cc_result_filename
     
 class ConcurrentRunner(BaseRunner):
     def build(algo, dataset, max_pts, cc_config):
@@ -20,6 +21,9 @@ class ConcurrentRunner(BaseRunner):
 
         Q = ds.get_queries() if not private_query else ds.get_private_queries()
         print(fr"Got {Q.shape[0]} queries")  
+        
+        cc_config = algo.get_cc_config()
+        cc_res_file = get_cc_result_filename(dataset, count, definition, query_arguments, neurips23track="concurrent", runbook_path=runbook_path, cc_config=cc_config)
 
         result_map = {}
         num_searches = 0
@@ -46,9 +50,7 @@ class ConcurrentRunner(BaseRunner):
             step_time = (time.time() - start_time)
             print(f"Step {step+1} took {step_time}s.")
             
-        cc_res_file = algo.get_cc_results()
-        
-        cc_config = algo.get_cc_config()
+        algo.save_cc_results(cc_res_file)
         
         attrs = {
             "name": str(algo),
@@ -58,9 +60,9 @@ class ConcurrentRunner(BaseRunner):
             "count": int(count),
             "private_queries": private_query,
             "cc_time": cc_time, 
-            "num_threads": cc_config["num_threads"],
-            "write_batch": cc_config["batch_size"],
+            "batch_size": cc_config["batch_size"],
             "write_ratio": cc_config["write_ratio"],
+            "num_threads": cc_config["num_threads"],
             "cc_result_filemae": cc_res_file,
         }
         

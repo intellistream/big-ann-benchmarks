@@ -130,6 +130,11 @@ def run(definition, dataset, count, run_count, rebuild=True,
                 descriptor["index_size"] = index_size
                 descriptor["algo"] = definition.algorithm
                 descriptor["dataset"] = dataset
+                
+                cc_config = {}
+                if neurips23track == 'concurrent':
+                    cc_config = {key: descriptor[key] for key in ["batch_size", "write_ratio", "num_threads"] if key in descriptor}
+                    
                 if power_capture.enabled():
                     if not private_query:
                         X = ds.get_queries()
@@ -141,7 +146,8 @@ def run(definition, dataset, count, run_count, rebuild=True,
 
                 store_results(dataset, count, definition,
                               query_arguments, descriptor,
-                              results, search_type, neurips23track, runbook_path)
+                              results, search_type, neurips23track, 
+                              runbook_path, cc_config)
                 print('end store results')
     finally:
         algo.done()
