@@ -10,7 +10,7 @@ import sys
 import benchmark.concurrent
 from benchmark.plotting.metrics import all_metrics as metrics, get_recall_values
 from benchmark.sensors.power_capture import power_capture
-from benchmark.dataset_io import knn_result_read
+from benchmark.dataset_io import knn_result_read, knn_vec_result_read
 import benchmark.streaming.compute_gt
 import benchmark.congestion.compute_gt
 from benchmark.streaming.load_runbook import load_runbook_streaming
@@ -109,7 +109,7 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
             for step, entry in enumerate(runbook):
                 if entry['operation'] == 'search':
                     step_gt_path = os.path.join(gt_dir, 'step' + str(step+1) + '.gt100')
-                    true_nn = knn_result_read(step_gt_path)
+                    true_nn = knn_vec_result_read(step_gt_path)
                     true_nn_across_steps.append(true_nn)
         elif neurips23track == "congestion":
             true_nn_across_steps = []
@@ -271,14 +271,15 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
 
                     if clear_cache and 'knn' in metrics_cache:
                         del metrics_cache['knn']
-                    val = metric["function"](true_nn, run_nn, metrics_cache, properties)
+                        
+                    print("^^^^^ ", metric['description'])
+                    val = metric["function"](true_nn, run_nn, metrics_cache, True, properties)
                     v.append(val)
                 if name == 'k-nn':
                     print('Recall: ', v)
             else:
                 v = metric["function"](true_nn, run_nn, metrics_cache, properties)
 
-            
             if name=="k-nn":
                 if neurips23track != "concurrent":
                     for i in range(len(v)):

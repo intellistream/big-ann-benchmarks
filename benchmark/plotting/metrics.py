@@ -39,19 +39,48 @@ def compute_recall_with_distance_ties(true_ids, true_dists, run_ids, count):
  
     return recall, found_tie
 
-def get_recall_values(true_nn, run_nn, count, count_ties=True):
+def compute_vec_recall(true_vectors, run_vectors, count, threshold=1e-6):
+    print("\n\n\n  BBBBBBBBB ", run_vectors)
+    if not isinstance(count, int):
+        try:
+            count = int(count)
+        except ValueError:
+            raise TypeError("count must be an integer or convertible to an integer")
+
+    true_vectors_list = [tuple(vec) for vec in true_vectors[:count]]
+    run_vectors_list = [tuple(vec) for vec in run_vectors]
+
+    intersection = set()
+    
+    for true_vec in true_vectors_list:
+        for run_vec in run_vectors_list:
+            if np.linalg.norm(np.array(true_vec) - np.array(run_vec)) < threshold:
+                intersection.add(true_vec)
+                break
+            
+    recall = len(intersection) / count
+    return recall, False
+    
+def get_recall_values(true_nn, run_nn, count, count_ties=True, use_vec=False):
+    print("use vec scdasda", use_vec)
     true_ids, true_dists = true_nn
 
+    print("distttt ", len(true_dists))
     if not count_ties:
         true_ids = true_ids[:, :count]
         assert true_ids.shape == run_nn.shape
     recalls = np.zeros(len(run_nn))
     queries_with_ties = 0
+    
     # TODO probably not very efficient
     for i in range(len(run_nn)):
         if count_ties:
-            recalls[i], found_tie = compute_recall_with_distance_ties(true_ids[i], true_dists[i], run_nn[i], count)
-            if found_tie: queries_with_ties += 1 
+            if use_vec:
+                recalls[i], found_tie = compute_vec_recall(true_ids[i], run_nn[i], count)
+                if found_tie: queries_with_ties += 1 
+            else:
+                recalls[i], found_tie = compute_recall_with_distance_ties(true_ids[i], true_dists[i], run_nn[i], count)
+                if found_tie: queries_with_ties += 1 
         else:
             recalls[i] = compute_recall_without_distance_ties(true_ids[i], run_nn[i], count)
     return (np.nanmean(recalls) / float(count),
@@ -59,11 +88,14 @@ def get_recall_values(true_nn, run_nn, count, count_ties=True):
             recalls,
             queries_with_ties)
 
-def knn(true_nn, run_nn, count, metrics):
+def knn(true_nn, run_nn, count, metrics, use_vec=False):
+    print("true_nn :", len(true_nn), true_nn)
+    print("run_nn :", len(run_nn), run_nn)
     if 'knn' not in metrics:
         print('Computing knn metrics')
         knn_metrics = metrics.create_group('knn')
-        mean, std, recalls, queries_with_ties = get_recall_values(true_nn, run_nn, count)
+        print(use_vec, "  ssss cdascasdas")
+        mean, std, recalls, queries_with_ties = get_recall_values(true_nn, run_nn, count, use_vec=use_vec)
         print(len(recalls))
         if queries_with_ties>0:
             print("Warning: %d/%d queries contained ties accounted for in recall" % (queries_with_ties, len(run_nn)))
@@ -73,8 +105,6 @@ def knn(true_nn, run_nn, count, metrics):
     else:
         print("Found cached result")
     return metrics['knn']
-
-
 
 def ap(true_nn, run_nn, metrics):
     if'ap' not in metrics:
@@ -140,7 +170,7 @@ def continuousLatency(attrs):
 all_metrics = {
     "k-nn": {
         "description": "Recall",
-        "function": lambda true_nn, run_nn, metrics, run_attrs: knn(true_nn, run_nn, run_attrs["count"], metrics).attrs['mean'],  # noqa
+        "function": lambda true_nn, run_nn, metrics, use_vec, run_attrs: knn(true_nn, run_nn, run_attrs["count"], metrics, use_vec).attrs['mean'],  # noqa
         "worst": float("-inf"),
         "lim": [0.0, 1.03],
     },
