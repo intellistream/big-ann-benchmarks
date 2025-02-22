@@ -42,5 +42,3 @@ categories = {
     # 'Clustering': ['faiss_pq', 'faiss_onlinepq', 'faiss_IVFPQ', 'puck', 'faiss_fast_scan'],
     'Graph-based': ['nswlib_HNSW']
 }
-
-def 

@@ -44,13 +44,22 @@ def output_gt(ds, id_list, step, args):
         f.write(ds.d.to_bytes(4, byteorder='little'))  
         data_slice.tofile(f)
 
-    print(f"Executing GT \n\n\n\n", args.k)
+    print("Executing GT")
     PyCANDYAlgo.compute_vec_gt(data_file, args.query_file, gt_file, args.k, args.dist_fn)
-
-    print(gt_file)
 
     print(f"Removing data file: {data_file}")
     os.system(f"rm {data_file}")
+
+
+def output_stepwise_gt(ds, step, max_pts, cc_config, args):
+    dir = gt_dir(ds, args.runbook_file)
+    prefix = os.path.join(dir, f'step{step}')
+    
+    gt_file = prefix + '.cc.gt'
+    
+    print("Executing stepwise GT")
+    PyCANDYAlgo.compute_stepwise_gt()
+    
 
 
 def main():
@@ -99,8 +108,8 @@ def main():
         if entry['operation'] == 'search':
             output_gt(ds, id_list, step, args)
             
-        # elif entry['operation'] == '':
-        #     output_stepwise_gt(ds, tag_to_id, step, common_cmd, args.runbook_file)
+        elif entry['operation'] == 'insert_and_search':
+            output_stepwise_gt(ds, step, max_pts, cc_config, args)
 
         step += 1
 

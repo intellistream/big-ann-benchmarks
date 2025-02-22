@@ -10,7 +10,7 @@ import sys
 
 from benchmark.datasets import DATASETS
 from benchmark.plotting.utils  import compute_metrics_all_runs
-from benchmark.results import load_all_results, get_unique_algorithms
+from benchmark.results import (load_all_results, load_all_attrs, get_unique_algorithms)
 
 
 def cleaned_run_metric(run_metrics):
@@ -97,10 +97,6 @@ if __name__ == "__main__":
     is_first = True
     for track in tracks:
         for dataset_name in datasets:
-            if dataset_name == "sift":
-                  print("\n\n\n\n\n\n ************** \n\n\n\n\n\n") 
-            else:
-                continue
             print(f"Looking at track:{track}, dataset:{dataset_name}")
             dataset = DATASETS[dataset_name]()
             runbook_paths = [None]
@@ -196,21 +192,29 @@ if __name__ == "__main__":
                     runbook_paths = ['neurips23/runbooks/congestion/multiModal/multiModal_experiment.yaml']
 
             for runbook_path in runbook_paths:
-                print("Looking for runbook ", runbook_path)
+                print("Looking for results", runbook_path)
                 results = load_all_results(dataset_name, neurips23track=track, runbook_path=runbook_path)
-                print("Looked runbook ", runbook_path)
+                print("Looked results ", runbook_path)
                 results = compute_metrics_all_runs(dataset, dataset_name, results, args.recompute, \
                     args.sensors, args.search_times, args.private_query, \
                     neurips23track=track, runbook_path=runbook_path)
+                
                 results = cleaned_run_metric(results)
                 if len(results) > 0:
-                    dfs.append(pd.DataFrame(results))         
-
-            print("finish")
+                    dfs.append(pd.DataFrame(results))     
+                    
+                if track == 'concurrent':
+                    print("Looking for attrs ", runbook_path)
+                    attrs = load_all_attrs(dataset_name, neurips23track=track, runbook_path=runbook_path)
+                    print("Looked attrs ", runbook_path)
+                    attrs = compute_cc_metrics_all_runs
+                    
 
     dfs = [e for e in dfs if len(e) > 0]
+    
+    print(dfs)
     if len(dfs) > 0:
         data = pd.concat(dfs)
         data = data.sort_values(by=["algorithm", "dataset", "recall/ap"])        
-        data.to_csv(args.output+"-"+args.track+".csv", index=False)
-        print(args.output+"-"+args.track+".csv")
+        data.to_csv(args.output+"-" + args.track + ".csv", index=False)
+        print(args.output + "-" + args.track + ".csv")

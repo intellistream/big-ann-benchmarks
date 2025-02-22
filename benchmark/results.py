@@ -4,6 +4,7 @@ import h5py
 import json
 import os
 import re
+import csv
 import torch
 import traceback
 
@@ -133,7 +134,7 @@ def store_results(dataset, count, definition, query_arguments,
     f = h5py.File(name=fn, mode='w', libver='latest')
     import pandas as pd
     df = pd.DataFrame([attrs])
-    print(fn)
+    print("ssss ", fn_attr)
 
     # Write the DataFrame to a CSV file
     df.to_csv(fn_attr, index=False)
@@ -141,7 +142,7 @@ def store_results(dataset, count, definition, query_arguments,
     for k, v in attrs.items():
         # TODO: here is one potential bug
         f.attrs[k] = v
-        
+    
     if neurips23track in ['streaming', 'congestion']:
         for i, step_results in enumerate(results):
             step = attrs['step_' + str(i)]
@@ -154,6 +155,7 @@ def store_results(dataset, count, definition, query_arguments,
             add_cc_results_to_h5py(f, search_type, step_results, count, '_step' + str(step))
     else:
         add_results_to_h5py(f, search_type, results, count)
+
     f.close()
 
 
@@ -171,17 +173,33 @@ def load_all_results(dataset=None, count=None, neurips23track="congestion", runb
             print(f"Found HDF5 file: {full_path}")
             try:
                 f = h5py.File(name=os.path.join(root, fn), mode='r+', libver='latest')
-                
-                print("===== ")
                 properties = dict(f.attrs)
-                print("Properties:", properties.keys())
-                print("===== ")
                 yield properties, f
                 f.close()
             except:
                 print('Was unable to read', fn)
                 traceback.print_exc()
 
+
+def load_all_attrs(dataset=None, count=None, neurips23track="concurrent", runbook_path=None):
+    for root, _, files in os.walk(get_result_filename(dataset, count, \
+                                                      neurips23track=neurips23track, \
+                                                      runbook_path=runbook_path)):
+        for fn in files:
+            if os.path.splitext(fn)[-1].lower() != '.csv':
+                continue
+            full_path = os.path.join(root, fn)
+            print(f"Found CSV file: {full_path}")
+            try:
+                # 打开 CSV 文件
+                with open(full_path, mode='r', newline='', encoding='utf-8') as csvfile:
+                    reader = csv.DictReader(csvfile)  
+                    properties = {"filename": fn}  
+                    yield properties, reader  
+            except Exception as e:
+                print(f'Was unable to read {fn}')
+                traceback.print_exc()
+                
 
 def get_unique_algorithms():
     return set(properties['algo'] for properties, _ in load_all_results())

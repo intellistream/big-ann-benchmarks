@@ -17,13 +17,13 @@ class ConcurrentRunner(BaseRunner):
         
     def run_task(algo, ds, distance, count, run_count, search_type, private_query, runbook, definition, query_arguments, runbook_path, dataset):
         all_results = []
-        cc_time = 0
 
         Q = ds.get_queries() if not private_query else ds.get_private_queries()
         print(fr"Got {Q.shape[0]} queries")  
         
         cc_config = algo.get_cc_config()
         cc_res_file = get_cc_result_filename(dataset, count, definition, query_arguments, neurips23track="concurrent", runbook_path=runbook_path, cc_config=cc_config)
+        cc_res_file += ".cc.hdf5"
 
         result_map = {}
         num_searches = 0
@@ -39,7 +39,6 @@ class ConcurrentRunner(BaseRunner):
                     start = entry['start']
                     end = entry['end']
                     algo.cc_insert_and_query(ds.get_data_in_range(start, end), Q, count)
-                    cc_time += (time.time() - start_time)
                 case 'search':
                     algo.query(Q, count)
                     all_results.append(algo.get_results())
@@ -49,8 +48,8 @@ class ConcurrentRunner(BaseRunner):
                     raise NotImplementedError('Invalid runbook operation.')
             step_time = (time.time() - start_time)
             print(f"Step {step+1} took {step_time}s.")
-            
-        algo.save_cc_results(cc_res_file)
+        
+        cc_res = algo.save_and_get_cc_results(cc_res_file)
         
         attrs = {
             "name": str(algo),
@@ -60,11 +59,16 @@ class ConcurrentRunner(BaseRunner):
             "count": int(count),
             "private_queries": private_query,
             "num_searches": num_searches,
-            "cc_time": cc_time, 
             "batch_size": cc_config["batch_size"],
             "write_ratio": cc_config["write_ratio"],
             "num_threads": cc_config["num_threads"],
-            "cc_result_filemae": cc_res_file,
+            "insert_throughput": cc_res["insertThroughput"],
+            "search_throughput": cc_res["searchThroughput"],
+            "insert_latency_avg": cc_res["insertLatencyAvg"],
+            "search_latency_avg": cc_res["searchLatencyAvg"],
+            "insert_latency_95": cc_res["insertLatency95"],
+            "search_latency_95": cc_res["searchLatency95"],
+            "cc_result_filename": cc_res_file,
         }
         
         for k, v in result_map.items():

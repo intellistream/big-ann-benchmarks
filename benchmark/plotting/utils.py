@@ -8,7 +8,7 @@ import traceback
 import sys
 
 import benchmark.concurrent
-from benchmark.plotting.metrics import all_metrics as metrics, get_recall_values
+from benchmark.plotting.metrics import all_metrics as metrics, get_recall_values, get_recall_values_by_vecs
 from benchmark.sensors.power_capture import power_capture
 from benchmark.dataset_io import knn_result_read, knn_vec_result_read
 import benchmark.streaming.compute_gt
@@ -89,7 +89,6 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
         dataset_params = get_dataset_params_from_runbook(runbook_path, dataset_name)
 
     try:
-        print("ccococococo1")
         if neurips23track not in ['streaming', 'congestion', 'concurrent']:
             true_nn_across_steps = []
             true_nn = dataset.get_private_groundtruth() if private_query else dataset.get_groundtruth()
@@ -180,7 +179,6 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
             elif neurips23track == 'concurrent':
                 run_nn_across_steps = []
                 run_nn_across_batches = []
-                print("******** ", properties.keys())
                 for i in range(0, properties['num_searches']):
                    step_suffix = str(properties['step_' + str(i)])
                    run_nn_across_steps.append(numpy.array(run['neighbors_step' +  step_suffix]))
@@ -271,12 +269,13 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
 
                     if clear_cache and 'knn' in metrics_cache:
                         del metrics_cache['knn']
-                        
-                    print("^^^^^ ", metric['description'])
-                    val = metric["function"](true_nn, run_nn, metrics_cache, True, properties)
-                    v.append(val)
-                if name == 'k-nn':
-                    print('Recall: ', v)
+                    
+                    if name == 'k-nn':
+                        properties["use_vec"] = True
+                        val = metric["function"](true_nn, run_nn, metrics_cache, properties)
+                        v.append(val)
+                        print('Recall: ', v)
+                
             else:
                 v = metric["function"](true_nn, run_nn, metrics_cache, properties)
 
@@ -311,6 +310,22 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
 
             run_result[name] = numpy.nanmean(v)
         yield run_result
+
+
+def compute_cc_metrics_all_runs(dataset, dataset_name, attr, neurips23track=None, runbook_path=None):
+    if neurips23track == "concurrent":
+        
+            true_nn_across_steps = []
+            gt_dir = benchmark.concurrent.compute_gt.gt_dir(dataset, runbook_path)
+            max_pts, cc_config, runbook = load_runbook_concurrent(dataset_name, dataset.nb, runbook_path)
+            for step, entry in enumerate(runbook):
+                if entry['operation'] == 'search':
+                    step_gt_path = os.path.join(gt_dir, 'step' + str(step+1) + '.gt100')
+                    true_nn = knn_vec_result_read(step_gt_path)
+                    true_nn_across_steps.append(true_nn)
+                    
+    cc_res_file = attr["cc_res_filename"]
+    
 
 
 def generate_n_colors(n):

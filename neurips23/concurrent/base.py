@@ -49,9 +49,8 @@ class BaseConcurrentANN(BaseANN):
         qtensor = torch.from_numpy(qt)
         self.result = self.index.searchTensor(qtensor, k)
     
-    def save_cc_results(self, cc_res_filename):
-        if not self.index.ccSaveResultAsFile(cc_res_filename):
-            raise ValueError("Result save failed")
+    def save_and_get_cc_results(self, cc_res_filename):
+        return self.index.ccSaveAndGetResults(cc_res_filename)
     
     def get_results(self):
         return self.result

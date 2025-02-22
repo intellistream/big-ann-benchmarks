@@ -138,7 +138,6 @@ def knn_result_read(fname):
 
 
 def knn_vec_result_read(fname):
-    print(fname, "  ===")
     f = open(fname, "rb")
     header_bytes = f.read(12)
     n, k, dim = struct.unpack("<3I", header_bytes)
