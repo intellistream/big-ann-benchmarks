@@ -7,6 +7,7 @@ def load_runbook_concurrent(dataset_name, max_pts, runbook_file):
         runbook = yaml.safe_load(fd)[dataset_name] 
 
     run_list = []
+    initial_count = 0
     i = 1
     
     while i in runbook:  
@@ -23,6 +24,9 @@ def load_runbook_concurrent(dataset_name, max_pts, runbook_file):
                 raise Exception(f'Start out of range at entry {i}')
             if entry['end'] < 0 or entry['end'] > max_pts:
                 raise Exception(f'End out of range at entry {i}')
+            
+            if entry['operation'] == 'initial':
+                initial_count = entry['end'] - entry['start']
 
         run_list.append(entry)
         i += 1
@@ -41,6 +45,10 @@ def load_runbook_concurrent(dataset_name, max_pts, runbook_file):
     if batch_size == None:
         raise Exception('batch size not listed in runbook')
 
+    cc_query_size = runbook.get('cc_query_size')
+    if cc_query_size == None:
+        cc_query_size = 100
+
     num_threads = runbook.get('num_threads')
     if num_threads == None:
         num_threads = os.cpu_count()
@@ -54,7 +62,9 @@ def load_runbook_concurrent(dataset_name, max_pts, runbook_file):
         'write_ratio': write_ratio,
         'batch_size': batch_size,
         'num_threads': num_threads,
-        'random_mode': random_mode
+        'random_mode': random_mode,
+        'initial_count': initial_count,
+        'cc_query_size': cc_query_size
     }
 
     return max_pts, cc_config, run_list

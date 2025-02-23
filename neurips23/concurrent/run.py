@@ -24,6 +24,8 @@ class ConcurrentRunner(BaseRunner):
         cc_config = algo.get_cc_config()
         cc_res_file = get_cc_result_filename(dataset, count, definition, query_arguments, neurips23track="concurrent", runbook_path=runbook_path, cc_config=cc_config)
         cc_res_file += ".cc.hdf5"
+        
+        ccQ = Q[:cc_config["cc_query_size"]]
 
         result_map = {}
         num_searches = 0
@@ -38,7 +40,7 @@ class ConcurrentRunner(BaseRunner):
                 case 'insert_and_search':
                     start = entry['start']
                     end = entry['end']
-                    algo.cc_insert_and_query(ds.get_data_in_range(start, end), Q, count)
+                    algo.cc_insert_and_query(ds.get_data_in_range(start, end), ccQ, count)
                 case 'search':
                     algo.query(Q, count)
                     all_results.append(algo.get_results())

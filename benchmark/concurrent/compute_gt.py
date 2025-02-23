@@ -28,7 +28,6 @@ def get_next_set(id_list: list, entry):
 
 def output_gt(ds, id_list, step, args):
     ids = np.array(id_list, dtype=np.uint32)
-
     data = ds.get_data_in_range(0, ds.nb)
     data_slice = data[ids]  
 
@@ -51,15 +50,29 @@ def output_gt(ds, id_list, step, args):
     os.system(f"rm {data_file}")
 
 
-def output_stepwise_gt(ds, step, max_pts, cc_config, args):
+def output_stepwise_gt(ds, id_list, step, max_pts, cc_config, args):
+    ids = np.array(id_list, dtype=np.uint32)
+    data = ds.get_data_in_range(0, ds.nb)
+    data_slice = data[ids]  
+
     dir = gt_dir(ds, args.runbook_file)
     prefix = os.path.join(dir, f'step{step}')
-    
+    os.makedirs(dir, exist_ok=True)
+
+    data_file = prefix + '.data'
     gt_file = prefix + '.cc.gt'
-    
+
+    with open(data_file, 'wb') as f:
+        f.write(ids.size.to_bytes(4, byteorder='little'))  
+        f.write(ds.d.to_bytes(4, byteorder='little'))  
+        data_slice.tofile(f)
+  
     print("Executing stepwise GT")
-    PyCANDYAlgo.compute_stepwise_gt()
-    
+    PyCANDYAlgo.compute_stepwise_gt(data_file, args.query_file, gt_file, args.k, args.dist_fn, 
+        cc_config["batch_size"], cc_config["initial_count"], cc_config["cc_query_size"])
+
+    print(f"Removing data file: {data_file}")
+    os.system(f"rm {data_file}")
 
 
 def main():
@@ -82,6 +95,8 @@ def main():
     args = parser.parse_args()
 
     ds = DATASETS[args.dataset]()
+    print("0000 ", ds)
+    
     max_pts, cc_config, runbook  = load_runbook_concurrent(args.dataset, ds.nb, args.runbook_file)
     query_file = ds.qs_fn if args.private_query else ds.qs_fn
     
@@ -109,7 +124,7 @@ def main():
             output_gt(ds, id_list, step, args)
             
         elif entry['operation'] == 'insert_and_search':
-            output_stepwise_gt(ds, step, max_pts, cc_config, args)
+            output_stepwise_gt(ds, id_list, step, max_pts, cc_config, args)
 
         step += 1
 
