@@ -13,9 +13,12 @@ from benchmark.sensors.power_capture import power_capture
 from benchmark.dataset_io import knn_result_read, knn_vec_result_read
 import benchmark.streaming.compute_gt
 import benchmark.congestion.compute_gt
+import benchmark.concurrent.compute_gt
 from benchmark.streaming.load_runbook import load_runbook_streaming
 from benchmark.congestion.load_runbook import load_runbook_congestion
 from benchmark.concurrent.load_runbook import load_runbook_concurrent
+
+import PyCANDYAlgo
 
 
 def get_or_create_metrics(run):
@@ -312,20 +315,33 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
         yield run_result
 
 
-def compute_cc_metrics_all_runs(dataset, dataset_name, attr, neurips23track=None, runbook_path=None):
-    if neurips23track == "concurrent":
-        
-            true_nn_across_steps = []
-            gt_dir = benchmark.concurrent.compute_gt.gt_dir(dataset, runbook_path)
-            max_pts, cc_config, runbook = load_runbook_concurrent(dataset_name, dataset.nb, runbook_path)
-            for step, entry in enumerate(runbook):
-                if entry['operation'] == 'search':
-                    step_gt_path = os.path.join(gt_dir, 'step' + str(step+1) + '.gt100')
-                    true_nn = knn_vec_result_read(step_gt_path)
-                    true_nn_across_steps.append(true_nn)
-                    
-    cc_res_file = attr["cc_res_filename"]
+def compute_cc_metrics_all_runs(dataset, dataset_name, attrs, runbook_path=None):    
+    gt_dir = benchmark.concurrent.compute_gt.gt_dir(dataset, runbook_path)
+    max_pts, cc_config, runbook = load_runbook_concurrent(dataset_name, dataset.nb, runbook_path)
+
+    stepwise_res = []
+    stepwise_gt = []
+    stepwise_recall = []
     
+    for step, entry in enumerate(runbook):
+        if entry['operation'] == 'insert_and_search':
+            step_gt_path = os.path.join(gt_dir, 'step' + str(step+1) + '.cc.gt.hdf5')
+            stepwise_gt.append(step_gt_path)
+    
+    for properties, reader in attrs:
+        row = next(reader)  
+        stepwise_res.append(row.get('cc_result_filename', None))
+    
+    print("PPPPPPP11 ", stepwise_gt)
+    print("PPPPPPP22 ", stepwise_res)   
+    
+    assert len(stepwise_gt) == len(stepwise_res)
+    for res, gt in zip(stepwise_res, stepwise_gt):
+        print("III1 ", res)
+        print("III1 ", gt)
+        stepwise_recall = PyCANDYAlgo.calc_stepwise_recall(res, gt)
+    
+    print(stepwise_recall)
 
 
 def generate_n_colors(n):

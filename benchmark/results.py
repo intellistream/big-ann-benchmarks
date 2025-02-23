@@ -169,6 +169,8 @@ def load_all_results(dataset=None, count=None, neurips23track="congestion", runb
         for fn in files:
             if os.path.splitext(fn)[-1] != '.hdf5':
                 continue
+            if fn.endswith('.cc.hdf5'):
+                continue
             full_path = os.path.join(root, fn)
             print(f"Found HDF5 file: {full_path}")
             try:
@@ -191,7 +193,6 @@ def load_all_attrs(dataset=None, count=None, neurips23track="concurrent", runboo
             full_path = os.path.join(root, fn)
             print(f"Found CSV file: {full_path}")
             try:
-                # 打开 CSV 文件
                 with open(full_path, mode='r', newline='', encoding='utf-8') as csvfile:
                     reader = csv.DictReader(csvfile)  
                     properties = {"filename": fn}  

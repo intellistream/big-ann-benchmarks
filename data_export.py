@@ -9,8 +9,8 @@ import bz2
 import sys
 
 from benchmark.datasets import DATASETS
-from benchmark.plotting.utils  import compute_metrics_all_runs
-from benchmark.results import (load_all_results, load_all_attrs, get_unique_algorithms)
+from benchmark.plotting.utils import compute_metrics_all_runs, compute_cc_metrics_all_runs
+from benchmark.results import load_all_results, load_all_attrs
 
 
 def cleaned_run_metric(run_metrics):
@@ -93,10 +93,13 @@ if __name__ == "__main__":
     # neurips23tracks = ['streaming', 'congestion', 'concurrent', 'none']
     neurips23tracks = ['concurrent', 'none']
     tracks = [args.track]
+    concurrent_dataset_name = ['sift']
 
     is_first = True
     for track in tracks:
         for dataset_name in datasets:
+            if dataset_name not in concurrent_dataset_name:
+                continue
             print(f"Looking at track:{track}, dataset:{dataset_name}")
             dataset = DATASETS[dataset_name]()
             runbook_paths = [None]
@@ -195,8 +198,8 @@ if __name__ == "__main__":
                 print("Looking for results", runbook_path)
                 results = load_all_results(dataset_name, neurips23track=track, runbook_path=runbook_path)
                 print("Looked results ", runbook_path)
-                results = compute_metrics_all_runs(dataset, dataset_name, results, args.recompute, \
-                    args.sensors, args.search_times, args.private_query, \
+                results = compute_metrics_all_runs(dataset, dataset_name, results, args.recompute, 
+                    args.sensors, args.search_times, args.private_query, 
                     neurips23track=track, runbook_path=runbook_path)
                 
                 results = cleaned_run_metric(results)
@@ -207,8 +210,8 @@ if __name__ == "__main__":
                     print("Looking for attrs ", runbook_path)
                     attrs = load_all_attrs(dataset_name, neurips23track=track, runbook_path=runbook_path)
                     print("Looked attrs ", runbook_path)
-                    attrs = compute_cc_metrics_all_runs
-                    
+                    # stepwise_results, cc_results = compute_cc_metrics_all_runs(dataset, dataset_name, attrs, runbook_path=runbook_path)
+                    compute_cc_metrics_all_runs(dataset, dataset_name, attrs, runbook_path=runbook_path)
 
     dfs = [e for e in dfs if len(e) > 0]
     

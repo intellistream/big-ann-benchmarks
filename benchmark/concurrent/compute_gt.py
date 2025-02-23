@@ -60,7 +60,7 @@ def output_stepwise_gt(ds, id_list, step, max_pts, cc_config, args):
     os.makedirs(dir, exist_ok=True)
 
     data_file = prefix + '.data'
-    gt_file = prefix + '.cc.gt'
+    gt_file = prefix + '.cc.gt.hdf5'
 
     with open(data_file, 'wb') as f:
         f.write(ids.size.to_bytes(4, byteorder='little'))  
@@ -70,6 +70,7 @@ def output_stepwise_gt(ds, id_list, step, max_pts, cc_config, args):
     print("Executing stepwise GT")
     PyCANDYAlgo.compute_stepwise_gt(data_file, args.query_file, gt_file, args.k, args.dist_fn, 
         cc_config["batch_size"], cc_config["initial_count"], cc_config["cc_query_size"])
+    print("Stepwise GT file: ", gt_file)
 
     print(f"Removing data file: {data_file}")
     os.system(f"rm {data_file}")
