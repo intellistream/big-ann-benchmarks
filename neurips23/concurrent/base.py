@@ -1,5 +1,6 @@
 import PyCANDYAlgo
 import torch
+from pathlib import Path
 
 from benchmark.algorithms.base import BaseANN
 
@@ -38,7 +39,7 @@ class BaseConcurrentANN(BaseANN):
         
     def initial(self, t):
         tensor = torch.from_numpy(t)
-        return self.index.insertTensor(tensor)
+        return self.index.loadInitialTensor(tensor)
         
     def cc_insert_and_query(self, t, qt, k):
         tensor = torch.from_numpy(t)
@@ -50,6 +51,7 @@ class BaseConcurrentANN(BaseANN):
         self.result = self.index.searchTensor(qtensor, k)
     
     def save_and_get_cc_results(self, cc_res_filename):
+        Path(cc_res_filename).parent.mkdir(parents=True, exist_ok=True)
         return self.index.ccSaveAndGetResults(cc_res_filename)
     
     def get_results(self):

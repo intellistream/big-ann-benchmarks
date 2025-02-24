@@ -321,7 +321,8 @@ def compute_cc_metrics_all_runs(dataset, dataset_name, attrs, runbook_path=None)
 
     stepwise_res = []
     stepwise_gt = []
-    stepwise_recall = []
+    stepwise_recalls = []
+    metrics = []
     
     for step, entry in enumerate(runbook):
         if entry['operation'] == 'insert_and_search':
@@ -331,18 +332,28 @@ def compute_cc_metrics_all_runs(dataset, dataset_name, attrs, runbook_path=None)
     for properties, reader in attrs:
         row = next(reader)  
         stepwise_res.append(row.get('cc_result_filename', None))
-    
-    print("PPPPPPP11 ", stepwise_gt)
-    print("PPPPPPP22 ", stepwise_res)   
+        
+        write_ratio_str = str(int(float(row.get('write_ratio', None)) * 100))
+        stepwise_recall_suffix = dataset_name + "_b" + row.get('batch_size', None)  \
+            + "_w" + write_ratio_str + "_t" + row.get('num_threads', None)
+        
+        metrics.append({
+            "insertThroughput": row.get('insert_throughput', None),  
+            "searchThroughput": row.get('search_throughput', None),
+            "insertLatencyAvg": row.get('insert_latency_avg', None),
+            "searchLatencyAvg": row.get('search_latency_avg', None),
+            "insertLatency95": row.get('insert_latency_95', None),
+            "searchLatency95": row.get('search_latency_95', None),
+            "stepwiseRecallFile": stepwise_recall_suffix
+        })
     
     assert len(stepwise_gt) == len(stepwise_res)
     for res, gt in zip(stepwise_res, stepwise_gt):
-        print("III1 ", res)
-        print("III1 ", gt)
-        stepwise_recall = PyCANDYAlgo.calc_stepwise_recall(res, gt)
-    
-    print(stepwise_recall)
+        print("stepwise_gt path: ", gt)
+        print("stepwise_res path: ", res)
+        stepwise_recalls.append(PyCANDYAlgo.calc_stepwise_recall(res, gt))
 
+    return metrics, stepwise_recalls
 
 def generate_n_colors(n):
     vs = numpy.linspace(0.3, 0.9, 7)

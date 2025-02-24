@@ -5,8 +5,8 @@ import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 import argparse
-import bz2
-import sys
+import math
+import csv
 
 from benchmark.datasets import DATASETS
 from benchmark.plotting.utils import compute_metrics_all_runs, compute_cc_metrics_all_runs
@@ -48,6 +48,14 @@ def cleaned_run_metric(run_metrics):
         cleaned.append(run_metric)
     return cleaned
 
+
+def write_stepwise_recall_to_csv(stepwise_recall, output_file):
+    with open(output_file, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(['Step', 'Recall'])
+        
+        for step, recall in stepwise_recall:
+            writer.writerow([step, recall])
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -93,7 +101,8 @@ if __name__ == "__main__":
     # neurips23tracks = ['streaming', 'congestion', 'concurrent', 'none']
     neurips23tracks = ['concurrent', 'none']
     tracks = [args.track]
-    concurrent_dataset_name = ['sift']
+    concurrent_dataset_name = ['sift']  
+    stepwise_res_file = "stepwise"
 
     is_first = True
     for track in tracks:
@@ -107,6 +116,9 @@ if __name__ == "__main__":
                 runbook_paths = ['neurips23/runbooks/streaming/simple_runbook.yaml'
                                 ]
             if track == 'concurrent':
+                if not os.path.exists("stepwise"):
+                    os.makedirs("stepwise")
+                    
                 runbook_paths = []
                 if args.output == "writeIntensive":
                     runbook_paths = ['neurips23/runbooks/concurrent/writeIntensive/batch100_w50r50.yaml',
@@ -203,15 +215,23 @@ if __name__ == "__main__":
                     neurips23track=track, runbook_path=runbook_path)
                 
                 results = cleaned_run_metric(results)
-                if len(results) > 0:
-                    dfs.append(pd.DataFrame(results))     
                     
                 if track == 'concurrent':
                     print("Looking for attrs ", runbook_path)
                     attrs = load_all_attrs(dataset_name, neurips23track=track, runbook_path=runbook_path)
                     print("Looked attrs ", runbook_path)
-                    # stepwise_results, cc_results = compute_cc_metrics_all_runs(dataset, dataset_name, attrs, runbook_path=runbook_path)
-                    compute_cc_metrics_all_runs(dataset, dataset_name, attrs, runbook_path=runbook_path)
+                    cc_results, stepwise_recalls = compute_cc_metrics_all_runs(dataset, dataset_name, attrs, runbook_path=runbook_path)
+
+                    assert len(results) == len(cc_results)
+                    for i, (r, cc_r) in enumerate(zip(results, cc_results)):
+                        new_name = r["algorithm"] + "_" + cc_r["stepwiseRecallFile"]
+                        cc_r["stepwiseRecallFile"] = "stepwise/" + new_name + ".csv"
+                        write_stepwise_recall_to_csv(stepwise_recalls[i], cc_r["stepwiseRecallFile"])
+                        merged = r | cc_r
+                        results[i] = {k: v for k, v in merged.items() if not (isinstance(v, float) and math.isnan(v))}
+                        
+                if len(results) > 0:
+                    dfs.append(pd.DataFrame(results))     
 
     dfs = [e for e in dfs if len(e) > 0]
     

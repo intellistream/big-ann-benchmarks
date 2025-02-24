@@ -12,6 +12,7 @@ def load_runbook_concurrent(dataset_name, max_pts, runbook_file):
     
     while i in runbook:  
         entry = runbook[i]
+        print(entry)
         
         if entry['operation'] not in {'initial', 'insert_and_search', 'search'}:
             raise Exception('Undefined runbook operation')
@@ -23,6 +24,7 @@ def load_runbook_concurrent(dataset_name, max_pts, runbook_file):
             if entry['start'] < 0 or entry['start'] >= max_pts:
                 raise Exception(f'Start out of range at entry {i}')
             if entry['end'] < 0 or entry['end'] > max_pts:
+                print(entry['end'], max_pts)
                 raise Exception(f'End out of range at entry {i}')
             
             if entry['operation'] == 'initial':

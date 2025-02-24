@@ -1,3 +1,16 @@
+reddit:
+  nswlib_HNSW:
+    docker-tag: neurips23-concurrent-nswlib_HNSW
+    module: neurips23.concurrent.nswlib_HNSW.nswlib_HNSW
+    constructor: nswlib_HNSW
+    base-args: ["@metric"]
+    run-groups:
+      base:
+        args: |
+          [{"maxConnection": 64, "efConstruction": 400}]
+        query-args: |
+          [{"ef":30}]
+
 sift:
   nswlib_HNSW:
     docker-tag: neurips23-concurrent-nswlib_HNSW
@@ -7,32 +20,11 @@ sift:
     run-groups:
       base:
         args: |
-          [
-            {"maxConnection": 64, "efConstruction": 400}
-          ]
+          [{"maxConnection": 64, "efConstruction": 400}]
         query-args: |
-          [
-            {"ef":30}
-          ]
-
-random-xs:
-  nswlib_HNSW:
-    docker-tag: neurips23-concurrent-nswlib_HNSW
-    module: neurips23.concurrent.nswlib_HNSW.nswlib_HNSW
-    constructor: nswlib_HNSW
-    base-args: ["@metric"]
-    run-groups:
-      base:
-        args: |
-          [
-            {"maxConnection": 64, "efConstruction": 400}
-          ]
-        query-args: |
-          [
-            {"ef":30}
-          ]
+          [{"ef":30}]
           
-msturing-10M-clustered:
+glove:
   nswlib_HNSW:
     docker-tag: neurips23-concurrent-nswlib_HNSW
     module: neurips23.concurrent.nswlib_HNSW.nswlib_HNSW
@@ -41,15 +33,11 @@ msturing-10M-clustered:
     run-groups:
       base:
         args: |
-          [
-            {"maxConnection": 64, "efConstruction": 400}
-          ]
+          [{"maxConnection": 64, "efConstruction": 400}]
         query-args: |
-          [
-            {"ef":100}
-          ]
+          [{"ef":100}]
 
-msturing-30M-clustered:
+msong:
   nswlib_HNSW:
     docker-tag: neurips23-concurrent-nswlib_HNSW
     module: neurips23.concurrent.nswlib_HNSW.nswlib_HNSW
@@ -58,10 +46,19 @@ msturing-30M-clustered:
     run-groups:
       base:
         args: |
-          [
-            {"maxConnection": 64, "efConstruction": 400}
-          ]
+          [{"maxConnection": 64, "efConstruction": 400}]
         query-args: |
-          [
-            {"ef":100}
-          ]
+          [{"ef":100}]
+
+msturing-10M:
+  nswlib_HNSW:
+      docker-tag: neurips23-concurrent-nswlib_HNSW
+      module: neurips23.concurrent.nswlib_HNSW.nswlib_HNSW
+      constructor: nswlib_HNSW
+      base-args: ["@metric"]
+      run-groups:
+        base:
+          args: |
+            [{"maxConnection": 64, "efConstruction": 400}]
+          query-args: |
+            [{"ef":100}]

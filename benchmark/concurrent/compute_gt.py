@@ -96,7 +96,6 @@ def main():
     args = parser.parse_args()
 
     ds = DATASETS[args.dataset]()
-    print("0000 ", ds)
     
     max_pts, cc_config, runbook  = load_runbook_concurrent(args.dataset, ds.nb, args.runbook_file)
     query_file = ds.qs_fn if args.private_query else ds.qs_fn

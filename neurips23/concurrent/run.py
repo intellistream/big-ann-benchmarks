@@ -33,7 +33,6 @@ class ConcurrentRunner(BaseRunner):
             start_time = time.time()
             match entry['operation']:
                 case 'initial':
-                    print("initial")
                     start = entry['start']
                     end = entry['end']
                     algo.initial(ds.get_data_in_range(start, end))
@@ -52,6 +51,7 @@ class ConcurrentRunner(BaseRunner):
             print(f"Step {step+1} took {step_time}s.")
         
         cc_res = algo.save_and_get_cc_results(cc_res_file)
+        print(cc_res)
         
         attrs = {
             "name": str(algo),
