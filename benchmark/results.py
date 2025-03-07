@@ -134,7 +134,6 @@ def store_results(dataset, count, definition, query_arguments,
     f = h5py.File(name=fn, mode='w', libver='latest')
     import pandas as pd
     df = pd.DataFrame([attrs])
-    print("ssss ", fn_attr)
 
     # Write the DataFrame to a CSV file
     df.to_csv(fn_attr, index=False)
