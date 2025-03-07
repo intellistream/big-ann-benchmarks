@@ -1,6 +1,23 @@
+reddit:
+  batch_size: 100
+  write_ratio: 0.2
+  random_mode: 0
+  max_pts: 100000
+  1:
+    operation: "initial"
+    start: 0
+    end: 1000
+  2:
+    operation: "insert_and_search"
+    start: 1000
+    end: 100000
+  3:
+    operation: "search"
+  gt_url: "none"
+
 sift:
-  batch_size: 200
-  write_ratio: 0.1
+  batch_size: 100
+  write_ratio: 0.2
   random_mode: 0
   max_pts: 1000000
   1:
@@ -15,11 +32,11 @@ sift:
     operation: "search"
   gt_url: "none"
 
-random-xs:
-  batch_size: 200
-  write_ratio: 0.1
+glove:
+  batch_size: 100
+  write_ratio: 0.2
   random_mode: 0
-  max_pts: 1000000
+  max_pts: 1100000
   1:
     operation: "initial"
     start: 0
@@ -27,16 +44,16 @@ random-xs:
   2:
     operation: "insert_and_search"
     start: 1000
-    end: 1000000
+    end: 1100000
   3:
     operation: "search"
   gt_url: "none"
 
-msturing-10M-clustered:
-  batch_size: 200
-  write_ratio: 0.1
+msong:
+  batch_size: 100
+  write_ratio: 0.2
   random_mode: 0
-  max_pts: 1000000
+  max_pts: 990000
   1:
     operation: "initial"
     start: 0
@@ -44,24 +61,7 @@ msturing-10M-clustered:
   2:
     operation: "insert_and_search"
     start: 1000
-    end: 1000000
-  3:
-    operation: "search"
-  gt_url: "none"
-
-msturing-30M-clustered:
-  batch_size: 200
-  write_ratio: 0.1
-  random_mode: 0
-  max_pts: 1000000
-  1:
-    operation: "initial"
-    start: 0
-    end: 1000
-  2:
-    operation: "insert_and_search"
-    start: 1000
-    end: 3000000
+    end: 990000
   3:
     operation: "search"
   gt_url: "none"

@@ -5,7 +5,7 @@ import numpy
 import os
 import yaml
 import traceback
-import sys
+import re
 
 import benchmark.concurrent
 from benchmark.plotting.metrics import all_metrics as metrics, get_recall_values, get_recall_values_by_vecs
@@ -316,26 +316,39 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
 
 
 def compute_cc_metrics_all_runs(dataset, dataset_name, attrs, runbook_path=None):    
-    gt_dir = benchmark.concurrent.compute_gt.gt_dir(dataset, runbook_path)
-    max_pts, cc_config, runbook = load_runbook_concurrent(dataset_name, dataset.nb, runbook_path)
+    # gt_dir = benchmark.concurrent.compute_gt.gt_dir(dataset, runbook_path)
+    # max_pts, cc_config, runbook = load_runbook_concurrent(dataset_name, dataset.nb, runbook_path)
 
-    stepwise_res = []
-    stepwise_gt = []
-    stepwise_recalls = []
+    # stepwise_res = []
+    # stepwise_gt = {}
+    # stepwise_recalls = []
+    
+    # for step, entry in enumerate(runbook):
+    #     if entry['operation'] == 'insert_and_search':
+    #         path = os.path.join(gt_dir, 'step' + str(step+1) + '.cc.gt.hdf5')
+    #         parts = path.split('/')
+    #         ds = parts[1].lower()
+    #         bnum = re.search(r"batch(\d+)", parts[3]).group(1)
+            
+    #         parent_path = os.path.dirname(gt_dir)
+    #         items = os.listdir(parent_path)
+            
+    #         step_gt_path = ""
+    #         for root, dirs, files in os.walk(parent_path):
+    #             for file in files:
+    #                 if file.lower().endswith("cc.gt.hdf5"):
+    #                     step_gt_path = os.path.join(root, file)
+    #         stepwise_gt[f"{ds}{bnum}"] = step_gt_path
+            
+            
     metrics = []
-    
-    for step, entry in enumerate(runbook):
-        if entry['operation'] == 'insert_and_search':
-            step_gt_path = os.path.join(gt_dir, 'step' + str(step+1) + '.cc.gt.hdf5')
-            stepwise_gt.append(step_gt_path)
-    
     for properties, reader in attrs:
         row = next(reader)  
-        stepwise_res.append(row.get('cc_result_filename', None))
+        # stepwise_res.append(row.get('cc_result_filename', None))
         
-        write_ratio_str = str(int(float(row.get('write_ratio', None)) * 100))
-        stepwise_recall_suffix = dataset_name + "_b" + row.get('batch_size', None)  \
-            + "_w" + write_ratio_str + "_t" + row.get('num_threads', None)
+        # write_ratio_str = str(int(float(row.get('write_ratio', None)) * 100))
+        # stepwise_recall_suffix = dataset_name + "_b" + row.get('batch_size', None)  \
+        #     + "_w" + write_ratio_str + "_t" + row.get('num_threads', None)
         
         metrics.append({
             "insertThroughput": row.get('insert_throughput', None),  
@@ -344,16 +357,26 @@ def compute_cc_metrics_all_runs(dataset, dataset_name, attrs, runbook_path=None)
             "searchLatencyAvg": row.get('search_latency_avg', None),
             "insertLatency95": row.get('insert_latency_95', None),
             "searchLatency95": row.get('search_latency_95', None),
-            "stepwiseRecallFile": stepwise_recall_suffix
+            # "stepwiseRecallFile": stepwise_recall_suffix
         })
     
-    assert len(stepwise_gt) == len(stepwise_res)
-    for res, gt in zip(stepwise_res, stepwise_gt):
-        print("stepwise_gt path: ", gt)
-        print("stepwise_res path: ", res)
-        stepwise_recalls.append(PyCANDYAlgo.calc_stepwise_recall(res, gt))
+    # for res in stepwise_res:
+    #     parts = res.split('/')
+    #     ds = parts[4].lower()
+    #     bnum = re.search(r"batch(\d+)", parts[3]).group(1)
+        
+    #     ds_key = f"{ds}{bnum}"
+    #     gt = ""
+    #     if ds_key in stepwise_gt.keys():
+    #         gt = stepwise_gt[ds_key]
+    #     else:
+    #         print("Can't find gt for ", res)
+        
+    #     print("stepwise recall calculating : ", res, gt)
+    #     stepwise_recalls.append(PyCANDYAlgo.calc_stepwise_recall(res, gt))
 
-    return metrics, stepwise_recalls
+    # return metrics, stepwise_recalls\
+    return metrics
 
 def generate_n_colors(n):
     vs = numpy.linspace(0.3, 0.9, 7)

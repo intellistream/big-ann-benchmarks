@@ -16,14 +16,14 @@ reddit:
   gt_url: "none"
 
 sift:
-  batch_size: 100
+  batch_size: 1000
   write_ratio: 0.5
   random_mode: 0
   max_pts: 1000000
   1:
     operation: "initial"
     start: 0
-    end: 1000
+    end: 10
   2:
     operation: "insert_and_search"
     start: 1000
@@ -62,23 +62,6 @@ msong:
     operation: "insert_and_search"
     start: 1000
     end: 990000
-  3:
-    operation: "search"
-  gt_url: "none"
-
-msturing-10M:
-  batch_size: 100
-  write_ratio: 0.5
-  random_mode: 0
-  max_pts: 2000000
-  1:
-    operation: "initial"
-    start: 0
-    end: 1000
-  2:
-    operation: "insert_and_search"
-    start: 1000
-    end: 2000000
   3:
     operation: "search"
   gt_url: "none"

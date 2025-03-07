@@ -1,6 +1,6 @@
 import numpy as np
 import time
-import os
+import json
 
 from benchmark.algorithms.base_runner import BaseRunner
 from benchmark.datasets import DATASETS
@@ -22,8 +22,8 @@ class ConcurrentRunner(BaseRunner):
         print(fr"Got {Q.shape[0]} queries")  
         
         cc_config = algo.get_cc_config()
-        cc_res_file = get_cc_result_filename(dataset, count, definition, query_arguments, neurips23track="concurrent", runbook_path=runbook_path, cc_config=cc_config)
-        cc_res_file += ".cc.hdf5"
+        # cc_res_file = get_cc_result_filename(dataset, count, definition, query_arguments, neurips23track="concurrent", runbook_path=runbook_path, cc_config=cc_config)
+        # cc_res_file += ".cc.hdf5"
         
         ccQ = Q[:cc_config["cc_query_size"]]
 
@@ -50,8 +50,12 @@ class ConcurrentRunner(BaseRunner):
             step_time = (time.time() - start_time)
             print(f"Step {step+1} took {step_time}s.")
         
-        cc_res = algo.save_and_get_cc_results(cc_res_file)
-        print(cc_res)
+        cc_res_filename = "stepwise/" + str(algo) + "_" + dataset + "_" + str(cc_config["write_ratio"])
+        recall_filename = cc_res_filename + ".csv"
+        cc_filename = cc_res_filename + ".txt"
+        cc_res = algo.save_and_get_cc_results(recall_filename)
+        with open(cc_filename, 'w') as f:
+            json.dump(cc_res, f, indent=4)
         
         attrs = {
             "name": str(algo),
@@ -70,7 +74,7 @@ class ConcurrentRunner(BaseRunner):
             "search_latency_avg": cc_res["searchLatencyAvg"],
             "insert_latency_95": cc_res["insertLatency95"],
             "search_latency_95": cc_res["searchLatency95"],
-            "cc_result_filename": cc_res_file,
+            "cc_result_filename": "",
         }
         
         for k, v in result_map.items():
