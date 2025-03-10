@@ -14,7 +14,7 @@ for RUN in "${RUNBOOKS[@]}"; do
   for ALGO in "${ALGORITHMS[@]}"; do
     for DS in "${DATASETS[@]}"; do
       echo "Running with algorithm: $ALGO and dataset: $DS Using $DS"
-      python3 run.py --neurips23track concurrent --algorithm "$ALGO" --nodocker --rebuild --runbook_path neurips23/runbooks/concurrent/writeIntensive/"$RUN" --dataset "$DS"
+      python3 run.py --neurips23track concurrent --algorithm "$ALGO" --nodocker --rebuild --runbook_path neurips23/runbooks/concurrent/"$RUN" --dataset "$DS"
     done
   done
 done
