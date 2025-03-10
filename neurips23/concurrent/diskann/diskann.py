@@ -15,6 +15,6 @@ class diskann(BaseConcurrentANN):
         self.cm.edit("L", index_params["L"])
         self.cm.edit("consolidate_threads", index_params["consolidate_threads"])
         
-    def set_query_arguments(self, query_args, xx):
+    def set_query_arguments(self, query_args):
         # TODO:
         pass 
