@@ -1,7 +1,7 @@
 reddit:
     diskann: 
-      docker-tag: neurips23-congestion-diskann
-      module: neurips23.congestion.diskann.diskann
+      docker-tag: neurips23-concurrent-diskann
+      module: neurips23.concurrent.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -13,8 +13,8 @@ reddit:
 
 sift:
     diskann: 
-      docker-tag: neurips23-congestion-diskann
-      module: neurips23.congestion.diskann.diskann
+      docker-tag: neurips23-concurrent-diskann
+      module: neurips23.concurrent.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -26,8 +26,8 @@ sift:
 
 glove:
     diskann: 
-      docker-tag: neurips23-congestion-diskann
-      module: neurips23.congestion.diskann.diskann
+      docker-tag: neurips23-concurrent-diskann
+      module: neurips23.concurrent.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
@@ -40,8 +40,8 @@ glove:
 
 msong:
     diskann: 
-      docker-tag: neurips23-congestion-diskann
-      module: neurips23.congestion.diskann.diskann
+      docker-tag: neurips23-concurrent-diskann
+      module: neurips23.concurrent.diskann.diskann
       constructor: diskann
       base-args: ["@metric"]
       run-groups:
