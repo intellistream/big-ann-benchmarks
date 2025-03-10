@@ -1,8 +1,8 @@
 reddit:
-  nswlib_HNSW:
-    docker-tag: neurips23-concurrent-nswlib_HNSW
-    module: neurips23.concurrent.nswlib_HNSW.nswlib_HNSW
-    constructor: nswlib_HNSW
+  hnswlib_HNSW:
+    docker-tag: neurips23-concurrent-hnswlib_HNSW
+    module: neurips23.concurrent.hnswlib_HNSW.hnswlib_HNSW
+    constructor: hnswlib_HNSW
     base-args: ["@metric"]
     run-groups:
       base:
@@ -12,10 +12,10 @@ reddit:
           [{"ef":30}]
 
 sift:
-  nswlib_HNSW:
-    docker-tag: neurips23-concurrent-nswlib_HNSW
-    module: neurips23.concurrent.nswlib_HNSW.nswlib_HNSW
-    constructor: nswlib_HNSW
+  hnswlib_HNSW:
+    docker-tag: neurips23-concurrent-hnswlib_HNSW
+    module: neurips23.concurrent.hnswlib_HNSW.hnswlib_HNSW
+    constructor: hnswlib_HNSW
     base-args: ["@metric"]
     run-groups:
       base:
@@ -25,10 +25,10 @@ sift:
           [{"ef":30}]
           
 glove:
-  nswlib_HNSW:
-    docker-tag: neurips23-concurrent-nswlib_HNSW
-    module: neurips23.concurrent.nswlib_HNSW.nswlib_HNSW
-    constructor: nswlib_HNSW
+  hnswlib_HNSW:
+    docker-tag: neurips23-concurrent-hnswlib_HNSW
+    module: neurips23.concurrent.hnswlib_HNSW.hnswlib_HNSW
+    constructor: hnswlib_HNSW
     base-args: ["@metric"]
     run-groups:
       base:
@@ -38,10 +38,10 @@ glove:
           [{"ef":30}]
 
 msong:
-  nswlib_HNSW:
-    docker-tag: neurips23-concurrent-nswlib_HNSW
-    module: neurips23.concurrent.nswlib_HNSW.nswlib_HNSW
-    constructor: nswlib_HNSW
+  hnswlib_HNSW:
+    docker-tag: neurips23-concurrent-hnswlib_HNSW
+    module: neurips23.concurrent.hnswlib_HNSW.hnswlib_HNSW
+    constructor: hnswlib_HNSW
     base-args: ["@metric"]
     run-groups:
       base:
@@ -51,10 +51,10 @@ msong:
           [{"ef":30}]
 
 msturing-10M:
-  nswlib_HNSW:
-      docker-tag: neurips23-concurrent-nswlib_HNSW
-      module: neurips23.concurrent.nswlib_HNSW.nswlib_HNSW
-      constructor: nswlib_HNSW
+  hnswlib_HNSW:
+      docker-tag: neurips23-concurrent-hnswlib_HNSW
+      module: neurips23.concurrent.hnswlib_HNSW.hnswlib_HNSW
+      constructor: hnswlib_HNSW
       base-args: ["@metric"]
       run-groups:
         base:
