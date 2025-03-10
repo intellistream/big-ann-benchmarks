@@ -61,8 +61,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--output',
-        help='Path to the output csv file',
-        required=True)
+        help='Path to the output csv file')
     parser.add_argument(
         '--track',
         choices=['streaming', 'congestion', 'concurrent'],
@@ -97,11 +96,13 @@ if __name__ == "__main__":
 
     datasets = DATASETS.keys()
     dfs = []
+    
+    cc_dfs = []
 
     # neurips23tracks = ['streaming', 'congestion', 'concurrent', 'none']
     neurips23tracks = ['concurrent', 'none']
     tracks = [args.track]
-    concurrent_dataset_name = ['sift']  
+    concurrent_dataset_name = ["reddit", "sift", "glove", "msong"]  
     stepwise_res_file = "stepwise"
 
     is_first = True
@@ -119,35 +120,14 @@ if __name__ == "__main__":
                 if not os.path.exists("stepwise"):
                     os.makedirs("stepwise")
                     
-                runbook_paths = []
-                if args.output == "writeIntensive":
-                    runbook_paths = ['neurips23/runbooks/concurrent/writeIntensive/batch100_w50r50.yaml',
-                                    #  'neurips23/runbooks/concurrent/writeIntensive/batch100_w80r20.yaml',
-                                    #  'neurips23/runbooks/concurrent/writeIntensive/batch100_w90r10.yaml',
-                                    #  'neurips23/runbooks/concurrent/writeIntensive/batch200_w50r50.yaml',
-                                    #  'neurips23/runbooks/concurrent/writeIntensive/batch200_w80r20.yaml',
-                                    #  'neurips23/runbooks/concurrent/writeIntensive/batch200_w90r10.yaml',
-                                    #  'neurips23/runbooks/concurrent/writeIntensive/batch500_w50r50.yaml',
-                                    #  'neurips23/runbooks/concurrent/writeIntensive/batch500_w80r20.yaml',
-                                    #  'neurips23/runbooks/concurrent/writeIntensive/batch500_w90r10.yaml',
-                                    #  'neurips23/runbooks/concurrent/writeIntensive/batch1000_w50r50.yaml',
-                                    #  'neurips23/runbooks/concurrent/writeIntensive/batch1000_w80r20.yaml',
-                                    #  'neurips23/runbooks/concurrent/writeIntensive/batch1000_w90r10.yaml',
-                                    ]
-                if args.output == "readIntensive":
-                    runbook_paths = ['neurips23/runbooks/concurrent/readIntensive/batch100_w05r95.yaml',
-                                     'neurips23/runbooks/concurrent/readIntensive/batch100_w10r90.yaml',
-                                     'neurips23/runbooks/concurrent/readIntensive/batch100_w20r80.yaml',
-                                     'neurips23/runbooks/concurrent/readIntensive/batch200_w05r95.yaml',
-                                     'neurips23/runbooks/concurrent/readIntensive/batch200_w10r90.yaml',
-                                     'neurips23/runbooks/concurrent/readIntensive/batch200_w20r80.yaml',
-                                     'neurips23/runbooks/concurrent/readIntensive/batch500_w05r95.yaml',
-                                     'neurips23/runbooks/concurrent/readIntensive/batch500_w10r90.yaml',
-                                     'neurips23/runbooks/concurrent/raedIntensive/batch500_w20r80.yaml',
-                                     'neurips23/runbooks/concurrent/readIntensive/batch1000_w05r95.yaml',
-                                     'neurips23/runbooks/concurrent/readIntensive/batch1000_w10r90.yaml',
-                                     'neurips23/runbooks/concurrent/readIntensive/batch1000_w20r80.yaml',
-                                    ]
+                runbook_paths = [
+                                    'neurips23/runbooks/concurrent/batch100_w05r95.yaml',
+                                    'neurips23/runbooks/concurrent/batch100_w10r90.yaml',
+                                    'neurips23/runbooks/concurrent/batch100_w20r80.yaml',
+                                    'neurips23/runbooks/concurrent/batch100_w50r50.yaml',
+                                    'neurips23/runbooks/concurrent/batch100_w80r20.yaml',
+                                    'neurips23/runbooks/concurrent/batch100_w90r10.yaml',
+                                ]
             if track == 'congestion':
                 runbook_paths = []
                 if args.output == "gen":
@@ -220,13 +200,23 @@ if __name__ == "__main__":
                     print("Looking for attrs ", runbook_path)
                     attrs = load_all_attrs(dataset_name, neurips23track=track, runbook_path=runbook_path)
                     print("Looked attrs ", runbook_path)
-                    cc_results, stepwise_recalls = compute_cc_metrics_all_runs(dataset, dataset_name, attrs, runbook_path=runbook_path)
+                    # cc_results, stepwise_recalls = compute_cc_metrics_all_runs(dataset, dataset_name, attrs, runbook_path=runbook_path)
 
-                    assert len(results) == len(cc_results)
-                    for i, (r, cc_r) in enumerate(zip(results, cc_results)):
-                        new_name = r["algorithm"] + "_" + cc_r["stepwiseRecallFile"]
-                        cc_r["stepwiseRecallFile"] = "stepwise/" + new_name + ".csv"
-                        write_stepwise_recall_to_csv(stepwise_recalls[i], cc_r["stepwiseRecallFile"])
+                    # for i, (r, cc_r) in enumerate(zip(results, cc_results)):
+                    #     new_name = r["algorithm"] + "_" + cc_r["stepwiseRecallFile"]
+                    #     cc_r["stepwiseRecallFile"] = "stepwise/" + new_name + ".csv"
+                    #     write_stepwise_recall_to_csv(stepwise_recalls[i], cc_r["stepwiseRecallFile"])
+                    #     merged = r | cc_r
+                    #     results[i] = {k: v for k, v in merged.items() if not (isinstance(v, float) and math.isnan(v))}
+                        
+                    # # for cc_r in cc_results:
+                    # #     new_name = r["algorithm"] + "_" + cc_r["stepwiseRecallFile"]
+                    # #     cc_r["stepwiseRecallFile"] = "stepwise/" + new_name + ".csv"
+                    # #     write_stepwise_recall_to_csv(stepwise_recalls[i], cc_r["stepwiseRecallFile"])
+                    
+                    cc_results = compute_cc_metrics_all_runs(dataset, dataset_name, attrs, runbook_path=runbook_path)
+                    
+                    for i, (cc_r, r) in enumerate(zip(cc_results, results)):
                         merged = r | cc_r
                         results[i] = {k: v for k, v in merged.items() if not (isinstance(v, float) and math.isnan(v))}
                         
@@ -238,6 +228,10 @@ if __name__ == "__main__":
     print(dfs)
     if len(dfs) > 0:
         data = pd.concat(dfs)
-        data = data.sort_values(by=["algorithm", "dataset", "recall/ap"])        
-        data.to_csv(args.output+"-" + args.track + ".csv", index=False)
-        print(args.output + "-" + args.track + ".csv")
+        data = data.sort_values(by=["algorithm", "dataset", "recall/ap"])     
+        if args.output is None:
+            data.to_csv(args.track + ".csv", index=False)
+            print(args.track + ".csv")
+        else:
+            data.to_csv(args.output+"-" + args.track + ".csv", index=False)
+            print(args.output + "-" + args.track + ".csv")
