@@ -144,7 +144,9 @@ if __name__ == "__main__":
                                      'neurips23/runbooks/congestion/eventRates/event5000.yaml',
                                      'neurips23/runbooks/congestion/eventRates/event10000.yaml',
                                      'neurips23/runbooks/congestion/eventRates/event20000.yaml',
-                                     'neurips23/runbooks/congestion/eventRates/event50000.yaml'
+                                     'neurips23/runbooks/congestion/eventRates/event50000.yaml',
+                                     'neurips23/runbooks/congestion/eventRates/event100000.yaml',
+                                     'neurips23/runbooks/congestion/eventRates/event200000.yaml'
                                      ]
                 if args.output=='conceptDrift':
                     runbook_paths=['neurips23/runbooks/congestion/conceptDrift/conceptDrift_experiment.yaml']
