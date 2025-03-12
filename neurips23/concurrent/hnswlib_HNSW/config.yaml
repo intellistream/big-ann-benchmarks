@@ -50,19 +50,6 @@ msong:
         query-args: |
           [{"ef":30}]
 
-random-xs:
-  hnswlib_HNSW:
-    docker-tag: neurips23-concurrent-hnswlib_HNSW
-    module: neurips23.concurrent.hnswlib_HNSW.hnswlib_HNSW
-    constructor: hnswlib_HNSW
-    base-args: ["@metric"]
-    run-groups:
-      base:
-        args: |
-          [{"maxConnection": 32, "efConstruction": 200}]
-        query-args: |
-          [{"ef":30}]
-
 text2image-1M:
   hnswlib_HNSW:
     docker-tag: neurips23-concurrent-hnswlib_HNSW

@@ -13,7 +13,6 @@ class pyanns(BaseConcurrentANN):
         self.cm.edit("concurrentAlgoTag", "Pyanns") 
         self.cm.edit("R", index_params["R"])
         self.cm.edit("L", index_params["L"])
-        self.cm.edit("consolidate_threads", index_params["consolidate_threads"])
         
     def set_query_arguments(self, query_args):
         # TODO:
