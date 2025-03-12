@@ -228,10 +228,16 @@ if __name__ == "__main__":
     print(dfs)
     if len(dfs) > 0:
         data = pd.concat(dfs)
-        data = data.sort_values(by=["algorithm", "dataset", "recall/ap"])     
+        sort_columns = ["algorithm", "dataset"]
+        if "recall/ap" in data.columns:  
+            sort_columns.append("recall/ap")
+        
+        data = data.sort_values(by=sort_columns)
+        
         if args.output is None:
-            data.to_csv(args.track + ".csv", index=False)
-            print(args.track + ".csv")
+            output_path = args.track + ".csv"
         else:
-            data.to_csv(args.output+"-" + args.track + ".csv", index=False)
-            print(args.output + "-" + args.track + ".csv")
+            output_path = f"{args.output}-{args.track}.csv"
+        
+        data.to_csv(output_path, index=False)
+        print(output_path)
