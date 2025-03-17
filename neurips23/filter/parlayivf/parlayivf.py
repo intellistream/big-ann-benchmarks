@@ -16,9 +16,9 @@ class ParlayIVF(BaseFilterANN):
         self._metric = self.translate_dist_fn(metric)
         print(index_params)
 
-        self._cluster_size = int(index_params['cluster_size'])
-        self._cutoff = int(index_params['cutoff'])
-        self._max_iter = int(index_params['max_iter'])
+        self._cluster_size = int(index_params['cluster_size'])   #聚类数（多少个簇）
+        self._cutoff = int(index_params['cutoff'])   #提前终止的阈值
+        self._max_iter = int(index_params['max_iter'])  #最大迭代次数
 
         self._weight_classes = tuple(index_params['weight_classes'])
         self._build_params = tuple([wp.BuildParams(int(d['max_degree']), int(d['limit']), float(d['alpha'])) for d in index_params['build_params']]) # tuple of BuildParams objects
@@ -68,13 +68,13 @@ class ParlayIVF(BaseFilterANN):
         # else:
         #     self._cutoff = 20_000
         if 'target_points' in query_args:
-            self._target_points = query_args['target_points']
+            self._target_points = query_args['target_points']   # 控制 beam search的规模
             self.index.set_target_points(self._target_points)
         else:
             self._target_points = 5000
 
         if 'tiny_cutoff' in query_args:
-            self._tiny_cutoff = query_args['tiny_cutoff']
+            self._tiny_cutoff = query_args['tiny_cutoff']      # 小规模搜索的提前终止阈值
             self.index.set_tiny_cutoff(self._tiny_cutoff)
         else:
             self._tiny_cutoff = 1000
@@ -86,12 +86,12 @@ class ParlayIVF(BaseFilterANN):
             self._sq_target_points = self._target_points
 
         if 'beam_widths' in query_args:
-            self._beam_widths = query_args['beam_widths']
+            self._beam_widths = query_args['beam_widths']        # beam search 的宽度控制
         else:
             self._beam_widths = [100, 100, 100]
 
         if 'search_limits' in query_args:
-            self._search_limits = query_args['search_limits']
+            self._search_limits = query_args['search_limits']     # 最大搜索限制
         else:
             self._search_limits = list(self._weight_classes) + [3_000_000]
             

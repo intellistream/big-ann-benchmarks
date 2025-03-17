@@ -151,7 +151,7 @@ if __name__ == "__main__":
         action='store_true')
     parser.add_argument(
         '--neurips23track',
-        choices=['filter', 'ood', 'sparse', 'streaming', 'none'],
+        choices=['filter', 'ood', 'sparse', 'streaming', 'congestion', 'none'],
         default='none'
     )
     parser.add_argument(
@@ -174,7 +174,10 @@ if __name__ == "__main__":
 
     count = int(args.count)
     if not args.csv:
-        unique_algorithms = get_unique_algorithms()
+        if args.neurips23track == "congestion":
+            unique_algorithms = get_unique_algorithms("congestion")
+        else:
+            unique_algorithms = get_unique_algorithms()
         results = load_all_results(args.dataset, count, neurips23track=args.neurips23track)
         if args.private_query:
             runs = compute_metrics(dataset.get_private_groundtruth(k=args.count),

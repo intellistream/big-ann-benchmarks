@@ -37,3 +37,25 @@ random-xs:
   12:
     operation: "endHPC"
   gt_url: "https://comp21storage.z5.web.core.windows.net/comp23/str_gt/random10000/10000/simple_runbook.yaml"
+
+random-filter-s:
+  max_pts: 100000
+  1:
+    operation: "insert"
+    start: 0
+    end: 100000
+  2:
+    operation: "search"
+  3:
+    operation: "delete"
+    start: 0
+    end: 50000
+  4:
+    operation: "search"
+  5:
+    operation: "insert"
+    start: 0
+    end: 50000
+  6:
+    operation: "search"
+  gt_url: "none"

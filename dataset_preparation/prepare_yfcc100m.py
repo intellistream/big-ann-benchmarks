@@ -29,8 +29,8 @@ class ClipDescriptors:
     def __init__(self):
         self.local_basedir = "/scratch/matthijs/billion-scale-ann-benchmarks/yfcc100M/dense_decoded/"
         self.basedir = "/checkpoint/matthijs/billion-scale-ann-benchmarks/yfcc100M/"
-        self.hdf5_map = np.load(self.basedir + "hdf5_ptr.npy")
-        self.mmaps = [None] * 4096
+        self.hdf5_map = np.load(self.basedir + "hdf5_ptr.npy")  #索引映射表
+        self.mmaps = [None] * 4096  #维护文件缓存
         self.shape = (10**8, 192)
         self.pool = ThreadPool(32)
 
@@ -63,6 +63,7 @@ class ClipDescriptors:
 
 print(ds.basedir)
 
+# 量化模型的训练
 if False:
     all_descriptors = np.memmap(
         tmpdir + "random_yfcc100m_descriptors.384d.uint8", mode='r',
@@ -105,6 +106,7 @@ else: # the real CLIP descriptors from Zilliz
 
 print(f"valid descriptors: {all_descriptors_valid.sum()}/{all_descriptors_valid.size}")
 
+# 判断查询id是否有效
 fname = metadata_dir + "query_array.npy"
 print("load query metadata", fname)
 query_array = np.load(fname)
@@ -141,7 +143,7 @@ if "query_vecs" in todo or "query_meta" in todo:
         words_per_q = 1 + is_2word.astype(int)
         nq = len(query_array)
         indptr = np.zeros(nq + 1, dtype=int)
-        indptr[1:] = np.cumsum(words_per_q)
+        indptr[1:] = np.cumsum(words_per_q)  # 计算每个查询在稀疏矩阵中的起始位置
         indices = query_array[:, :2].ravel()
         indices = indices[indices >= 0]
         nnz = indices.size
@@ -162,12 +164,12 @@ if "query_vecs" in todo or "query_meta" in todo:
 
 if "database_vecs" in todo or "database_meta" in todo:
     available_mask = all_descriptors_valid.copy()
-    available_mask[qids] = False
+    available_mask[qids] = False  # 防止数据泄露
 
     print(f"Available for use in the database: "
           f"{available_mask.sum()}/{available_mask.size}")
 
-    nb = 10_000_000
+    nb = 10_000_000  # 随机选取1000万个
 
     rs = np.random.RandomState(123)
     available = np.where(available_mask)[0]

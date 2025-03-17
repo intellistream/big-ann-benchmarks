@@ -58,7 +58,7 @@ if __name__ == "__main__":
 
     parser.add_argument(
         '--track',
-        choices=['streaming', 'congestion'],
+        choices=['streaming', 'congestion','filter','sparse', 'ood'],
         required=True)
     parser.add_argument(
         '--recompute',
@@ -92,9 +92,10 @@ if __name__ == "__main__":
     datasets = DATASETS.keys()
     dfs = []
 
-    neurips23tracks = ['streaming', 'none', 'congestion']
+    neurips23tracks = ['streaming', 'congestion', 'filter', 'ood', 'sparse', 'none']
     tracks = [args.track]
     is_first = True
+    print(f"tracks: {tracks}")
     for track in tracks:
         for dataset_name in datasets:
             print(f"Looking at track:{track}, dataset:{dataset_name}")

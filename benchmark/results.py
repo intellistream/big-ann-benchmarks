@@ -80,7 +80,7 @@ def store_results(dataset, count, definition, query_arguments,
 
 
 
-def load_all_results(dataset=None, count=None, neurips23track="congestion", runbook_path=None):
+def load_all_results(dataset=None, count=None, neurips23track=None, runbook_path=None):
     """
     A generator for all result files.
     """
@@ -101,5 +101,5 @@ def load_all_results(dataset=None, count=None, neurips23track="congestion", runb
                 traceback.print_exc()
 
 
-def get_unique_algorithms():
-    return set(properties['algo'] for properties, _ in load_all_results())
+def get_unique_algorithms(neurips23track=None):
+    return set(properties['algo'] for properties, _ in load_all_results(neurips23track=neurips23track))

@@ -151,7 +151,7 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
         algo_name = properties['name']
         # cache distances to avoid access to hdf5 file
         if search_type == "knn" or search_type == "knn_filtered":
-            if neurips23track in ['streaming','congestion']:
+            if neurips23track == 'congestion':
                 run_nn_across_steps = []
                 run_nn_across_batches = []
                 for i in range(0,properties['num_searches']):
@@ -164,7 +164,12 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
                         temp = numpy.array(properties['continuousQueryResults'][i][j])
                         run_nn_across_batches[i].append(temp)
 
-
+            elif neurips23track == "streaming":
+                run_nn_across_steps = []
+                for i in range(0, properties['num_searches']):
+                    step_suffix = str(properties['step_' + str(i)])
+                    run_nn_across_steps.append(numpy.array(run['neighbors_step' + step_suffix]))
+                    # true_nn_across_steps.append()
 
             else:
                 run_nn = numpy.array(run['neighbors'])
@@ -222,7 +227,7 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
                 continue
             if not search_times and name=="search_times": #don't process search_times by default
                 continue
-            if neurips23track in ['streaming', 'congestion']:
+            if neurips23track =='congestion':
                 v = []
                 bv=[]
                 assert len(true_nn_across_steps) == len(run_nn_across_steps)
@@ -245,12 +250,23 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
                         val = mean
                         bv[-1].append(val)
 
-
+            elif neurips23track == 'streaming':
+                v = []
+                assert len(true_nn_across_steps) == len(run_nn_across_steps)
+                for (true_nn, run_nn) in zip(true_nn_across_steps, run_nn_across_steps):
+                    clear_cache = True
+                    if clear_cache and 'knn' in metrics_cache:
+                        del metrics_cache['knn']
+                    val = metric["function"](true_nn, run_nn, metrics_cache, properties)
+                    v.append(val)
+                if name == 'k-nn':
+                    print('Recall: ', v)
+                v = numpy.mean(v)
 
             else:
                 v = metric["function"](true_nn, run_nn, metrics_cache, properties)
 
-            if(name=="k-nn"):
+            if(name=="k-nn" and neurips23track =='congestion'):
                 for i in range(len(v)):
                     run_result['knn_'+str(i)] = v[i]
 
