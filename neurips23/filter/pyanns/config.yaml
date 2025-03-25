@@ -57,3 +57,41 @@ yfcc-10M:
            {"nprobe": 16, "mt_threshold":0.0035},
            {"nprobe": 32, "mt_threshold":0.001}
           ]
+sift-filter:
+  pyanns:
+    docker-tag: neurips23-filter-pyanns
+    module: neurips23.filter.pyanns.pyanns
+    constructor: Pyanns
+    base-args: ["@metric"]
+    run-groups:
+      base:
+        args: |
+          [{"indexkey": "IVF16384,SQ8", 
+            "binarysig": true, 
+            "threads": 16
+          }]
+        query-args: |
+          [
+           {"nprobe": 16, "mt_threshold":0.0032},
+           {"nprobe": 16, "mt_threshold":0.0035},
+           {"nprobe": 32, "mt_threshold":0.001}
+          ]
+glove-filter:
+  pyanns:
+    docker-tag: neurips23-filter-pyanns
+    module: neurips23.filter.pyanns.pyanns
+    constructor: Pyanns
+    base-args: [ "@metric" ]
+    run-groups:
+      base:
+        args: |
+          [{"indexkey": "IVF16384,SQ8", 
+            "binarysig": true, 
+            "threads": 16
+          }]
+        query-args: |
+          [
+           {"nprobe": 16, "mt_threshold":0.0032},
+           {"nprobe": 16, "mt_threshold":0.0035},
+           {"nprobe": 32, "mt_threshold":0.001}
+          ]

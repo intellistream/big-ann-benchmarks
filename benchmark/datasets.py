@@ -1304,15 +1304,29 @@ class OpenAIEmbedding1M(DatasetCompetitionFormat):
         return f"{self.__class__.__name__}-{self.nb}"
 
 class GLOVE(DatasetCompetitionFormat):
-    def __init__(self):
+    def __init__(self, filtered=False):
+        self.filtered = filtered
         self.d = 100
         self.nb = 1192514
-        self.nq = 200
+        self.nq = 10000
         self.dtype = "float32"
         self.ds_fn = f"data_{self.nb}_{self.d}"
         self.qs_fn = f"queries_{self.nq}_{self.d}"
-        self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
-        self.basedir = os.path.join(BASEDIR, "GLOVE")
+
+        if self.filtered:
+            self.basedir = os.path.join(BASEDIR, "GLOVE/filter")
+            self.ds_metadata_fn = "base_metadata.spmat"
+            self.qs_metadata_fn = "query_metadata.spmat"
+            self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
+            self.folder_url = "https://drive.google.com/drive/folders/1rEedcJyXZSCQyE-QOZgxrMqPalWYamzx?usp=sharing"
+            self.get_dataset_metadata = self._get_dataset_metadata
+            self.get_queries_metadata = self._get_queries_metadata
+
+        else:
+            self.basedir = os.path.join(BASEDIR, "GLOVE/unfiltered")
+            self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
+            self.folder_url = "https://drive.google.com/drive/folders/1m06VVmXmklHr7QZzdz6w8EtYmuRGIl9s?usp=sharing"
+
         if not os.path.exists(self.basedir):
             os.makedirs(self.basedir)
 
@@ -1326,8 +1340,7 @@ class GLOVE(DatasetCompetitionFormat):
                 break
         if downloadflag == 0:
             import gdown
-            folder_url = "https://drive.google.com/drive/folders/1m06VVmXmklHr7QZzdz6w8EtYmuRGIl9s?usp=sharing"
-            gdown.download_folder(folder_url, output=self.basedir)
+            gdown.download_folder(self.folder_url, output=self.basedir)
 
         prepocessflag = 0
         data_file_path = os.path.join(self.basedir, self.ds_fn)
@@ -1343,8 +1356,17 @@ class GLOVE(DatasetCompetitionFormat):
             save_data(index_vectors, type='data', basedir=self.basedir)
             save_data(query_vectors, type='queries', basedir=self.basedir)
 
+    def _get_dataset_metadata(self):
+        return read_sparse_matrix(os.path.join(self.basedir, self.ds_metadata_fn))
+
+    def _get_queries_metadata(self):
+        return read_sparse_matrix(os.path.join(self.basedir, self.qs_metadata_fn))
+
     def search_type(self):
-        return "knn"
+        if self.filtered:
+            return "knn_filtered"
+        else:
+            return "knn"
 
     def distance(self):
         return "euclidean"
@@ -1353,15 +1375,29 @@ class GLOVE(DatasetCompetitionFormat):
         return 10
 
 class MSONG(DatasetCompetitionFormat):
-    def __init__(self):
+    def __init__(self, filtered=False):
+        self.filtered = filtered
         self.d = 420
         self.nb = 992272
         self.nq = 200
         self.dtype = "float32"
         self.ds_fn = f"data_{self.nb}_{self.d}"
         self.qs_fn = f"queries_{self.nq}_{self.d}"
-        self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
-        self.basedir = os.path.join(BASEDIR, "MSONG")
+
+        if self.filtered:
+            self.basedir = os.path.join(BASEDIR, "MSONG/filter")
+            self.ds_metadata_fn = "base_metadata.spmat"
+            self.qs_metadata_fn = "query_metadata.spmat"
+            self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
+            self.folder_url = ""
+            self.get_dataset_metadata = self._get_dataset_metadata
+            self.get_queries_metadata = self._get_queries_metadata
+
+        else:
+            self.basedir = os.path.join(BASEDIR, "MSONG/unfilter")
+            self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
+            self.folder_url = "https://drive.google.com/drive/folders/1TnLNJNVqyFrEzKGfQVdvUC8Al-tmjVg0?usp=sharing"
+
         if not os.path.exists(self.basedir):
             os.makedirs(self.basedir)
 
@@ -1375,8 +1411,7 @@ class MSONG(DatasetCompetitionFormat):
                 break
         if downloadflag == 0:
             import gdown
-            folder_url = "https://drive.google.com/drive/folders/1TnLNJNVqyFrEzKGfQVdvUC8Al-tmjVg0?usp=sharing"
-            gdown.download_folder(folder_url, output=self.basedir)
+            gdown.download_folder(self.folder_url, output=self.basedir)
 
         prepocessflag = 0
         data_file_path = os.path.join(self.basedir, self.ds_fn)
@@ -1392,8 +1427,17 @@ class MSONG(DatasetCompetitionFormat):
             save_data(index_vectors, type='data', basedir=self.basedir)
             save_data(query_vectors, type='queries', basedir=self.basedir)
 
+    def _get_dataset_metadata(self):
+        return read_sparse_matrix(os.path.join(self.basedir, self.ds_metadata_fn))
+
+    def _get_queries_metadata(self):
+        return read_sparse_matrix(os.path.join(self.basedir, self.qs_metadata_fn))
+
     def search_type(self):
-        return "knn"
+        if self.filtered:
+            return "knn_filtered"
+        else:
+            return "knn"
 
     def distance(self):
         return "euclidean"
@@ -1798,15 +1842,29 @@ class SIFTSMALL(DatasetCompetitionFormat):
         return 10
 
 class SIFT(DatasetCompetitionFormat):
-    def __init__(self):
+    def __init__(self, filtered=False):
+        self.filtered = filtered
         self.d = 128
         self.nb = 1000000
         self.nq = 10000
         self.dtype = "float32"
         self.ds_fn = f"data_{self.nb}_{self.d}"
         self.qs_fn = f"queries_{self.nq}_{self.d}"
-        self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
-        self.basedir = os.path.join(BASEDIR, "SIFT")
+
+        if self.filtered:
+            self.basedir = os.path.join(BASEDIR, "SIFT/filter")
+            self.ds_metadata_fn = "base_metadata.spmat"
+            self.qs_metadata_fn = "query_metadata.spmat"
+            self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
+            self.folder_url = "https://drive.google.com/drive/folders/1dQl44vkv92QgVA2VlLxjuc9JAmzCoy89?usp=sharing"
+            self.get_dataset_metadata = self._get_dataset_metadata
+            self.get_queries_metadata = self._get_queries_metadata
+
+        else:
+            self.basedir = os.path.join(BASEDIR, "SIFT/unfilter")
+            self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
+            self.folder_url = "https://drive.google.com/drive/folders/1PngXRH9jnN86T8RNiU-QyGqOillfQE_p?usp=sharing"
+
         if not os.path.exists(self.basedir):
             os.makedirs(self.basedir)
 
@@ -1820,8 +1878,7 @@ class SIFT(DatasetCompetitionFormat):
                 break
         if downloadflag == 0:
             import gdown
-            folder_url = "https://drive.google.com/drive/folders/1PngXRH9jnN86T8RNiU-QyGqOillfQE_p?usp=sharing"
-            gdown.download_folder(folder_url, output=self.basedir)
+            gdown.download_folder(self.folder_url, output=self.basedir)
 
         prepocessflag = 0
         data_file_path = os.path.join(self.basedir, self.ds_fn)
@@ -1840,8 +1897,17 @@ class SIFT(DatasetCompetitionFormat):
             _, query_vectors = sample_vectors(vectors, 0, self.nq)
             save_data(query_vectors, type='queries', basedir=self.basedir)
 
+    def _get_dataset_metadata(self):
+        return read_sparse_matrix(os.path.join(self.basedir, self.ds_metadata_fn))
+
+    def _get_queries_metadata(self):
+        return read_sparse_matrix(os.path.join(self.basedir, self.qs_metadata_fn))
+
     def search_type(self):
-        return "knn"
+        if self.filtered:
+            return "knn_filtered"
+        else:
+            return "knn"
 
     def distance(self):
         return "euclidean"
@@ -2050,9 +2116,16 @@ DATASETS = {
     "random-experiment": lambda: RandomDS(500000,1000,20),
 
     'sift-small': lambda: SIFTSMALL(),
+
     'glove': lambda: GLOVE(),
+    'glove-filter': lambda: GLOVE(filtered=True),
+
     'sift': lambda: SIFT(),
+    'sift-filter': lambda: SIFT(filtered=True),
+
     'msong': lambda: MSONG(),
+    'msong-filter': lambda : MSONG(filtered=True),
+
     'sun': lambda: SUN(),
     'dpr': lambda: DPR(),
     'reddit': lambda: REDDIT(),
