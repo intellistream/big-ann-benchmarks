@@ -23,4 +23,4 @@ def read_u8bin_file(filename, num_vectors_to_print=5):
         print("\n(Only showing first {} vectors)".format(total_vectors))
 
 
-read_u8bin_file('../../data/MSONG/data_992272_420', num_vectors_to_print=992272)
+read_u8bin_file('../../data/YouTube-rgb/filter/queries_1000_1024.u8bin', num_vectors_to_print=2)

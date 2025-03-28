@@ -57,7 +57,7 @@ def write_sparse_matrix(mat, fname):
 
 
 # **运行示例**
-label_file = "../../data/GLOVE/query_metadata.txt"  # 输入的文本标签文件
+label_file = "../../data/YouTube-rgb/filter/query_metadata.txt"  # 输入的文本标签文件
 
 # 自动计算 voc_size
 voc_size = get_voc_size(label_file)
@@ -77,6 +77,6 @@ print(
     f"Row 2: indices={csr_labels.indices[csr_labels.indptr[2]:csr_labels.indptr[3]]}, data={csr_labels.data[csr_labels.indptr[2]:csr_labels.indptr[3]]}")
 
 # **保存 CSR 矩阵**
-output_file = "../../data/GLOVE/query_metadata.spmat"
+output_file = "../../data/YouTube-rgb/filter/query_metadata.spmat"
 write_sparse_matrix(csr_labels, output_file)
 print(f"Saved CSR matrix to {output_file}")

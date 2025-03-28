@@ -116,3 +116,81 @@ glove-filter:
           {"nprobe": 34, "mt_threshold": 0.00033},
           {"nprobe": 40, "mt_threshold": 0.0003}
           ]
+msong-filter:
+  faissplus:
+    docker-tag: neurips23-filter-faissplus
+    module: neurips23.filter.faissplus.faiss
+    constructor: FAISS
+    base-args: [ "@metric" ]
+    run-groups:
+      base:
+        args: |
+          [{"indexkey": "IVF11264,SQ8", 
+            "binarysig": true, 
+            "threads": 16
+          }]
+        query-args: |
+          [
+          {"nprobe": 34, "mt_threshold": 0.00031}, 
+          {"nprobe": 32, "mt_threshold": 0.0003}, 
+          {"nprobe": 32, "mt_threshold": 0.00031}, 
+          {"nprobe": 34, "mt_threshold": 0.0003}, 
+          {"nprobe": 34, "mt_threshold": 0.00035}, 
+          {"nprobe": 32, "mt_threshold": 0.00033}, 
+          {"nprobe": 30, "mt_threshold": 0.00033}, 
+          {"nprobe": 32, "mt_threshold": 0.00035},
+          {"nprobe": 34, "mt_threshold": 0.00033},
+          {"nprobe": 40, "mt_threshold": 0.0003}
+          ]
+cirr-filter:
+  faissplus:
+    docker-tag: neurips23-filter-faissplus
+    module: neurips23.filter.faissplus.faiss
+    constructor: FAISS
+    base-args: [ "@metric" ]
+    run-groups:
+      base:
+        args: |
+          [{"indexkey": "IVF11264,SQ8", 
+            "binarysig": true, 
+            "threads": 16
+          }]
+        query-args: |
+          [
+          {"nprobe": 34, "mt_threshold": 0.00031}, 
+          {"nprobe": 32, "mt_threshold": 0.0003}, 
+          {"nprobe": 32, "mt_threshold": 0.00031}, 
+          {"nprobe": 34, "mt_threshold": 0.0003}, 
+          {"nprobe": 34, "mt_threshold": 0.00035}, 
+          {"nprobe": 32, "mt_threshold": 0.00033}, 
+          {"nprobe": 30, "mt_threshold": 0.00033}, 
+          {"nprobe": 32, "mt_threshold": 0.00035},
+          {"nprobe": 34, "mt_threshold": 0.00033},
+          {"nprobe": 40, "mt_threshold": 0.0003}
+          ]
+YouTube-rgb:
+  faissplus:
+    docker-tag: neurips23-filter-faissplus
+    module: neurips23.filter.faissplus.faiss
+    constructor: FAISS
+    base-args: [ "@metric" ]
+    run-groups:
+      base:
+        args: |
+          [{"indexkey": "IVF11264,SQ8", 
+            "binarysig": true, 
+            "threads": 16
+          }]
+        query-args: |
+          [
+          {"nprobe": 34, "mt_threshold": 0.00031}, 
+          {"nprobe": 32, "mt_threshold": 0.0003}, 
+          {"nprobe": 32, "mt_threshold": 0.00031}, 
+          {"nprobe": 34, "mt_threshold": 0.0003}, 
+          {"nprobe": 34, "mt_threshold": 0.00035}, 
+          {"nprobe": 32, "mt_threshold": 0.00033}, 
+          {"nprobe": 30, "mt_threshold": 0.00033}, 
+          {"nprobe": 32, "mt_threshold": 0.00035},
+          {"nprobe": 34, "mt_threshold": 0.00033},
+          {"nprobe": 40, "mt_threshold": 0.0003}
+          ]

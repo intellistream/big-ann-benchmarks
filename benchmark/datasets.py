@@ -1648,15 +1648,29 @@ class COCO(DatasetCompetitionFormat):
         return 10
 
 class CIRR(DatasetCompetitionFormat):
-    def __init__(self):
+    def __init__(self, filtered = False):
+        self.filtered = filtered
         self.d = 768
         self.nb = 101335
         self.nq = 4181
         self.dtype = "float32"
         self.ds_fn = f"data_{self.nb}_{self.d}"
         self.qs_fn = f"queries_{self.nq}_{self.d}"
-        self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
-        self.basedir = os.path.join(BASEDIR, "CIRR")
+
+        if self.filtered:
+            self.basedir = os.path.join(BASEDIR, "CIRR/filter")
+            self.ds_metadata_fn = "base_metadata.spmat"
+            self.qs_metadata_fn = "query_metadata.spmat"
+            self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
+            self.folder_url = ""
+            self.get_dataset_metadata = self._get_dataset_metadata
+            self.get_queries_metadata = self._get_queries_metadata
+
+        else:
+            self.basedir = os.path.join(BASEDIR, "CIRR/unfiltered")
+            self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
+            self.folder_url = "https://drive.google.com/drive/folders/1zCZWG3DX_4xnAC0kZv1IxEqLD0qv6kOy?usp=sharing"
+
         if not os.path.exists(self.basedir):
             os.makedirs(self.basedir)
 
@@ -1670,8 +1684,7 @@ class CIRR(DatasetCompetitionFormat):
                 break
         if downloadflag == 0:
             import gdown
-            folder_url = " https://drive.google.com/drive/folders/1zCZWG3DX_4xnAC0kZv1IxEqLD0qv6kOy?usp=sharing"
-            gdown.download_folder(folder_url, output=self.basedir)
+            gdown.download_folder(self.folder_url, output=self.basedir)
 
         prepocessflag = 0
         data_file_path = os.path.join(self.basedir, self.ds_fn)
@@ -1686,12 +1699,21 @@ class CIRR(DatasetCompetitionFormat):
             index_vectors, _ = sample_vectors(vectors, self.nb, self.nq)
             save_data(index_vectors, type='data', basedir=self.basedir)
 
-            num, dim, vectors = load_data(self.basedir + '/queries_4181_768query')
+            num, dim, vectors = load_data(self.basedir + '/queries_4181_768')
             _, query_vectors = sample_vectors(vectors, 0, self.nq)
             save_data(query_vectors, type='queries', basedir=self.basedir)
 
+    def _get_dataset_metadata(self):
+        return read_sparse_matrix(os.path.join(self.basedir, self.ds_metadata_fn))
+
+    def _get_queries_metadata(self):
+        return read_sparse_matrix(os.path.join(self.basedir, self.qs_metadata_fn))
+
     def search_type(self):
-        return "knn"
+        if self.filtered:
+            return "knn_filtered"
+        else:
+            return "knn"
 
     def distance(self):
         return "euclidean"
@@ -1915,6 +1937,80 @@ class SIFT(DatasetCompetitionFormat):
     def default_count(self):
         return 10
 
+class YOUTUBERGB(DatasetCompetitionFormat):
+    def __init__(self, filtered=False):
+        self.filtered = filtered
+        self.d = 1024
+        self.nb = 1000000
+        self.nq = 1000
+        self.dtype = "float32"
+        self.ds_fn = f"data_{self.nb}_{self.d}"
+        self.qs_fn = f"queries_{self.nq}_{self.d}"
+
+        if self.filtered:
+            self.basedir = os.path.join(BASEDIR, "Youtube-rgb/filter")
+            self.ds_metadata_fn = "base_metadata.spmat"
+            self.qs_metadata_fn = "query_metadata.spmat"
+            self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
+            self.folder_url = ""
+            self.get_dataset_metadata = self._get_dataset_metadata
+            self.get_queries_metadata = self._get_queries_metadata
+
+        else:
+            self.basedir = os.path.join(BASEDIR, "Youtube-rgb/unfilter")
+            self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
+            self.folder_url = ""
+
+        if not os.path.exists(self.basedir):
+            os.makedirs(self.basedir)
+
+    def prepare(self, skip_data=False):
+        downloadflag = 0
+        for item in os.listdir(self.basedir):
+            item_path = os.path.join(self.basedir, item)
+            if os.path.isdir(item_path) or os.path.isfile(item_path):
+                print("YouTube-rgb has already installed!")
+                downloadflag = 1
+                break
+        if downloadflag == 0:
+            import gdown
+            gdown.download_folder(self.folder_url, output=self.basedir)
+
+        prepocessflag = 0
+        data_file_path = os.path.join(self.basedir, self.ds_fn)
+        queries_file_path = os.path.join(self.basedir, self.qs_fn)
+
+        if os.path.exists(data_file_path) and os.path.exists(queries_file_path):
+            print("Preprocessed data already exists. Skipping data generation.")
+            prepocessflag = 1
+
+        if prepocessflag == 0:
+            num, dim, vectors = load_data(self.basedir+'/data_1000000_1024')
+            index_vectors, _ = sample_vectors(vectors, self.nb, self.nq)
+            save_data(index_vectors, type='data', basedir=self.basedir)
+
+            num, dim, vectors = load_data(self.basedir+'/queries_1000_1024')
+            _, query_vectors = sample_vectors(vectors, 0, self.nq)
+            save_data(query_vectors, type='queries', basedir=self.basedir)
+
+    def _get_dataset_metadata(self):
+        return read_sparse_matrix(os.path.join(self.basedir, self.ds_metadata_fn))
+
+    def _get_queries_metadata(self):
+        return read_sparse_matrix(os.path.join(self.basedir, self.qs_metadata_fn))
+
+    def search_type(self):
+        if self.filtered:
+            return "knn_filtered"
+        else:
+            return "knn"
+
+    def distance(self):
+        return "euclidean"
+
+    def default_count(self):
+        return 10
+
 class OPENIMAGESTREAMING(DatasetCompetitionFormat):
     def __init__(self):
         self.d = 512
@@ -2106,7 +2202,7 @@ DATASETS = {
     'random-range-xs': lambda : RandomRangeDS(10000, 1000, 20),
     'random-range-s': lambda : RandomRangeDS(100000, 1000, 50),
 
-    'random-filter-s': lambda : RandomFilterDS(100000, 1000, 50),
+    'random-filter-s': lambda : RandomFilterDS(500000, 1000, 100),
 
     'openai-embedding-1M': lambda: OpenAIEmbedding1M(93652),
 
@@ -2132,7 +2228,9 @@ DATASETS = {
     'trevi': lambda: TREVI(),
 
     'coco': lambda: COCO(),
+
     'cirr': lambda: CIRR(),
+    'cirr-filter': lambda: CIRR(filter=True),
 
     'wte-0.05': lambda: WTE('-0.05'),
     'wte-0.1': lambda: WTE('-0.1'),
@@ -2143,4 +2241,5 @@ DATASETS = {
 
     'openimage-streaming': lambda: OPENIMAGESTREAMING(),
 
+    'YouTube-rgb': lambda: YOUTUBERGB(filtered=True),
 }

@@ -39,4 +39,4 @@ def read_sparse_matrix(fname, num_rows_to_print=5):
 
 # read_sparse_matrix('../../data/random-filter100000/data_metadata_100000_50', num_rows_to_print=100000)
 
-read_sparse_matrix('../../data/MSONG/base_metadata.spmat', num_rows_to_print=100)
+read_sparse_matrix('../../data/YouTube-rgb/filter/query_metadata.spmat', num_rows_to_print=100)
