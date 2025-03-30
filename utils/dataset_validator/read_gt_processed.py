@@ -23,5 +23,5 @@ def read_gt_ibin(fname, num_queries_to_print=5):
 
     return neighbors
 
-
-read_gt_ibin('../../data/GLOVE/filter/gt_1192514_10000_100', num_queries_to_print=10)
+path = '../../data/YouTube-audio/filter/gt_1000000_1000_128'
+read_gt_ibin(path, num_queries_to_print=1000)

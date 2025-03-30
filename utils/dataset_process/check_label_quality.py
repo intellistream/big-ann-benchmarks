@@ -44,15 +44,15 @@ def analyze_label_distribution(file_path):
     frequencies = np.array([x[1] for x in sorted_labels]) / total_labels
 
     # 计算理论Zipf分布（s=1）
-    zipf = 1 / (ranks * np.sum(1 / ranks))  # 归一化Zipf定律
+    # zipf = 1 / (ranks * np.sum(1 / ranks))  # 归一化Zipf定律
 
     # 可视化比较
     plt.figure(figsize=(10, 6))
     plt.bar(ranks - 0.2, frequencies, width=0.4, label='实际分布')
-    plt.bar(ranks + 0.2, zipf, width=0.4, label='理论Zipf')
+    # plt.bar(ranks + 0.2, zipf, width=0.4, label='理论Zipf')
     plt.xlabel('标签排名')
     plt.ylabel('出现频率')
-    plt.title('实际分布 vs 理论Zipf分布')
+    plt.title('SIFT multi_normial')
     plt.legend()
     plt.grid(True)
     plt.show()
@@ -66,5 +66,5 @@ def analyze_label_distribution(file_path):
 
 
 if __name__ == "__main__":
-    file_path = "../../data/SIFT/base_label.txt"  # 修改为实际路径
+    file_path = '../../data/YouTube-rgb/filter/base_metadata.txt'  # 修改为实际路径
     analyze_label_distribution(file_path)

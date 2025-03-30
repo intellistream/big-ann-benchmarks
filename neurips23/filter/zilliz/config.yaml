@@ -166,3 +166,99 @@ YouTube-rgb:
           {"ef": 32},
           {"ef": 36}
           ]
+sift-uniform:
+  zilliz:
+    docker-tag: neurips23-filter-zilliz
+    module: neurips23.filter.zilliz.zilliz
+    constructor: Zilliz
+    base-args: [ "@metric" ]
+    run-groups:
+      base:
+        args: |
+          [{"R": 12, "L": 100, "threshold": 8000, "threshold2": 10000
+          }]
+        query-args: |
+          [
+          {"ef": 16},
+          {"ef": 18},
+          {"ef": 19},
+          {"ef": 20},
+          {"ef": 22},
+          {"ef": 24},
+          {"ef": 26},
+          {"ef": 28},
+          {"ef": 32},
+          {"ef": 36}
+          ]
+sift-poisson:
+    zilliz:
+      docker-tag: neurips23-filter-zilliz
+      module: neurips23.filter.zilliz.zilliz
+      constructor: Zilliz
+      base-args: [ "@metric" ]
+      run-groups:
+        base:
+          args: |
+            [{"R": 12, "L": 100, "threshold": 8000, "threshold2": 10000
+            }]
+          query-args: |
+            [
+            {"ef": 16},
+            {"ef": 18},
+            {"ef": 19},
+            {"ef": 20},
+            {"ef": 22},
+            {"ef": 24},
+            {"ef": 26},
+            {"ef": 28},
+            {"ef": 32},
+            {"ef": 36}
+            ]
+adverse:
+  zilliz:
+    docker-tag: neurips23-filter-zilliz
+    module: neurips23.filter.zilliz.zilliz
+    constructor: Zilliz
+    base-args: [ "@metric" ]
+    run-groups:
+      base:
+        args: |
+          [{"R": 12, "L": 100, "threshold": 8000, "threshold2": 10000
+          }]
+        query-args: |
+          [
+          {"ef": 16},
+          {"ef": 18},
+          {"ef": 19},
+          {"ef": 20},
+          {"ef": 22},
+          {"ef": 24},
+          {"ef": 26},
+          {"ef": 28},
+          {"ef": 32},
+          {"ef": 36}
+          ]
+YouTube-audio:
+  zilliz:
+    docker-tag: neurips23-filter-zilliz
+    module: neurips23.filter.zilliz.zilliz
+    constructor: Zilliz
+    base-args: [ "@metric" ]
+    run-groups:
+      base:
+        args: |
+          [{"R": 12, "L": 100, "threshold": 8000, "threshold2": 10000
+          }]
+        query-args: |
+          [
+          {"ef": 16},
+          {"ef": 18},
+          {"ef": 19},
+          {"ef": 20},
+          {"ef": 22},
+          {"ef": 24},
+          {"ef": 26},
+          {"ef": 28},
+          {"ef": 32},
+          {"ef": 36}
+          ]

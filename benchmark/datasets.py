@@ -1141,6 +1141,18 @@ class RandomFilterDS(RandomDS):
         import sklearn.model_selection
         from sklearn.neighbors import NearestNeighbors
 
+        downloadflag = 0
+        for item in os.listdir(self.basedir):
+            item_path = os.path.join(self.basedir, item)
+            if os.path.isdir(item_path) or os.path.isfile(item_path):
+                print("MSONG has already installed!")
+                downloadflag = 1
+                break
+        if downloadflag == 0:
+            import gdown
+            self.folder_url = ''
+            gdown.download_folder(self.folder_url, output=self.basedir)
+
         print(f"Preparing datasets with {self.nb} random points, {self.nq} queries, and two filters.")
 
         X, _ = sklearn.datasets.make_blobs(
@@ -1937,6 +1949,154 @@ class SIFT(DatasetCompetitionFormat):
     def default_count(self):
         return 10
 
+class SIFTPOISSON(DatasetCompetitionFormat):
+    def __init__(self, filtered=False):
+        self.filtered = filtered
+        self.d = 128
+        self.nb = 1000000
+        self.nq = 10000
+        self.dtype = "float32"
+        self.ds_fn = f"data_{self.nb}_{self.d}"
+        self.qs_fn = f"queries_{self.nq}_{self.d}"
+
+        if self.filtered:
+            self.basedir = os.path.join(BASEDIR, "SIFT/poisson")
+            self.ds_metadata_fn = "base_metadata.spmat"
+            self.qs_metadata_fn = "query_metadata.spmat"
+            self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
+            self.folder_url = ""
+            self.get_dataset_metadata = self._get_dataset_metadata
+            self.get_queries_metadata = self._get_queries_metadata
+
+        else:
+            self.basedir = os.path.join(BASEDIR, "SIFT/unfilter")
+            self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
+            self.folder_url = ""
+
+        if not os.path.exists(self.basedir):
+            os.makedirs(self.basedir)
+
+    def prepare(self, skip_data=False):
+        downloadflag = 0
+        for item in os.listdir(self.basedir):
+            item_path = os.path.join(self.basedir, item)
+            if os.path.isdir(item_path) or os.path.isfile(item_path):
+                print("SIFT has already installed!")
+                downloadflag = 1
+                break
+        if downloadflag == 0:
+            import gdown
+            gdown.download_folder(self.folder_url, output=self.basedir)
+
+        prepocessflag = 0
+        data_file_path = os.path.join(self.basedir, self.ds_fn)
+        queries_file_path = os.path.join(self.basedir, self.qs_fn)
+
+        if os.path.exists(data_file_path) and os.path.exists(queries_file_path):
+            print("Preprocessed data already exists. Skipping data generation.")
+            prepocessflag = 1
+
+        if prepocessflag == 0:
+            num, dim, vectors = load_data(self.basedir+'/data_1000000_128')
+            index_vectors, _ = sample_vectors(vectors, self.nb, self.nq)
+            save_data(index_vectors, type='data', basedir=self.basedir)
+
+            num, dim, vectors = load_data(self.basedir+'/queries_10000_128')
+            _, query_vectors = sample_vectors(vectors, 0, self.nq)
+            save_data(query_vectors, type='queries', basedir=self.basedir)
+
+    def _get_dataset_metadata(self):
+        return read_sparse_matrix(os.path.join(self.basedir, self.ds_metadata_fn))
+
+    def _get_queries_metadata(self):
+        return read_sparse_matrix(os.path.join(self.basedir, self.qs_metadata_fn))
+
+    def search_type(self):
+        if self.filtered:
+            return "knn_filtered"
+        else:
+            return "knn"
+
+    def distance(self):
+        return "euclidean"
+
+    def default_count(self):
+        return 10
+
+class SIFTUNIFORM(DatasetCompetitionFormat):
+    def __init__(self, filtered=False):
+        self.filtered = filtered
+        self.d = 128
+        self.nb = 1000000
+        self.nq = 10000
+        self.dtype = "float32"
+        self.ds_fn = f"data_{self.nb}_{self.d}"
+        self.qs_fn = f"queries_{self.nq}_{self.d}"
+
+        if self.filtered:
+            self.basedir = os.path.join(BASEDIR, "SIFT/uniform")
+            self.ds_metadata_fn = "base_metadata.spmat"
+            self.qs_metadata_fn = "query_metadata.spmat"
+            self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
+            self.folder_url = ""
+            self.get_dataset_metadata = self._get_dataset_metadata
+            self.get_queries_metadata = self._get_queries_metadata
+
+        else:
+            self.basedir = os.path.join(BASEDIR, "SIFT/unfilter")
+            self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
+            self.folder_url = ""
+
+        if not os.path.exists(self.basedir):
+            os.makedirs(self.basedir)
+
+    def prepare(self, skip_data=False):
+        downloadflag = 0
+        for item in os.listdir(self.basedir):
+            item_path = os.path.join(self.basedir, item)
+            if os.path.isdir(item_path) or os.path.isfile(item_path):
+                print("SIFT has already installed!")
+                downloadflag = 1
+                break
+        if downloadflag == 0:
+            import gdown
+            gdown.download_folder(self.folder_url, output=self.basedir)
+
+        prepocessflag = 0
+        data_file_path = os.path.join(self.basedir, self.ds_fn)
+        queries_file_path = os.path.join(self.basedir, self.qs_fn)
+
+        if os.path.exists(data_file_path) and os.path.exists(queries_file_path):
+            print("Preprocessed data already exists. Skipping data generation.")
+            prepocessflag = 1
+
+        if prepocessflag == 0:
+            num, dim, vectors = load_data(self.basedir+'/data_1000000_128')
+            index_vectors, _ = sample_vectors(vectors, self.nb, self.nq)
+            save_data(index_vectors, type='data', basedir=self.basedir)
+
+            num, dim, vectors = load_data(self.basedir+'/queries_10000_128')
+            _, query_vectors = sample_vectors(vectors, 0, self.nq)
+            save_data(query_vectors, type='queries', basedir=self.basedir)
+
+    def _get_dataset_metadata(self):
+        return read_sparse_matrix(os.path.join(self.basedir, self.ds_metadata_fn))
+
+    def _get_queries_metadata(self):
+        return read_sparse_matrix(os.path.join(self.basedir, self.qs_metadata_fn))
+
+    def search_type(self):
+        if self.filtered:
+            return "knn_filtered"
+        else:
+            return "knn"
+
+    def distance(self):
+        return "euclidean"
+
+    def default_count(self):
+        return 10
+
 class YOUTUBERGB(DatasetCompetitionFormat):
     def __init__(self, filtered=False):
         self.filtered = filtered
@@ -1970,6 +2130,154 @@ class YOUTUBERGB(DatasetCompetitionFormat):
             item_path = os.path.join(self.basedir, item)
             if os.path.isdir(item_path) or os.path.isfile(item_path):
                 print("YouTube-rgb has already installed!")
+                downloadflag = 1
+                break
+        if downloadflag == 0:
+            import gdown
+            gdown.download_folder(self.folder_url, output=self.basedir)
+
+        prepocessflag = 0
+        data_file_path = os.path.join(self.basedir, self.ds_fn)
+        queries_file_path = os.path.join(self.basedir, self.qs_fn)
+
+        if os.path.exists(data_file_path) and os.path.exists(queries_file_path):
+            print("Preprocessed data already exists. Skipping data generation.")
+            prepocessflag = 1
+
+        if prepocessflag == 0:
+            num, dim, vectors = load_data(self.basedir+'/data_1000000_1024')
+            index_vectors, _ = sample_vectors(vectors, self.nb, self.nq)
+            save_data(index_vectors, type='data', basedir=self.basedir)
+
+            num, dim, vectors = load_data(self.basedir+'/queries_1000_1024')
+            _, query_vectors = sample_vectors(vectors, 0, self.nq)
+            save_data(query_vectors, type='queries', basedir=self.basedir)
+
+    def _get_dataset_metadata(self):
+        return read_sparse_matrix(os.path.join(self.basedir, self.ds_metadata_fn))
+
+    def _get_queries_metadata(self):
+        return read_sparse_matrix(os.path.join(self.basedir, self.qs_metadata_fn))
+
+    def search_type(self):
+        if self.filtered:
+            return "knn_filtered"
+        else:
+            return "knn"
+
+    def distance(self):
+        return "euclidean"
+
+    def default_count(self):
+        return 10
+
+class YOUTUBEAUDIO(DatasetCompetitionFormat):
+    def __init__(self, filtered=False):
+        self.filtered = filtered
+        self.d = 128
+        self.nb = 1000000
+        self.nq = 1000
+        self.dtype = "float32"
+        self.ds_fn = f"data_{self.nb}_{self.d}"
+        self.qs_fn = f"queries_{self.nq}_{self.d}"
+
+        if self.filtered:
+            self.basedir = os.path.join(BASEDIR, "Youtube-audio/filter")
+            self.ds_metadata_fn = "base_metadata.spmat"
+            self.qs_metadata_fn = "query_metadata.spmat"
+            self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
+            self.folder_url = ""
+            self.get_dataset_metadata = self._get_dataset_metadata
+            self.get_queries_metadata = self._get_queries_metadata
+
+        else:
+            self.basedir = os.path.join(BASEDIR, "Youtube-audio/unfilter")
+            self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
+            self.folder_url = ""
+
+        if not os.path.exists(self.basedir):
+            os.makedirs(self.basedir)
+
+    def prepare(self, skip_data=False):
+        downloadflag = 0
+        for item in os.listdir(self.basedir):
+            item_path = os.path.join(self.basedir, item)
+            if os.path.isdir(item_path) or os.path.isfile(item_path):
+                print("YouTube-audio has already installed!")
+                downloadflag = 1
+                break
+        if downloadflag == 0:
+            import gdown
+            gdown.download_folder(self.folder_url, output=self.basedir)
+
+        prepocessflag = 0
+        data_file_path = os.path.join(self.basedir, self.ds_fn)
+        queries_file_path = os.path.join(self.basedir, self.qs_fn)
+
+        if os.path.exists(data_file_path) and os.path.exists(queries_file_path):
+            print("Preprocessed data already exists. Skipping data generation.")
+            prepocessflag = 1
+
+        if prepocessflag == 0:
+            num, dim, vectors = load_data(self.basedir+'/data_1000000_1024')
+            index_vectors, _ = sample_vectors(vectors, self.nb, self.nq)
+            save_data(index_vectors, type='data', basedir=self.basedir)
+
+            num, dim, vectors = load_data(self.basedir+'/queries_1000_1024')
+            _, query_vectors = sample_vectors(vectors, 0, self.nq)
+            save_data(query_vectors, type='queries', basedir=self.basedir)
+
+    def _get_dataset_metadata(self):
+        return read_sparse_matrix(os.path.join(self.basedir, self.ds_metadata_fn))
+
+    def _get_queries_metadata(self):
+        return read_sparse_matrix(os.path.join(self.basedir, self.qs_metadata_fn))
+
+    def search_type(self):
+        if self.filtered:
+            return "knn_filtered"
+        else:
+            return "knn"
+
+    def distance(self):
+        return "euclidean"
+
+    def default_count(self):
+        return 10
+
+class ADVERSE(DatasetCompetitionFormat):
+    def __init__(self, filtered=False):
+        self.filtered = filtered
+        self.d = 100
+        self.nb = 1000000
+        self.nq = 9900
+        self.dtype = "float32"
+        self.ds_fn = f"data_{self.nb}_{self.d}"
+        self.qs_fn = f"queries_{self.nq}_{self.d}"
+
+        if self.filtered:
+            self.basedir = os.path.join(BASEDIR, "adverse/filter")
+            self.ds_metadata_fn = "base_metadata.spmat"
+            self.qs_metadata_fn = "query_metadata.spmat"
+            self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
+            self.folder_url = ""
+            self.get_dataset_metadata = self._get_dataset_metadata
+            self.get_queries_metadata = self._get_queries_metadata
+
+        else:
+            self.basedir = os.path.join(BASEDIR, "adverse/unfilter")
+            self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
+            self.folder_url = ""
+
+        if not os.path.exists(self.basedir):
+            os.makedirs(self.basedir)
+
+    def prepare(self, skip_data=False):
+        downloadflag = 0
+        for item in os.listdir(self.basedir):
+            item_path = os.path.join(self.basedir, item)
+            if os.path.isdir(item_path) or os.path.isfile(item_path):
+                print("Adverse has already installed!")
                 downloadflag = 1
                 break
         if downloadflag == 0:
@@ -2219,6 +2527,9 @@ DATASETS = {
     'sift': lambda: SIFT(),
     'sift-filter': lambda: SIFT(filtered=True),
 
+    'sift-poisson': lambda: SIFTPOISSON(filtered=True),
+    'sift-uniform': lambda: SIFTUNIFORM(filtered=True),
+
     'msong': lambda: MSONG(),
     'msong-filter': lambda : MSONG(filtered=True),
 
@@ -2230,7 +2541,7 @@ DATASETS = {
     'coco': lambda: COCO(),
 
     'cirr': lambda: CIRR(),
-    'cirr-filter': lambda: CIRR(filter=True),
+    'cirr-filter': lambda: CIRR(filtered=True),
 
     'wte-0.05': lambda: WTE('-0.05'),
     'wte-0.1': lambda: WTE('-0.1'),
@@ -2242,4 +2553,7 @@ DATASETS = {
     'openimage-streaming': lambda: OPENIMAGESTREAMING(),
 
     'YouTube-rgb': lambda: YOUTUBERGB(filtered=True),
+    'YouTube-audio': lambda: YOUTUBEAUDIO(filtered=True),
+
+    'adverse': lambda: ADVERSE(filtered=True),
 }
