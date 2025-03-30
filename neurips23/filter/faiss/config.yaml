@@ -203,7 +203,7 @@ cirr-filter:
            {"nprobe": 64, "mt_threshold":0.01}, 
            {"nprobe": 96, "mt_threshold":0.01}
           ]
-YouTube-frgb:
+YouTube-rgb:
   faiss:
     docker-tag: neurips23-filter-faiss
     module: neurips23.filter.faiss.faiss

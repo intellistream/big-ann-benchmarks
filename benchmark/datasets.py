@@ -2108,7 +2108,7 @@ class YOUTUBERGB(DatasetCompetitionFormat):
         self.qs_fn = f"queries_{self.nq}_{self.d}"
 
         if self.filtered:
-            self.basedir = os.path.join(BASEDIR, "Youtube-rgb/filter")
+            self.basedir = os.path.join(BASEDIR, "YouTube-rgb/filter")
             self.ds_metadata_fn = "base_metadata.spmat"
             self.qs_metadata_fn = "query_metadata.spmat"
             self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
@@ -2117,7 +2117,7 @@ class YOUTUBERGB(DatasetCompetitionFormat):
             self.get_queries_metadata = self._get_queries_metadata
 
         else:
-            self.basedir = os.path.join(BASEDIR, "Youtube-rgb/unfilter")
+            self.basedir = os.path.join(BASEDIR, "YouTube-rgb/unfilter")
             self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
             self.folder_url = ""
 
@@ -2182,7 +2182,7 @@ class YOUTUBEAUDIO(DatasetCompetitionFormat):
         self.qs_fn = f"queries_{self.nq}_{self.d}"
 
         if self.filtered:
-            self.basedir = os.path.join(BASEDIR, "Youtube-audio/filter")
+            self.basedir = os.path.join(BASEDIR, "YouTube-audio/filter")
             self.ds_metadata_fn = "base_metadata.spmat"
             self.qs_metadata_fn = "query_metadata.spmat"
             self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
@@ -2191,7 +2191,7 @@ class YOUTUBEAUDIO(DatasetCompetitionFormat):
             self.get_queries_metadata = self._get_queries_metadata
 
         else:
-            self.basedir = os.path.join(BASEDIR, "Youtube-audio/unfilter")
+            self.basedir = os.path.join(BASEDIR, "YouTube-audio/unfilter")
             self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
             self.folder_url = ""
 

@@ -237,7 +237,7 @@ sift-poisson:
           {"nprobe": 160,  "max_codes": 2100, "selector_probe_limit": 160},
           {"nprobe": 200,  "max_codes": 2100, "selector_probe_limit": 200}
           ]
-  adverse:
+adverse:
     wm_filter:
       docker-tag: neurips23-filter-wm_filter
       module: neurips23.filter.wm_filter.wm_filter
@@ -264,7 +264,7 @@ sift-poisson:
             {"nprobe": 160,  "max_codes": 2100, "selector_probe_limit": 160},
             {"nprobe": 200,  "max_codes": 2100, "selector_probe_limit": 200}
             ]
-  YouTube-audio:
+YouTube-audio:
     wm_filter:
       docker-tag: neurips23-filter-wm_filter
       module: neurips23.filter.wm_filter.wm_filter

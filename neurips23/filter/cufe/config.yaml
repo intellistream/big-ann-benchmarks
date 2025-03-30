@@ -263,7 +263,7 @@ adverse:
            {"nprobe": 12, "mt_threshold": 0.0002},
            {"nprobe": 16, "mt_threshold": 0.00033}
           ]
-Youtube-audio:
+YouTube-audio:
   cufe:
     docker-tag: neurips23-filter-cufe
     module: neurips23.filter.cufe.faissCUFE

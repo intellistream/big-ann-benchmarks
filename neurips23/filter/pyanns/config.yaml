@@ -190,7 +190,7 @@ sift-poisson:
            {"nprobe": 16, "mt_threshold":0.0035},
            {"nprobe": 32, "mt_threshold":0.001}
           ]
-adcerse:
+adverse:
   pyanns:
     docker-tag: neurips23-filter-pyanns
     module: neurips23.filter.pyanns.pyanns
