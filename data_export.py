@@ -5,12 +5,12 @@ import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
 import argparse
-import bz2
-import sys
+import math
+import csv
 
 from benchmark.datasets import DATASETS
-from benchmark.plotting.utils  import compute_metrics_all_runs
-from benchmark.results import load_all_results, get_unique_algorithms
+from benchmark.plotting.utils import compute_metrics_all_runs, compute_cc_metrics_all_runs
+from benchmark.results import load_all_results, load_all_attrs
 
 
 def cleaned_run_metric(run_metrics):
@@ -49,23 +49,28 @@ def cleaned_run_metric(run_metrics):
     return cleaned
 
 
+def write_stepwise_recall_to_csv(stepwise_recall, output_file):
+    with open(output_file, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(['Step', 'Recall'])
+        
+        for step, recall in stepwise_recall:
+            writer.writerow([step, recall])
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--output',
-        help='Path to the output csv file',
-        required=True)
-
+        help='Path to the output csv file')
     parser.add_argument(
         '--track',
-        choices=['streaming', 'congestion'],
+        choices=['streaming', 'congestion', 'concurrent'],
         required=True)
     parser.add_argument(
         '--recompute',
         action='store_true',
         help='Path to the output csv file')
     parser.add_argument(
-
         '--private-query',
         help='Use the private queries and ground truth',
         action='store_true')
@@ -91,40 +96,42 @@ if __name__ == "__main__":
 
     datasets = DATASETS.keys()
     dfs = []
+    
+    cc_dfs = []
 
-    neurips23tracks = ['streaming', 'none', 'congestion']
+    # neurips23tracks = ['streaming', 'congestion', 'concurrent', 'none']
+    neurips23tracks = ['concurrent', 'none']
     tracks = [args.track]
+    concurrent_dataset_name = ["reddit", "sift", "glove", "msong"]  
+    stepwise_res_file = "stepwise"
+
     is_first = True
     for track in tracks:
         for dataset_name in datasets:
+            if dataset_name not in concurrent_dataset_name:
+                continue
             print(f"Looking at track:{track}, dataset:{dataset_name}")
             dataset = DATASETS[dataset_name]()
             runbook_paths = [None]
             if track == 'streaming':
                 runbook_paths = ['neurips23/runbooks/streaming/simple_runbook.yaml'
-                                    # 'neurips23/runbooks/streaming/simple_replace_runbook.yaml',
-                                    # 'neurips23/runbooks/streaming/random_replace_runbook.yaml',
-                                    # 'neurips23/runbooks/streaming/clustered_replace_runbook.yaml',
-                                    # 'neurips23/runbooks/streaming/clustered_runbook.yaml',
-                                    # 'neurips23/runbooks/streaming/clustered_runbook.yaml',
-                                    # 'neurips23/runbooks/streaming/delete_runbook.yaml',
-                                    # 'neurips23/runbooks/streaming/final_runbook.yaml',
-                                    # 'neurips23/runbooks/streaming/msturing-10M_slidingwindow_runbook.yaml',
-                                    # 'neurips23/runbooks/streaming/wikipedia-35M_expirationtime_runbook.yaml',
-                                    # 'neurips23/runbooks/streaming/wikipedia-1M_expiration_time_runbook.yaml',
-                                    # 'neurips23/runbooks/streaming/wikipedia-35M_expiration_time_replace_only_runbook.yaml',
-                                    # 'neurips23/runbooks/streaming/wikipedia-1M_expiration_time_replace_only_runbook.yaml',
-                                    # 'neurips23/runbooks/streaming/wikipedia-35M_expiration_time_replace_delete_runbook.yaml',
-                                    # 'neurips23/runbooks/streaming/wikipedia-1M_expiration_time_replace_delete_runbook.yaml',
-                                    #'neurips23/runbooks/streaming/msmarco-100M_expirationtime_runbook.yaml'
-                                    ]
+                                ]
+            if track == 'concurrent':
+                if not os.path.exists("stepwise"):
+                    os.makedirs("stepwise")
+                    
+                runbook_paths = [
+                                    'neurips23/runbooks/concurrent/batch100_w05r95.yaml',
+                                    'neurips23/runbooks/concurrent/batch100_w10r90.yaml',
+                                    'neurips23/runbooks/concurrent/batch100_w20r80.yaml',
+                                    'neurips23/runbooks/concurrent/batch100_w50r50.yaml',
+                                    'neurips23/runbooks/concurrent/batch100_w80r20.yaml',
+                                    'neurips23/runbooks/concurrent/batch100_w90r10.yaml',
+                                ]
             if track == 'congestion':
                 runbook_paths = []
                 if args.output == "gen":
-                    runbook_paths = [#'neurips23/runbooks/congestion/simple_runbook_2.yaml',
-                                     #'neurips23/runbooks/congestion/simple_runbook.yaml',
-                                     #'neurips23/runbooks/congestion/test_experiment.yaml',
-                                     'neurips23/runbooks/congestion/general_experiment/general_experiment.yaml'
+                    runbook_paths = ['neurips23/runbooks/congestion/general_experiment/general_experiment.yaml'
                                     ]
                 if args.output == "batch":
                     runbook_paths = ['neurips23/runbooks/congestion/batchSizes/batch100.yaml',
@@ -182,17 +189,57 @@ if __name__ == "__main__":
                     runbook_paths = ['neurips23/runbooks/congestion/algo_optimizations/algo_optimizations.yaml']
 
             for runbook_path in runbook_paths:
-                print("Looking for runbook ", runbook_path)
+                print("Looking for results", runbook_path)
                 results = load_all_results(dataset_name, neurips23track=track, runbook_path=runbook_path)
-                results = compute_metrics_all_runs(dataset, dataset_name, results, args.recompute, \
-                    args.sensors, args.search_times, args.private_query, \
+                print("Looked results ", runbook_path)
+                results = compute_metrics_all_runs(dataset, dataset_name, results, args.recompute, 
+                    args.sensors, args.search_times, args.private_query, 
                     neurips23track=track, runbook_path=runbook_path)
+                
                 results = cleaned_run_metric(results)
+                    
+                if track == 'concurrent':
+                    print("Looking for attrs ", runbook_path)
+                    attrs = load_all_attrs(dataset_name, neurips23track=track, runbook_path=runbook_path)
+                    print("Looked attrs ", runbook_path)
+                    # cc_results, stepwise_recalls = compute_cc_metrics_all_runs(dataset, dataset_name, attrs, runbook_path=runbook_path)
+
+                    # for i, (r, cc_r) in enumerate(zip(results, cc_results)):
+                    #     new_name = r["algorithm"] + "_" + cc_r["stepwiseRecallFile"]
+                    #     cc_r["stepwiseRecallFile"] = "stepwise/" + new_name + ".csv"
+                    #     write_stepwise_recall_to_csv(stepwise_recalls[i], cc_r["stepwiseRecallFile"])
+                    #     merged = r | cc_r
+                    #     results[i] = {k: v for k, v in merged.items() if not (isinstance(v, float) and math.isnan(v))}
+                        
+                    # # for cc_r in cc_results:
+                    # #     new_name = r["algorithm"] + "_" + cc_r["stepwiseRecallFile"]
+                    # #     cc_r["stepwiseRecallFile"] = "stepwise/" + new_name + ".csv"
+                    # #     write_stepwise_recall_to_csv(stepwise_recalls[i], cc_r["stepwiseRecallFile"])
+                    
+                    cc_results = compute_cc_metrics_all_runs(dataset, dataset_name, attrs, runbook_path=runbook_path)
+                    
+                    for i, (cc_r, r) in enumerate(zip(cc_results, results)):
+                        merged = r | cc_r
+                        results[i] = {k: v for k, v in merged.items() if not (isinstance(v, float) and math.isnan(v))}
+                        
                 if len(results) > 0:
-                    dfs.append(pd.DataFrame(results))
+                    dfs.append(pd.DataFrame(results))     
 
     dfs = [e for e in dfs if len(e) > 0]
+    
+    print(dfs)
     if len(dfs) > 0:
         data = pd.concat(dfs)
-        data = data.sort_values(by=["algorithm", "dataset", "recall/ap"])        
-        data.to_csv(args.output+"-"+args.track+".csv", index=False)
+        sort_columns = ["algorithm", "dataset"]
+        if "recall/ap" in data.columns:  
+            sort_columns.append("recall/ap")
+        
+        data = data.sort_values(by=sort_columns)
+        
+        if args.output is None:
+            output_path = args.track + ".csv"
+        else:
+            output_path = f"{args.output}-{args.track}.csv"
+        
+        data.to_csv(output_path, index=False)
+        print(output_path)

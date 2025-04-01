@@ -160,7 +160,7 @@ def main():
     )
     parser.add_argument(
         '--neurips23track',
-        choices=['filter', 'ood', 'sparse', 'streaming', 'none', 'congestion'],
+        choices=['filter', 'ood', 'sparse', 'streaming', 'concurrent', 'congestion', 'none'],
         default='none'
     )
     parser.add_argument(
@@ -180,10 +180,6 @@ def main():
     )
 
     args = parser.parse_args()
-
-    # if args.neurips23track == 'congestion':
-    #     if args.eventrate is None or args.batchsize is None:
-    #         raise ValueError("Both --eventrate and --batchsize must be provided when --neurips23track is 'congestion'.")
 
     if args.timeout == -1:
         args.timeout = None

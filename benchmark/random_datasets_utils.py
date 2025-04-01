@@ -9,12 +9,13 @@ import yaml
 def normalize_dataset_name(dataset_name):
     return re.sub(r"\(.*\)", "", dataset_name)
 
+
 def parse_dataset(args):
     if args.dataset in DATASETS:
         dataset = DATASETS[args.dataset]()
 
-        streaming_runbook_file, congestion_runbook_file = get_runbook_paths(args)
-        update_runbook_for_dataset(args, dataset.nb, streaming_runbook_file, congestion_runbook_file)
+        streaming_runbook_file, congestion_runbook_file, concurrent_runbook_file = get_runbook_paths(args)
+        update_runbook_for_dataset(args, dataset.nb, streaming_runbook_file, congestion_runbook_file, concurrent_runbook_file)
 
         return dataset
 
@@ -44,8 +45,8 @@ def custom_random_plus(args):
         add_dataset(dataset_name, f'RandomPlus({nb}, {nq}, {d}, {seed}, {drift_position}, {drift_offset}, {query_noise_fraction}, "{basedir}")')
         DATASETS[dataset_name] = lambda : RandomPlus(nb, nq, d, seed, drift_position, drift_offset, query_noise_fraction, basedir)
 
-        streaming_runbook_file, congestion_runbook_file = get_runbook_paths(args)
-        update_runbook_for_dataset(args, nb, streaming_runbook_file, congestion_runbook_file)
+        streaming_runbook_file, congestion_runbook_file, concurrent_runbook_file = get_runbook_paths(args)
+        update_runbook_for_dataset(args, nb, streaming_runbook_file, congestion_runbook_file, concurrent_runbook_file)
 
         return RandomPlus(nb, nq, d, seed, drift_position, drift_offset, query_noise_fraction, basedir)
     else:
@@ -61,8 +62,8 @@ def custom_random_ds(args):
         add_dataset(dataset_name, f'RandomDS({nb}, {nq}, {d}, "{basedir}")')
         DATASETS[dataset_name] = lambda: RandomDS(nb, nq, d, basedir)
 
-        streaming_runbook_file, congestion_runbook_file = get_runbook_paths(args)
-        update_runbook_for_dataset(args, nb, streaming_runbook_file, congestion_runbook_file)
+        streaming_runbook_file, congestion_runbook_file, concurrent_runbook_file = get_runbook_paths(args)
+        update_runbook_for_dataset(args, nb, streaming_runbook_file, congestion_runbook_file, concurrent_runbook_file)
 
         return RandomDS(nb, nq, d, basedir)
     else:
@@ -77,8 +78,8 @@ def custom_random_range_ds(args):
         add_dataset(dataset_name, f'RandomRangeDS({nb}, {nq}, {d})')
         DATASETS[dataset_name] = lambda: RandomRangeDS(nb, nq, d)
 
-        streaming_runbook_file, congestion_runbook_file = get_runbook_paths(args)
-        update_runbook_for_dataset(args, nb, streaming_runbook_file, congestion_runbook_file)
+        streaming_runbook_file, congestion_runbook_file, concurrent_runbook_file = get_runbook_paths(args)
+        update_runbook_for_dataset(args, nb, streaming_runbook_file, congestion_runbook_file, concurrent_runbook_file)
 
         return RandomRangeDS(nb, nq, d)
     else:
@@ -199,6 +200,42 @@ def generate_congestion_runbook_yaml(dataset, max_pts, runbook_file, batch_size,
     print(f"Congestion Runbook updated successfully for dataset: {dataset}")
 
 
+def generate_concurrent_runbook_yaml(dataset, max_pts, runbook_file, batch_size, write_rate):
+  
+    def custom_operation_representer(dumper, value):
+        quoted_operations = ["search", "initial", "insert_and_search", "startHPC", "endHPC", "none"]
+        if value in quoted_operations:
+            return dumper.represent_scalar('tag:yaml.org,2002:str', value, style='"')
+        else:
+            return dumper.represent_scalar('tag:yaml.org,2002:str', value)
+
+    yaml.add_representer(str, custom_operation_representer)
+
+    dataset_info = {
+        "batchSize": batch_size,
+        "writeRatio": write_rate,
+        1: {"operation": "startHPC"},
+        2: {"operation": "initial",
+            "start": 0,
+            "end": 1000
+        },
+        3: {
+            "operation": "insert_and_search",
+            "start": 1000,
+            "end": max_pts
+        },
+        4: {"operation": "search"},
+        5: {"operation": "endHPC"},
+        "gt_url": "none",
+    }
+
+    with open(runbook_file, "a") as f:
+        f.write("\n")
+        yaml.dump({dataset: dataset_info}, f, default_flow_style=False, sort_keys=False)
+
+    print(f"Congestion Runbook updated successfully for dataset: {dataset}")
+
+
 def read_runbook(runbook_file):
     try:
         with open(runbook_file, 'r') as f:
@@ -228,27 +265,44 @@ def update_congestion_runbook(dataset, max_pts, runbook_file, batch_size, event_
     else:
         generate_congestion_runbook_yaml(dataset, max_pts, runbook_file, batch_size, event_rate)
 
+
+def update_concurrent_runbook(dataset, runbook_file, batch_size, write_rate):
+    runbook_data = read_runbook(runbook_file)
+
+    if is_dataset_in_runbook(runbook_data, dataset):
+        print(f"Dataset '{dataset}' already exists in the concurrent runbook.")
+    else:
+        generate_concurrent_runbook_yaml(dataset, runbook_file, batch_size, write_rate)
+
+
 def update_runbook_for_dataset(args,
                                max_pts,
                                streaming_runbook_file='neurips23/runbooks/streaming/simple_runbook.yaml',
-                               congestion_runbook_file='neurips23/runbooks/congestion/simple_runbook.yaml',):
+                               congestion_runbook_file='neurips23/runbooks/congestion/simple_runbook.yaml',
+                               concurrent_runbook_file='neurips23/runbooks/concurrent/simple_runbook.yaml'):
     update_streaming_runbook(args.dataset, max_pts, streaming_runbook_file)
 
     if args.batchsize is not None and args.eventrate is not None:
         if hasattr(args, 'neurips23track'):
             if args.neurips23track == 'congestion':
                 update_congestion_runbook(args.dataset, max_pts, congestion_runbook_file, args.batchsize, args.eventrate)
+            elif args.neurips23track == 'concurrent':
+                update_concurrent_runbook(args.dataset, max_pts, concurrent_runbook_file, args.batchsize, args.writeratio)
         else:
             update_congestion_runbook(args.dataset, max_pts, congestion_runbook_file, args.batchsize, args.eventrate)
+
 
 def get_runbook_paths(args):
     default_streaming_path = 'neurips23/runbooks/streaming/simple_runbook.yaml'
     default_congestion_path = 'neurips23/runbooks/congestion/simple_runbook.yaml'
+    default_concurrent_path = 'neurips23/runbooks/concurrent/simple_runbook.yaml'
 
     if hasattr(args, 'runbook_path'):
         if args.neurips23track == 'congestion':
-            return default_streaming_path, args.runbook_path
+            return default_streaming_path, args.runbook_path, default_concurrent_path
+        elif args.neurips23track == 'concurrent':
+            return default_streaming_path, default_congestion_path, args.runbook_path
         else:
-            return args.runbook_path, default_congestion_path
+            return args.runbook_path, default_congestion_path, default_concurrent_path
     else:
-        return default_streaming_path, default_congestion_path
+        return default_streaming_path, default_congestion_path, default_concurrent_path

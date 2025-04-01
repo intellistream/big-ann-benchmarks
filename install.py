@@ -47,7 +47,7 @@ if __name__ == "__main__":
         default=None)
     parser.add_argument(
         '--neurips23track',
-        choices=['filter','ood','streaming','sparse','none'],
+        choices=['filter','ood','streaming','sparse','concurrent','none'],
         default='none'
     )
     parser.add_argument(

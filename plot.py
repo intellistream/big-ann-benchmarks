@@ -13,9 +13,7 @@ from benchmark.algorithms.definitions import get_definitions
 from benchmark.plotting.metrics import all_metrics as metrics
 from benchmark.plotting.utils import (get_plot_label, compute_metrics,
         create_linestyles, create_pointset)
-from benchmark.results import (store_results, load_all_results,
-                            get_unique_algorithms)
-
+from benchmark.results import (store_results, load_all_results, get_unique_algorithms)
 
 
 def create_plot(all_data, raw, x_scale, y_scale, xn, yn, fn_out, linestyles):

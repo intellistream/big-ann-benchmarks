@@ -636,3 +636,25 @@ random-plus(500000,1000,4096):
   6:
     operation: "search"
   gt_url: "none"
+
+msturing-30M-clustered:
+  max_pts: 29998994
+  1:
+    operation: "insert"
+    start: 0
+    end: 29998994
+  2:
+    operation: "search"
+  3:
+    operation: "delete"
+    start: 0
+    end: 14999497
+  4:
+    operation: "search"
+  5:
+    operation: "insert"
+    start: 0
+    end: 14999497
+  6:
+    operation: "search"
+  gt_url: "none"

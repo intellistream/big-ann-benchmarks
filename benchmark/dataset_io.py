@@ -5,12 +5,10 @@ I/O functions for the fileformats used in the competition.
 import numpy as np
 import os
 import time
+import struct
 
 from urllib.request import urlopen
 from scipy.sparse import csr_matrix
-
-
-
 
 
 def download(src, dst=None, max_size=None):
@@ -128,6 +126,7 @@ def range_result_read(fname):
     D = np.fromfile(f, count=total_res, dtype="float32")
     return nres, I, D
 
+
 def knn_result_read(fname):
     n, d = map(int, np.fromfile(fname, dtype="uint32", count=2))
     assert os.stat(fname).st_size == 8 + n * d * (4 + 4)
@@ -136,6 +135,22 @@ def knn_result_read(fname):
     I = np.fromfile(f, dtype="int32", count=n * d).reshape(n, d)
     D = np.fromfile(f, dtype="float32", count=n * d).reshape(n, d)
     return I, D
+
+
+def knn_vec_result_read(fname):
+    f = open(fname, "rb")
+    header_bytes = f.read(12)
+    n, k, dim = struct.unpack("<3I", header_bytes)
+    print(f"n: {n}, k: {k}, dim: {dim}")
+    expected_size = 12 + n * k * (dim * 4 + 4)
+    file_size = os.stat(fname).st_size
+    assert file_size == expected_size, \
+        f"File size mismatch! Expected {expected_size} bytes, got {file_size} bytes."
+
+    V = np.fromfile(f, dtype="<f4", count=n * k * dim).reshape(n, k, dim) 
+    D = np.fromfile(f, dtype="<f4", count=n * k).reshape(n, k)        
+    return V, D
+    
 
 def read_fbin(filename, start_idx=0, chunk_size=None):
     """ Read *.fbin file that contains float32 vectors

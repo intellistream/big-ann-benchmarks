@@ -96,8 +96,6 @@ class CongestionRunner(BaseRunner):
         print('Algorithm set up')
         return time.time() - t0
     
-
-
     def run_task(algo, ds, distance, count, run_count, search_type, private_query, runbook, definition, query_arguments, runbook_path,dataset):
         best_search_time = float('inf')
         search_times = []

@@ -24,8 +24,10 @@ from benchmark.sensors.power_capture import power_capture
 from benchmark.t3.helper import t3_create_container
 
 from neurips23.common import RUNNERS
+
 from benchmark.streaming.load_runbook import load_runbook_streaming
 from benchmark.congestion.load_runbook import load_runbook_congestion
+from benchmark.concurrent.load_runbook import load_runbook_concurrent
 
 def run(definition, dataset, count, run_count, rebuild=True,
         upload_index=False, download_index=False,
@@ -48,13 +50,18 @@ def run(definition, dataset, count, run_count, rebuild=True,
     build_time = -1 # default value used to indicate that the index was loaded from file
     print(f"Running {definition.algorithm} on {dataset}")
 
+    max_pts = 0
+    runbook = None
+    cc_config = None
+
     custom_runner = RUNNERS.get(neurips23track, BaseRunner)
     if neurips23track == 'streaming':
         max_pts, runbook = load_runbook_streaming(dataset, ds.nb, runbook_path)
-
-    if neurips23track == 'congestion':
+    elif neurips23track == 'congestion':
         max_pts, runbook = load_runbook_congestion(dataset, ds.nb, runbook_path)
-
+    elif neurips23track == 'concurrent':
+        max_pts, cc_config, runbook = load_runbook_concurrent(dataset, ds.nb, runbook_path)
+        print("loading ... ", runbook)
 
     try:
         # Try loading the index from the file
@@ -73,15 +80,17 @@ def run(definition, dataset, count, run_count, rebuild=True,
                 print("Index load failed.")
         elif rebuild or not algo.load_index(dataset):
             # Build the index if it is not available
-            build_time = (custom_runner.build(algo,dataset)
-                          if neurips23track not in ['streaming','congestion']
-                          else custom_runner.build(algo, dataset, max_pts))
+            build_time = 0
+            if neurips23track in ['streaming', 'congestion']:
+                build_time = custom_runner.build(algo, dataset, max_pts)
+            elif neurips23track == "concurrent":
+                build_time = custom_runner.build(algo, dataset, max_pts, cc_config)
+            else:
+                build_time = custom_runner.build(algo, dataset)
+            
             print('Built index in', build_time) 
         else:
             print("Loaded existing index")
-
-
-
 
         if upload_index:
             print("Starting index upload...")
@@ -107,6 +116,9 @@ def run(definition, dataset, count, run_count, rebuild=True,
                 if neurips23track in ['streaming', 'congestion']:
                     descriptor, results = custom_runner.run_task(
                         algo, ds, distance, count, 1, search_type, private_query, runbook, definition, query_arguments, runbook_path, dataset)
+                elif neurips23track == 'concurrent':
+                    descriptor, results = custom_runner.run_task(
+                        algo, ds, distance, count, 1, search_type, private_query, runbook, definition, query_arguments, runbook_path, dataset)
                 else:
                     descriptor, results = custom_runner.run_task(
                         algo, ds, distance, count, run_count, search_type, private_query)
@@ -118,6 +130,11 @@ def run(definition, dataset, count, run_count, rebuild=True,
                 descriptor["index_size"] = index_size
                 descriptor["algo"] = definition.algorithm
                 descriptor["dataset"] = dataset
+                
+                cc_config = {}
+                if neurips23track == 'concurrent':
+                    cc_config = {key: descriptor[key] for key in ["batch_size", "write_ratio", "num_threads"] if key in descriptor}
+                    
                 if power_capture.enabled():
                     if not private_query:
                         X = ds.get_queries()
@@ -129,7 +146,8 @@ def run(definition, dataset, count, run_count, rebuild=True,
 
                 store_results(dataset, count, definition,
                               query_arguments, descriptor,
-                              results, search_type, neurips23track, runbook_path)
+                              results, search_type, neurips23track, 
+                              runbook_path, cc_config)
                 print('end store results')
     finally:
         algo.done()
@@ -206,13 +224,13 @@ def run_from_cmdline(args=None):
         action="store_true")
     parser.add_argument(
         '--neurips23track',
-        choices=['filter', 'ood', 'sparse', 'streaming', 'none', "congestion"],
+        choices=['filter', 'ood', 'sparse', 'streaming', 'concurrent', 'congestion', 'none'],
         default='none'
     )
     parser.add_argument(
         '--runbook_path',
-        help='runbook yaml path for neurips23 streaming track',
-        default='neurips23/streaming/simple_runbook.yaml'
+        help='runbook yaml path for neurips23 concurrent track',
+        default='neurips23/concurrent/simple_runbook.yaml'
     )
 
     args = parser.parse_args(args)
@@ -268,7 +286,7 @@ def run_docker(definition, dataset, count, runs, timeout, rebuild,
         cmd.append("--private-query")
 
     cmd += ["--neurips23track", neurips23track]
-    if neurips23track in ['streaming','congestion']:
+    if neurips23track in ['streaming', 'congestion', 'concurrent']:
         cmd += ["--runbook_path", runbook_path]
 
     cmd.append(json.dumps(definition.arguments))
@@ -276,7 +294,9 @@ def run_docker(definition, dataset, count, runs, timeout, rebuild,
 
     client = docker.from_env()
     if mem_limit is None:
-        mem_limit = psutil.virtual_memory().available if neurips23track not in ['streaming', 'congestion'] else (8*1024*1024*1024)
+        mem_limit = psutil.virtual_memory().available \
+                    if neurips23track not in ['streaming', 'congestion', 'concurrent'] \
+                    else (8*1024*1024*1024)
 
     # ready the container object invoked later in this function
     container = None
@@ -304,7 +324,7 @@ def run_docker(definition, dataset, count, runs, timeout, rebuild,
     # set/override container timeout based on competition flag
     if neurips23track!='none':
         # 1 hour for streaming and 12 hours for other tracks
-        timeout = 60 * 60 if neurips23track in ['streaming', 'congestion'] else 12 * 60 * 60
+        timeout = 60 * 60 if neurips23track in ['streaming', 'congestion', 'concurrent'] else 12 * 60 * 60
         print("Setting container wait timeout to %d seconds" % timeout)       
 
     elif not timeout: 
@@ -381,7 +401,7 @@ def run_no_docker(definition, dataset, count, runs, timeout, rebuild,
         cmd.append("--private-query")
     
     cmd += ["--neurips23track", neurips23track]
-    if neurips23track in ['streaming', 'congestion']:
+    if neurips23track in ['streaming', 'congestion', 'concurrent']:
         cmd += ["--runbook_path", runbook_path]
 
     cmd.append(json.dumps(definition.arguments))
