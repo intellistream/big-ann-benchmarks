@@ -80,7 +80,7 @@ sift-filter:
       run-groups:
         base:
           args: |
-            [{"indexkey": "IVF16384,SQ8", 
+            [{"indexkey": "IVF2048,SQ8", 
               "binarysig": true, 
               "threads": 16
             }]
@@ -113,7 +113,7 @@ glove-filter:
     run-groups:
       base:
         args: |
-          [{"indexkey": "IVF16384,SQ8", 
+          [{"indexkey": "IVF2048,SQ8", 
             "binarysig": true, 
             "threads": 16
           }]
@@ -146,7 +146,7 @@ msong-filter:
     run-groups:
       base:
         args: |
-          [{"indexkey": "IVF16384,SQ8", 
+          [{"indexkey": "IVF2048,SQ8", 
             "binarysig": true, 
             "threads": 16
           }]
@@ -179,7 +179,7 @@ cirr-filter:
     run-groups:
       base:
         args: |
-          [{"indexkey": "IVF16384,SQ8", 
+          [{"indexkey": "IVF206,SQ8", 
             "binarysig": true, 
             "threads": 16
           }]
@@ -212,7 +212,7 @@ YouTube-rgb:
     run-groups:
       base:
         args: |
-          [{"indexkey": "IVF16384,SQ8", 
+          [{"indexkey": "IVF2048,SQ8", 
             "binarysig": true, 
             "threads": 16
           }]
@@ -245,7 +245,7 @@ sift-uniform:
     run-groups:
       base:
         args: |
-          [{"indexkey": "IVF16384,SQ8", 
+          [{"indexkey": "IVF2048,SQ8", 
             "binarysig": true, 
             "threads": 16
           }]
@@ -278,7 +278,7 @@ sift-poisson:
     run-groups:
       base:
         args: |
-          [{"indexkey": "IVF16384,SQ8", 
+          [{"indexkey": "IVF2048,SQ8", 
             "binarysig": true, 
             "threads": 16
           }]
@@ -311,7 +311,7 @@ adverse:
     run-groups:
       base:
         args: |
-          [{"indexkey": "IVF16384,SQ8", 
+          [{"indexkey": "IVF2048,SQ8", 
             "binarysig": true, 
             "threads": 16
           }]
@@ -344,7 +344,7 @@ YouTube-audio:
     run-groups:
       base:
         args: |
-          [{"indexkey": "IVF16384,SQ8", 
+          [{"indexkey": "IVF2048,SQ8", 
             "binarysig": true, 
             "threads": 16
           }]

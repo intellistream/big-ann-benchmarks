@@ -47,7 +47,7 @@ sift-filter:
       run-groups:
         base:
           args: |
-            [{"indexkey": "FilterIVFFlatU8", "num_clusters": "2048", "precompute_intersection_threshold": "1600"}]
+            [{"indexkey": "FilterIVFFlatU8", "num_clusters": "256", "precompute_intersection_threshold": "1600"}]
           query-args: |
             [
             {"fraction_coefficient": "13.0", "fraction_exponent": "0.65", "skip_clustering_threshold": 2000},
@@ -70,7 +70,7 @@ glove-filter:
     run-groups:
       base:
         args: |
-          [{"indexkey": "FilterIVFFlatU8", "num_clusters": "2048", "precompute_intersection_threshold": "1600"}]
+          [{"indexkey": "FilterIVFFlatU8", "num_clusters": "256", "precompute_intersection_threshold": "1600"}]
         query-args: |
           [
           {"fraction_coefficient": "13.0", "fraction_exponent": "0.65", "skip_clustering_threshold": 2000},
@@ -93,7 +93,7 @@ msong-filter:
     run-groups:
       base:
         args: |
-          [{"indexkey": "FilterIVFFlatU8", "num_clusters": "2048", "precompute_intersection_threshold": "1600"}]
+          [{"indexkey": "FilterIVFFlatU8", "num_clusters": "256", "precompute_intersection_threshold": "1600"}]
         query-args: |
           [
           {"fraction_coefficient": "13.0", "fraction_exponent": "0.65", "skip_clustering_threshold": 2000},
@@ -116,7 +116,7 @@ cirr-filter:
     run-groups:
       base:
         args: |
-          [{"indexkey": "FilterIVFFlatU8", "num_clusters": "2048", "precompute_intersection_threshold": "1600"}]
+          [{"indexkey": "FilterIVFFlatU8", "num_clusters": "32", "precompute_intersection_threshold": "1600"}]
         query-args: |
           [
           {"fraction_coefficient": "13.0", "fraction_exponent": "0.65", "skip_clustering_threshold": 2000},
@@ -139,7 +139,7 @@ YouTube-rgb:
     run-groups:
       base:
         args: |
-          [{"indexkey": "FilterIVFFlatU8", "num_clusters": "2048", "precompute_intersection_threshold": "1600"}]
+          [{"indexkey": "FilterIVFFlatU8", "num_clusters": "256", "precompute_intersection_threshold": "1600"}]
         query-args: |
           [
           {"fraction_coefficient": "13.0", "fraction_exponent": "0.65", "skip_clustering_threshold": 2000},
@@ -162,7 +162,7 @@ sift-poisson:
     run-groups:
       base:
         args: |
-          [{"indexkey": "FilterIVFFlatU8", "num_clusters": "2048", "precompute_intersection_threshold": "1600"}]
+          [{"indexkey": "FilterIVFFlatU8", "num_clusters": "256", "precompute_intersection_threshold": "1600"}]
         query-args: |
           [
           {"fraction_coefficient": "13.0", "fraction_exponent": "0.65", "skip_clustering_threshold": 2000},
@@ -185,7 +185,7 @@ sift-uniform:
     run-groups:
       base:
         args: |
-          [{"indexkey": "FilterIVFFlatU8", "num_clusters": "2048", "precompute_intersection_threshold": "1600"}]
+          [{"indexkey": "FilterIVFFlatU8", "num_clusters": "256", "precompute_intersection_threshold": "1600"}]
         query-args: |
           [
           {"fraction_coefficient": "13.0", "fraction_exponent": "0.65", "skip_clustering_threshold": 2000},
@@ -208,7 +208,7 @@ adverse:
     run-groups:
       base:
         args: |
-          [{"indexkey": "FilterIVFFlatU8", "num_clusters": "2048", "precompute_intersection_threshold": "1600"}]
+          [{"indexkey": "FilterIVFFlatU8", "num_clusters": "256", "precompute_intersection_threshold": "1600"}]
         query-args: |
           [
           {"fraction_coefficient": "13.0", "fraction_exponent": "0.65", "skip_clustering_threshold": 2000},
@@ -231,7 +231,7 @@ YouTube-audio:
     run-groups:
       base:
         args: |
-          [{"indexkey": "FilterIVFFlatU8", "num_clusters": "2048", "precompute_intersection_threshold": "1600"}]
+          [{"indexkey": "FilterIVFFlatU8", "num_clusters": "256", "precompute_intersection_threshold": "1600"}]
         query-args: |
           [
           {"fraction_coefficient": "13.0", "fraction_exponent": "0.65", "skip_clustering_threshold": 2000},

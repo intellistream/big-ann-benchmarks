@@ -2,6 +2,7 @@ import os
 import yaml
 
 from neurips23.filter.run import FilterRunner
+from neurips23.filter_streaming.run import FilterStreamingRunner
 from neurips23.sparse.run import SparseRunner
 from neurips23.ood.run import OODRunner
 from neurips23.streaming.run import StreamingRunner
@@ -36,7 +37,8 @@ RUNNERS = {
     "sparse": SparseRunner,
     "ood": OODRunner,
     "streaming": StreamingRunner,
-    "congestion": CongestionRunner
+    "congestion": CongestionRunner,
+    'filter_streaming': FilterStreamingRunner
 }
 
 

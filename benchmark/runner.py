@@ -26,6 +26,7 @@ from benchmark.t3.helper import t3_create_container
 from neurips23.common import RUNNERS
 from benchmark.streaming.load_runbook import load_runbook_streaming
 from benchmark.congestion.load_runbook import load_runbook_congestion
+from benchmark.filter_streaming.load_runbook import load_runbook_filter_streaming
 
 def run(definition, dataset, count, run_count, rebuild=True,
         upload_index=False, download_index=False,
@@ -55,6 +56,8 @@ def run(definition, dataset, count, run_count, rebuild=True,
     if neurips23track == 'congestion':
         max_pts, runbook = load_runbook_congestion(dataset, ds.nb, runbook_path)
 
+    if neurips23track == 'filter_streaming':
+        max_pts, runbook = load_runbook_filter_streaming(dataset, ds.nb, runbook_path)
 
     try:
         # Try loading the index from the file
@@ -74,7 +77,7 @@ def run(definition, dataset, count, run_count, rebuild=True,
         elif rebuild or not algo.load_index(dataset):
             # Build the index if it is not available
             build_time = (custom_runner.build(algo,dataset)
-                          if neurips23track not in ['streaming','congestion']
+                          if neurips23track not in ['streaming','congestion','filter_streaming']
                           else custom_runner.build(algo, dataset, max_pts))
             print('Built index in', build_time) 
         else:
@@ -104,7 +107,7 @@ def run(definition, dataset, count, run_count, rebuild=True,
 
                 if query_arguments:
                     algo.set_query_arguments(*query_arguments)
-                if neurips23track in ['streaming', 'congestion']:
+                if neurips23track in ['streaming', 'congestion', 'filter_streaming']:
                     descriptor, results = custom_runner.run_task(
                         algo, ds, distance, count, 1, search_type, private_query, runbook, definition, query_arguments, runbook_path, dataset)
                 else:
@@ -206,7 +209,7 @@ def run_from_cmdline(args=None):
         action="store_true")
     parser.add_argument(
         '--neurips23track',
-        choices=['filter', 'ood', 'sparse', 'streaming', 'none', "congestion"],
+        choices=['filter', 'ood', 'sparse', 'streaming', 'none', "congestion", 'filter_streaming'],
         default='none'
     )
     parser.add_argument(
@@ -268,7 +271,7 @@ def run_docker(definition, dataset, count, runs, timeout, rebuild,
         cmd.append("--private-query")
 
     cmd += ["--neurips23track", neurips23track]
-    if neurips23track in ['streaming','congestion']:
+    if neurips23track in ['streaming','congestion','filter_streaming']:
         cmd += ["--runbook_path", runbook_path]
 
     cmd.append(json.dumps(definition.arguments))
@@ -276,7 +279,7 @@ def run_docker(definition, dataset, count, runs, timeout, rebuild,
 
     client = docker.from_env()
     if mem_limit is None:
-        mem_limit = psutil.virtual_memory().available if neurips23track not in ['streaming', 'congestion'] else (8*1024*1024*1024)
+        mem_limit = psutil.virtual_memory().available if neurips23track not in ['streaming', 'congestion','filter_streaming'] else (8*1024*1024*1024)
 
     # ready the container object invoked later in this function
     container = None
@@ -304,7 +307,7 @@ def run_docker(definition, dataset, count, runs, timeout, rebuild,
     # set/override container timeout based on competition flag
     if neurips23track!='none':
         # 1 hour for streaming and 12 hours for other tracks
-        timeout = 60 * 60 if neurips23track in ['streaming', 'congestion'] else 12 * 60 * 60
+        timeout = 60 * 60 if neurips23track in ['streaming', 'congestion', 'filter_streaming'] else 12 * 60 * 60
         print("Setting container wait timeout to %d seconds" % timeout)       
 
     elif not timeout: 

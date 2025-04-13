@@ -7,9 +7,9 @@ random-filter-s:
     run-groups:
       base:
         args: |
-          [{"indexkey": "IVF1024,SQ8", 
+          [{"indexkey": "IVF64,SQ8", 
             "threads": 8,
-            "train_size": 2000000,
+            "train_size": 100000,
             "type": "direct"
           }]
         query-args: |
@@ -57,9 +57,9 @@ sift-filter:
       run-groups:
         base:
           args: |
-            [{"indexkey": "IVF1024,SQ8", 
+            [{"indexkey": "IVF128,SQ8", 
               "threads": 8,
-              "train_size": 2000000,
+              "train_size": 200000,
               "type": "direct"
             }]
           query-args: |
@@ -84,9 +84,9 @@ glove-filter:
     run-groups:
       base:
         args: |
-          [{"indexkey": "IVF1024,SQ8", 
+          [{"indexkey": "IVF128,SQ8", 
             "threads": 8,
-            "train_size": 2000000,
+            "train_size": 200000,
             "type": "direct"
           }]
         query-args: |
@@ -111,9 +111,9 @@ msong-filter:
     run-groups:
       base:
         args: |
-          [{"indexkey": "IVF1024,SQ8", 
+          [{"indexkey": "IVF128,SQ8", 
             "threads": 8,
-            "train_size": 2000000,
+            "train_size": 200000,
             "type": "direct"
           }]
         query-args: |
@@ -138,9 +138,9 @@ cirr-filter:
     run-groups:
       base:
         args: |
-          [{"indexkey": "IVF1024,SQ8", 
+          [{"indexkey": "IVF32,SQ8", 
             "threads": 8,
-            "train_size": 2000000,
+            "train_size": 20000,
             "type": "direct"
           }]
         query-args: |
@@ -165,9 +165,9 @@ YouTube-rgb:
     run-groups:
       base:
         args: |
-          [{"indexkey": "IVF1024,SQ8", 
+          [{"indexkey": "IVF128,SQ8", 
             "threads": 8,
-            "train_size": 2000000,
+            "train_size": 200000,
             "type": "direct"
           }]
         query-args: |
@@ -192,9 +192,9 @@ sift-uniform:
     run-groups:
       base:
         args: |
-          [{"indexkey": "IVF1024,SQ8", 
+          [{"indexkey": "IVF128,SQ8", 
             "threads": 8,
-            "train_size": 2000000,
+            "train_size": 200000,
             "type": "direct"
           }]
         query-args: |
@@ -219,9 +219,9 @@ sift-poisson:
     run-groups:
       base:
         args: |
-          [{"indexkey": "IVF1024,SQ8", 
+          [{"indexkey": "IVF128,SQ8", 
             "threads": 8,
-            "train_size": 2000000,
+            "train_size": 200000,
             "type": "direct"
           }]
         query-args: |
@@ -246,9 +246,9 @@ adverse:
       run-groups:
         base:
           args: |
-            [{"indexkey": "IVF1024,SQ8", 
+            [{"indexkey": "IVF128,SQ8", 
               "threads": 8,
-              "train_size": 2000000,
+              "train_size": 200000,
               "type": "direct"
             }]
           query-args: |
@@ -273,9 +273,9 @@ YouTube-audio:
       run-groups:
         base:
           args: |
-            [{"indexkey": "IVF1024,SQ8", 
+            [{"indexkey": "IVF128,SQ8", 
               "threads": 8,
-              "train_size": 2000000,
+              "train_size": 200000,
               "type": "direct"
             }]
           query-args: |

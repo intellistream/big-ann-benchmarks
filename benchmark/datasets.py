@@ -1147,7 +1147,7 @@ class RandomFilterDS(RandomDS):
             if os.path.isdir(item_path) or os.path.isfile(item_path):
                 print("MSONG has already installed!")
                 downloadflag = 1
-                break
+                return
         if downloadflag == 0:
             import gdown
             self.folder_url = ''

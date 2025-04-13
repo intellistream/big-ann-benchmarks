@@ -284,4 +284,3 @@ class FAISS(BaseFilterANN):
     def __str__(self):
         return f'Faiss({self.indexkey, self.qas})'
 
-   
