@@ -247,9 +247,11 @@ class BaseCongestionDropANN(BaseANN):
                 print("CLEAR CURRENT OPERATION QUEUE!")
             for i in range(self.parallel_workers):
                 while(not self.workers[i].insert_queue.empty() or not self.workers[i].delete_queue.empty()):
+                    self.workers[i].shouldLoop=False
                     self.workers[i].waitPendingOperations()
             return
         for i in range(self.parallel_workers):
+            self.workers[i].shouldLoop = False
             self.workers[i].waitPendingOperations()
 
     def initial_load(self,X,ids):
@@ -354,6 +356,7 @@ class BaseCongestionDropANN(BaseANN):
     def unlock(self):
         for i in range(self.parallel_workers):
             self.workers[i].m_mut.release()
+            self.workers[i].shouldLoop = False
 
 
 
