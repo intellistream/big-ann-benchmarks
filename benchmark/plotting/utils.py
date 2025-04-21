@@ -158,7 +158,7 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
                     
     except:
         print(f"Groundtruth for {dataset} not found.")
-        traceback.print_exc()
+        #traceback.print_exc()
         return
     
     search_type = dataset.search_type()
