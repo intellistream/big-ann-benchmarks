@@ -228,6 +228,8 @@ class CongestionRunner(BaseRunner):
                         # continuous query phase
                         continuous_counter += batchSize
                         if(continuous_counter >= (end-start)/100):
+                            algo.waitPendingOperations()
+                            algo.lock()
                             print(f"{i}: {start + i * batchSize}~{start + (i + 1) * batchSize} querying")
                             t0 = time.time()
                             algo.query(Q, count)
@@ -237,10 +239,12 @@ class CongestionRunner(BaseRunner):
                             attrs[f'continuousQueryResults'][-1].append(results)
                             #attrs[f'continuousQueryRecall{num_batch}_{i}'] = results
                             continuous_counter = 0
+                            algo.unlock()
 
 
                     # process the rest
                     if(start+batch_step*batchSize<end and start+(batch_step+1)*batchSize>end):
+
                         tNow = (time.time()-start_time)*1e6
                         tExpectedArrival = eventTimeStamps[end-start-1]
                         while tNow<tExpectedArrival:
@@ -275,6 +279,8 @@ class CongestionRunner(BaseRunner):
                         # continuous query phase
                         continuous_counter += batchSize
                         if(continuous_counter >= (end-start)/100):
+                            algo.waitPendingOperations()
+                            algo.lock()
                             print(f"{i}: {start + i * batchSize}~{end} querying")
 
                             t0 = time.time()
@@ -285,6 +291,7 @@ class CongestionRunner(BaseRunner):
                             attrs['continuousQueryResults'][-1].append(results)
                             #attrs[f'continuousQueryRecall{num_batch}_{batch_step}'] = results
                             continuous_counter = 0
+                            algo.unlock()
 
                     attrs['insertThroughput'].append((end-start)/((attrs['latencyInsert'][-1])/1e6))
                     filename = get_result_filename(dataset, count, definition, query_arguments, neurips23track="congestion", runbook_path=runbook_path)
@@ -369,6 +376,8 @@ class CongestionRunner(BaseRunner):
                         # continuous query phase
                         continuous_counter += batchSize
                         if (continuous_counter >= (end - start) / 100):
+                            algo.waitPendingOperations()
+                            algo.lock()
                             print(f"{i}: {start + i * batchSize}~{start + (i + 1) * batchSize} querying")
                             t0 = time.time()
                             algo.query(Q, count)
@@ -378,6 +387,7 @@ class CongestionRunner(BaseRunner):
                             attrs[f'continuousQueryResults'][-1].append(results)
                             # attrs[f'continuousQueryRecall{num_batch}_{i}'] = results
                             continuous_counter = 0
+                            algo.unlock()
 
                         # process the rest
                     if (start + batch_step * batchSize < end and start + (batch_step + 1) * batchSize > end):
@@ -417,6 +427,8 @@ class CongestionRunner(BaseRunner):
                         # continuous query phase
                         continuous_counter += batchSize
                         if (continuous_counter >= (end - start) / 100):
+                            #algo.waitPendingOperations()
+                            algo.lock()
                             print(f"{i}: {start + i * batchSize}~{end} querying")
 
                             t0 = time.time()
@@ -427,6 +439,7 @@ class CongestionRunner(BaseRunner):
                             attrs['continuousQueryResults'][-1].append(results)
                             # attrs[f'continuousQueryRecall{num_batch}_{batch_step}'] = results
                             continuous_counter = 0
+                            algo.unlock()
 
                     attrs['insertThroughput'].append((end - start) / ((attrs['latencyInsert'][-1]) / 1e6))
                     filename = get_result_filename(dataset, count, definition, query_arguments, neurips23track="congestion",

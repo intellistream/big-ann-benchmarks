@@ -1,6 +1,6 @@
-from threading import Thread,Lock
+from threading import Thread
+from multiprocessing import Process,Lock, Queue
 from typing import Optional,List
-from PyCANDYAlgo.utils import *
 
 from benchmark.algorithms.base import BaseANN
 
@@ -9,23 +9,30 @@ import numpy as np
 import time
 import random
 
+class NumpyIdxPair:
+    def __init__(self, X, ids):
+        self.vectors =X
+        self.idx = ids
+
+
 class AbstractThread:
     """
-    The base class and abstraction of a thread.
+    The base class and abstraction of a multiprocessing process
+    that enables true parallelism.
     """
     def __init__(self):
-        self.thread: Optional[Thread] = None
+        self.process: Optional[Process] = None
 
     def inline_main(self):
-        pass
+        pass  # Override in subclass
 
     def start_thread(self):
-        self.thread = Thread(target=self.inline_main)
-        self.thread.start()
+        self.process = Process(target=self.inline_main)
+        self.process.start()
 
     def join_thread(self):
-        if self.thread:
-            self.thread.join()
+        if self.process:
+            self.process.join(timeout=5)
 
 
 class CongestionDropWorker(AbstractThread):
@@ -36,11 +43,11 @@ class CongestionDropWorker(AbstractThread):
     def __init__(self, my_index_algo):
         super().__init__()
 
-        self.insert_queue = NumpyIdxQueue(10)
-        self.initial_load_queue = NumpyIdxQueue(10)
-        self.delete_queue = NumpyIdxQueue(10)
-        self.query_queue = NumpyIdxQueue(10)
-        self.cmd_queue = IdxQueue(10)
+        self.insert_queue = Queue()
+        self.initial_load_queue = Queue()
+        self.delete_queue = Queue()
+        self.query_queue = Queue()
+        self.cmd_queue = Queue()
 
         self.my_id = 0
         self.vec_dim = 0
@@ -70,14 +77,13 @@ class CongestionDropWorker(AbstractThread):
 
         while(shouldLoop):
             # 1. initial load stage
-            while not self.m_mut.acquire(blocking=False):
+            while not self.m_mut.acquire(block=False):
                 pass
             #print("Lock acquire by inline main initial")
             initial_vectors = []
             initial_ids = []
             while(not self.initial_load_queue.empty()):
-                pair = self.initial_load_queue.front()
-                self.initial_load_queue.pop()
+                pair = self.initial_load_queue.get()
                 initial_vectors.append(pair.vectors)
                 initial_ids.append(pair.idx)
             if(len(initial_vectors)>0):
@@ -88,30 +94,25 @@ class CongestionDropWorker(AbstractThread):
             self.m_mut.release()
 
             # 2. insert phase
-            while not self.m_mut.acquire(blocking=False):
+            while not self.m_mut.acquire(block=False):
                 pass
             #print("Lock acquire by inline main insertion & deletion")
             while(not self.insert_queue.empty()):
-                pair = self.insert_queue.front()
-                self.insert_queue.pop()
+                pair = self.insert_queue.get()
                 self.my_index_algo.insert(pair.vectors, np.array(pair.idx))
-
                 self.ingested_vectors += pair.vectors.shape[0]
-                #print(f"ingested_vectors={self.ingested_vectors}")
+                print(f"ingested_vectors={self.ingested_vectors}")
 
 
             # 3. delete phase
             while(not self.delete_queue.empty()):
-                idx = self.delete_queue.front().idx
-                self.delete_queue.pop()
+                idx = self.delete_queue.get().idx
                 self.my_index_algo.delete(np.array(idx))
-
             self.m_mut.release()
 
             # 4. terminate
             while(not self.cmd_queue.empty()):
-                cmd = self.cmd_queue.front()
-                self.cmd_queue.pop()
+                cmd = self.cmd_queue.get()
                 if(cmd==-1):
                     shouldLoop=False
                     print(f"parallel worker {self.my_id} terminates")
@@ -122,7 +123,7 @@ class CongestionDropWorker(AbstractThread):
         self.start_thread()
         return True
     def endHPC(self):
-        self.cmd_queue.push(-1)
+        self.cmd_queue.put(-1)
         return False
 
     def set_id(self,id):
@@ -130,7 +131,7 @@ class CongestionDropWorker(AbstractThread):
         return
 
     def waitPendingOperations(self):
-        while not self.m_mut.acquire(blocking=False):
+        while not self.m_mut.acquire(block=False):
             pass
         self.m_mut.release()
         return True
@@ -140,7 +141,7 @@ class CongestionDropWorker(AbstractThread):
         here index should be loaded several rows at a time before streaming
         """
         if(self.single_worker_opt):
-            while not self.m_mut.acquire(blocking=False):
+            while not self.m_mut.acquire(block=False):
                 pass
             #print("Lock acquire by initial_load")
             self.my_index_algo.insert(X,ids)
@@ -154,7 +155,8 @@ class CongestionDropWorker(AbstractThread):
 
         if(not self.randomDrop):
             if(self.insert_queue.empty() or (not self.congestion_drop)):
-                    self.insert_queue.push(NumpyIdxPair(X,id))
+                    print(f"inserting {id[0]}:{id[-1]}")
+                    self.insert_queue.put(NumpyIdxPair(X,id))
                     return
             else:
                 print(f"DROPPING DATA {id[0]}:{id[-1]}")
@@ -165,7 +167,7 @@ class CongestionDropWorker(AbstractThread):
                 print(f"RANDOM DROPPING DATA {id[0]}:{id[-1]}")
                 return
             if(self.insert_queue.empty() or (not self.congestion_drop)):
-                self.insert_queue.push(NumpyIdxPair(X,id))
+                self.insert_queue.put(NumpyIdxPair(X,id))
                 return
             else:
                 print(f"DROPPING DATA {id[0]}:{id[-1]}")
@@ -174,7 +176,7 @@ class CongestionDropWorker(AbstractThread):
 
     def delete(self, id):
         if(self.delete_queue.empty() or (not self.congestion_drop)):
-            self.delete_queue.push(NumpyIdxPair(np.array([0.0]),id))
+            self.delete_queue.put(NumpyIdxPair(np.array([0.0]),id))
         else:
             #TODO: Fix this
             print("Failed to process deletion!")
@@ -244,7 +246,7 @@ class BaseCongestionDropANN(BaseANN):
             if self.verbose:
                 print("CLEAR CURRENT OPERATION QUEUE!")
             for i in range(self.parallel_workers):
-                while(self.workers[i].insert_queue.size()!=0 and self.workers[i].delete_queue.size()!=0):
+                while(not self.workers[i].insert_queue.empty() or not self.workers[i].delete_queue.empty()):
                     self.workers[i].waitPendingOperations()
             return
         for i in range(self.parallel_workers):
@@ -343,6 +345,17 @@ class BaseCongestionDropANN(BaseANN):
     def replace(self,X,ids):
         self.delete(X,ids)
         self.insert(X,ids)
+
+    def lock(self):
+        for i in range(self.parallel_workers):
+            while not self.workers[i].m_mut.acquire(False):
+                pass
+
+    def unlock(self):
+        for i in range(self.parallel_workers):
+            self.workers[i].m_mut.release()
+
+
 
 
     def enableScenario(self, randomContamination=False, randomContaminationProb=0.0, randomDrop=False,
