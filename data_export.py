@@ -108,7 +108,7 @@ if __name__ == "__main__":
     is_first = True
     for track in tracks:
         for dataset_name in datasets:
-            if dataset_name not in concurrent_dataset_name:
+            if track=="concurrent" and dataset_name not in concurrent_dataset_name:
                 continue
             print(f"Looking at track:{track}, dataset:{dataset_name}")
             dataset = DATASETS[dataset_name]()
