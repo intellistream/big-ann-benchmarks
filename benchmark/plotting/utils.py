@@ -250,6 +250,7 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
 
                     if clear_cache and 'knn' in metrics_cache:
                         del metrics_cache['knn']
+                    properties["use_vec"] = False
                     val = metric["function"](true_nn, run_nn, metrics_cache, properties)
                     v.append(val)
                 if name == 'k-nn':
