@@ -1,0 +1,3 @@
+[submodule "CANDY-Benchmark"]
+	path = CANDY-Benchmark
+	url = https://github.com/intellistream/CANDY-Benchmark.git
