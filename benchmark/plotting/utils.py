@@ -174,11 +174,12 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
                    step_suffix = str(properties['step_' + str(i)])
                    run_nn_across_steps.append(numpy.array(run['neighbors_step' +  step_suffix]))
                    #true_nn_across_steps.append()
-                for i in range(len(properties['continuousQueryResults'])):
-                    run_nn_across_batches.append([])
-                    for j in range(len(properties['continuousQueryResults'][i])):
-                        temp = numpy.array(properties['continuousQueryResults'][i][j])
-                        run_nn_across_batches[i].append(temp)
+                if neurips23track == 'congestion':
+                    for i in range(len(properties['continuousQueryResults'])):
+                        run_nn_across_batches.append([])
+                        for j in range(len(properties['continuousQueryResults'][i])):
+                            temp = numpy.array(properties['continuousQueryResults'][i][j])
+                            run_nn_across_batches[i].append(temp)
             elif neurips23track == 'concurrent':
                 run_nn_across_steps = []
                 run_nn_across_batches = []
@@ -255,15 +256,15 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
                     v.append(val)
                 if name == 'k-nn':
                     print('Recall: ', v)
-
-                assert len(true_nn_across_batches) == len(run_nn_across_batches)
-                for(true_nn, run_nn) in zip(true_nn_across_batches, run_nn_across_batches):
-                    bv.append([])
-                    assert(len(true_nn)==len(run_nn))
-                    for(t,r) in zip(true_nn, run_nn):
-                        mean, std, recalls, queries_with_ties = get_recall_values(t, r, properties['count'])
-                        val = mean
-                        bv[-1].append(val)
+                if neurips23track == 'congestion':
+                    assert len(true_nn_across_batches) == len(run_nn_across_batches)
+                    for(true_nn, run_nn) in zip(true_nn_across_batches, run_nn_across_batches):
+                        bv.append([])
+                        assert(len(true_nn)==len(run_nn))
+                        for(t,r) in zip(true_nn, run_nn):
+                            mean, std, recalls, queries_with_ties = get_recall_values(t, r, properties['count'])
+                            val = mean
+                            bv[-1].append(val)
             elif neurips23track == 'concurrent':
                 v = []
                 bv = []

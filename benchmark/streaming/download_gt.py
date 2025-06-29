@@ -3,7 +3,7 @@ import os
 
 from benchmark.datasets import DATASETS
 from benchmark.dataset_io import download
-from benchmark.streaming.load_runbook import load_runbook, get_gt_url
+from benchmark.streaming.load_runbook import load_runbook_streaming, get_gt_url
 from benchmark.streaming.compute_gt import gt_dir
 
 
@@ -24,7 +24,7 @@ def main():
 
     ds = DATASETS[args.dataset]()
     print(args.runbook_file)
-    max_pts, runbook = load_runbook(args.dataset, ds.nb, args.runbook_file)
+    max_pts, runbook = load_runbook_streaming(args.dataset, ds.nb, args.runbook_file)
     gt_url = get_gt_url(args.dataset, args.runbook_file)
 
     download_dir = gt_dir(ds, args.runbook_file)

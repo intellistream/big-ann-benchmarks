@@ -1,0 +1,19 @@
+random-xs:
+  ipdiskann:
+    docker-tag: neurips23-streaming-ipdiskann
+    module: neurips23.streaming.ipdiskann.ipdiskann  # 假设 Python 类文件为 ipdiskann.py
+    constructor: IPDiskANN
+    base-args: [ "@metric" ]
+    run-groups:
+      base:
+        args: |
+          [{
+            "R": 64,
+            "L": 100,
+            "num_threads": 1
+          }]
+        query-args: |
+          [{
+            "L": 128,
+            "K": 10
+          }]

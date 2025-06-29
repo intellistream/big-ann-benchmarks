@@ -1977,6 +1977,102 @@ class RandomPlus(DatasetCompetitionFormat):
     def default_count(self):
         return 10
 
+class SPACEV1B(DatasetCompetitionFormat):
+    def __init__(self):
+        self.d = 100
+        self.nb = 1_000_000_000
+        self.nq = 29316
+        self.dtype = "float32"
+        self.ds_fn = f"data_{self.nb}_{self.d}"
+        self.qs_fn = f"queries_{self.nq}_{self.d}"
+        self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
+        self.basedir = os.path.join(BASEDIR, "SPACEV1B")
+        if not os.path.exists(self.basedir):
+            os.makedirs(self.basedir)
+
+    def prepare(self, skip_data=False):
+        downloadflag = 0
+        for item in os.listdir(self.basedir):
+            item_path = os.path.join(self.basedir, item)
+            if os.path.isdir(item_path) or os.path.isfile(item_path):
+                print("SPACEV1B has already been installed!")
+                downloadflag = 1
+                break
+        if downloadflag == 0:
+            import gdown
+            folder_url = "https://drive.google.com/drive/folders/your_folder_url_here"
+            gdown.download_folder(folder_url, output=self.basedir)
+
+        prepocessflag = 0
+        data_file_path = os.path.join(self.basedir, self.ds_fn)
+        queries_file_path = os.path.join(self.basedir, self.qs_fn)
+
+        if os.path.exists(data_file_path) and os.path.exists(queries_file_path):
+            print("Preprocessed SPACEV1B data already exists. Skipping preprocessing.")
+            prepocessflag = 1
+
+        if prepocessflag == 0:
+            num, dim, vectors = load_data(self.basedir + '/raw_data.bin')
+            index_vectors, query_vectors = sample_vectors(vectors, self.nb, self.nq)
+            save_data(index_vectors, type='data', basedir=self.basedir)
+            save_data(query_vectors, type='queries', basedir=self.basedir)
+
+    def search_type(self):
+        return "knn"
+
+    def distance(self):
+        return "euclidean"
+
+    def default_count(self):
+        return 10
+
+class SIFT1B(DatasetCompetitionFormat):
+    def __init__(self, base_count=1_000_000):
+        assert base_count in [1_000_000, 10_000_000, 100_000_000, 1_000_000_000], \
+            "Supported sizes: 1M, 10M, 100M, 1B"
+        self.d = 128
+        self.nb = base_count
+        self.nq = 10_000
+        self.dtype = "float32"
+        self.topk = 1000
+        self.ds_fn = "bigann_base.bvecs"
+        self.qs_fn = "bigann_query.bvecs"
+        self.gt_fn = "bigann_groundtruth.ivecs"
+        self.basedir = os.path.join(BASEDIR, "SIFT1B")
+        if not os.path.exists(self.basedir):
+            os.makedirs(self.basedir)
+
+    def prepare(self, skip_data=False):
+        downloadflag = 0
+        for name in [self.ds_fn, self.qs_fn, self.gt_fn]:
+            if os.path.exists(os.path.join(self.basedir, name)):
+                downloadflag += 1
+        if downloadflag < 3:
+            print("Downloading SIFT1B dataset...")
+            import gdown
+            folder_url = "https://drive.google.com/drive/folders/YOUR_FOLDER_ID_HERE"
+            gdown.download_folder(folder_url, output=self.basedir)
+        else:
+            print("SIFT1B already installed.")
+
+    def load_data(self):
+        return read_bvecs_as_float32(os.path.join(self.basedir, self.ds_fn))[:self.nb]
+
+    def load_queries(self):
+        return read_bvecs_as_float32(os.path.join(self.basedir, self.qs_fn))
+
+    def load_groundtruth(self):
+        return read_ivecs(os.path.join(self.basedir, self.gt_fn))[:, :self.topk]
+
+    def search_type(self):
+        return "knn"
+
+    def distance(self):
+        return "euclidean"
+
+    def default_count(self):
+        return 10
+
 DATASETS = {
     'random-plus(500000,1000,4096)': lambda : RandomPlus(500000, 1000, 4096, 7758258, 0, 0.5, 0, "randomplus"),
     'random-plus(500000,1000,2048)': lambda : RandomPlus(500000, 1000, 2048, 7758258, 0, 0.5, 0, "randomplus"),
