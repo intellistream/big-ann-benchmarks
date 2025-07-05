@@ -1,9 +1,12 @@
 from __future__ import absolute_import
 
 import itertools
+from fileinput import filename
+
 import numpy
 import os
 import yaml
+import random
 import traceback
 import re
 
@@ -19,6 +22,7 @@ from benchmark.congestion.load_runbook import load_runbook_congestion
 from benchmark.concurrent.load_runbook import load_runbook_concurrent
 
 import PyCANDYAlgo
+import pandas as pd
 
 
 def get_or_create_metrics(run):
@@ -287,6 +291,25 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
                 if neurips23track != "concurrent":
                     for i in range(len(v)):
                         run_result['knn_'+str(i)] = v[i]
+
+                    long_data = []
+
+                    for batch_idx, batch_values in enumerate(bv):
+                        for value_idx, value in enumerate(batch_values):
+                            long_data.append({
+                                'batch_id': batch_idx,
+                                'value_index': value_idx,
+                                'value': value,
+                            })
+
+                    if long_data:
+                        df = pd.DataFrame(long_data)
+                        output_dir = "results_temp"
+                        os.makedirs(output_dir, exist_ok=True)
+                        rand_suffix = random.randint(10000, 99999)
+                        filename = os.path.join(output_dir,
+                                                f"continuous_recall_{algo}_{dataset_name}_{rand_suffix}.csv")
+                        df.to_csv(filename, index=False)
 
                     for i in range(len(bv)):
                         recall_sum = 0

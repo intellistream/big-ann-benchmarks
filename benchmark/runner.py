@@ -11,6 +11,7 @@ import colors
 import docker
 import numpy
 import psutil
+import random
 
 from benchmark.algorithms.definitions import (Definition,
                                                instantiate_algorithm)
@@ -19,6 +20,7 @@ from benchmark.algorithms.base_runner import BaseRunner
 from benchmark.datasets import DATASETS
 from benchmark.dataset_io import upload_accelerated, download_accelerated
 from benchmark.results import store_results
+from benchmark.results import store_latency
 
 from benchmark.sensors.power_capture import power_capture
 from benchmark.t3.helper import t3_create_container
@@ -130,7 +132,17 @@ def run(definition, dataset, count, run_count, rebuild=True,
                 descriptor["index_size"] = index_size
                 descriptor["algo"] = definition.algorithm
                 descriptor["dataset"] = dataset
-                
+
+                output_dir = "results_temp"
+                os.makedirs(output_dir, exist_ok=True)
+                rand_suffix_1 = random.randint(10000, 99999)
+                f1 = os.path.join(output_dir, f"batchLatency_{definition.algorithm}_{dataset}_{rand_suffix_1}.csv")
+                rand_suffix_2 = random.randint(10000, 99999)
+                f2 = os.path.join(output_dir, f"batchThroughput_{definition.algorithm}_{dataset}_{rand_suffix_2}.csv")
+                store_latency(f1, f2, descriptor)
+                del descriptor['batchLatency']
+                del descriptor['batchThroughput']
+
                 cc_config = {}
                 if neurips23track == 'concurrent':
                     cc_config = {key: descriptor[key] for key in ["batch_size", "write_ratio", "num_threads"] if key in descriptor}
