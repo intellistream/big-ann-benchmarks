@@ -137,8 +137,7 @@ def run(definition, dataset, count, run_count, rebuild=True,
                 os.makedirs(output_dir, exist_ok=True)
                 rand_suffix_1 = random.randint(10000, 99999)
                 f1 = os.path.join(output_dir, f"batchLatency_{definition.algorithm}_{dataset}_{rand_suffix_1}.csv")
-                rand_suffix_2 = random.randint(10000, 99999)
-                f2 = os.path.join(output_dir, f"batchThroughput_{definition.algorithm}_{dataset}_{rand_suffix_2}.csv")
+                f2 = os.path.join(output_dir, f"batchThroughput_{definition.algorithm}_{dataset}_{rand_suffix_1}.csv")
                 store_latency(f1, f2, descriptor)
                 del descriptor['batchLatency']
                 del descriptor['batchThroughput']

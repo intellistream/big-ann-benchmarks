@@ -190,6 +190,8 @@ class CongestionRunner(BaseRunner):
 
                     start_time = time.time()
                     continuous_counter = 0
+                    MERGE_THRESHOLD = 100000  # 每10万条做一次合并
+                    inserted_total = 0
                     for i in range(batch_step):
 
                         attrs['batchLatency'].append(0)
@@ -228,6 +230,7 @@ class CongestionRunner(BaseRunner):
                         algo.insert(data, insert_ids)
                         attrs["latencyInsert"][-1]+=(time.time()-t0)*1e6
                         processedTimeStamps[i*batchSize:(i+1)*batchSize] = (time.time()-start_time)*1e6
+                        inserted_total += len(insert_ids)
 
                         #algo.waitPendingOperations()
                         # continuous query phase
@@ -245,6 +248,11 @@ class CongestionRunner(BaseRunner):
 
                         attrs['batchLatency'][-1] += (time.time() - t0) * 1e6
                         attrs['batchThroughput'][-1] += (batchSize / ((attrs['batchLatency'][-1]) / 1e6))
+
+                        if inserted_total >= MERGE_THRESHOLD and algo.name == "freshdiskann":
+                            print(f"MERGE THRESHOLD reached at {inserted_total} insertions — Performing final_merge()")
+                            algo.final_merge()
+                            inserted_total = 0
 
                     # process the rest
                     if(start+batch_step*batchSize<end and start+(batch_step+1)*batchSize>end):
