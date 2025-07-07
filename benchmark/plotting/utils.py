@@ -304,12 +304,15 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
 
                     if long_data:
                         df = pd.DataFrame(long_data)
-                        output_dir = "results_temp"
-                        os.makedirs(output_dir, exist_ok=True)
-                        rand_suffix = random.randint(10000, 99999)
-                        filename = os.path.join(output_dir,
-                                                f"continuous_recall_{algo}_{dataset_name}_{rand_suffix}.csv")
-                        df.to_csv(filename, index=False)
+                        # output_dir = "results_temp"
+                        # os.makedirs(output_dir, exist_ok=True)
+                        if neurips23track == 'congestion' and runbook_path:
+                            rand_suffix = random.randint(10000, 99999)
+                            last_part = runbook_path.split('/')[-1]
+                            filename = os.path.join('results/neurips23/congestion',last_part)
+                            f3 = os.path.join(filename,
+                                                f"{dataset_name}/10/{algo_name}/continuous_recall_{algo}_{dataset_name}_{rand_suffix}.csv")
+                            df.to_csv(f3, index=False)
 
                     for i in range(len(bv)):
                         recall_sum = 0
