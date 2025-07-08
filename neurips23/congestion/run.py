@@ -318,6 +318,8 @@ class CongestionRunner(BaseRunner):
                     counts['insert'] +=1
                 case 'delete':
                     ids = np.arange(entry['start'], entry['end'], dtype=np.uint32)
+                    start = entry['start']
+                    end = entry['end']
                     print(f'delete {start}:{end}')
                     algo.delete(ids)
 

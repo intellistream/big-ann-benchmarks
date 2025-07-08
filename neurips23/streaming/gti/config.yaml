@@ -1,0 +1,19 @@
+random-xs:
+  gti:
+    docker-tag: neurips23-streaming-gti
+    module: neurips23.streaming.gti.gti
+    constructor: GTI_Index
+    base-args: [ "@metric" ]
+    run-groups:
+      base:
+        args: |
+          [{
+            "capacity_up_i": 164,
+            "capacity_up_l": 2,
+            "m": 16
+          }]
+        query-args: |
+          [{
+            "L": 60,
+            "K": 10
+          }]
