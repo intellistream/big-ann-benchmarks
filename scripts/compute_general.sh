@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the algorithms and datasets
-GENERAL_DATASETS=("glove" "msong" "sun" "trevi" "dpr" "reddit" "random-experiment" "random-plus-experiment" "sift" "msturing-30M-clustered")
+GENERAL_DATASETS=("glove" "msong" "sun" "trevi" "dpr" "reddit" "random-experiment" "sift" "msturing-30M-clustered")
 
 # Iterate through each combination of algorithm and dataset
 for DS in "${GENERAL_DATASETS[@]}"; do
