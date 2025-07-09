@@ -62,8 +62,8 @@ def plot_recall_vs_batch_rate(file_path, save_path):
     plt.figure(figsize=(7, 6))
     for (algorithm, group), (marker, color) in zip(data.groupby("algorithm"), zip(markers, colors)):
         group = group.sort_values(by="randomContamination")
-        x = group["randomContamination"]
-        y = group["continuousRecall_0"]
+        x = group["randomContamination"].to_numpy()
+        y = group["continuousRecall_0"].to_numpy()
         plt.plot(x, y, marker='o', markersize=8, color=colors[algorithms.index(algorithm)], label=algorithm)
 
     plt.xlabel("Noisy Rate",fontsize=TICK_FONT_SIZE)
@@ -100,8 +100,8 @@ def plot_throughput_vs_batch_rate(file_path, save_path):
     plt.figure(figsize=(7, 6))
     for (algorithm, group), (marker, color) in zip(data.groupby("algorithm"), zip(markers, colors)):
         group = group.sort_values(by="randomContamination")
-        x = group["randomContamination"]
-        y = group["continuousThroughput_0"]
+        x = group["randomContamination"].to_numpy()
+        y = group["continuousThroughput_0"].to_numpy()
         plt.plot(x, y, marker='o',markersize=8, color=colors[algorithms.index(algorithm)], label=algorithm)
 
     plt.xlabel("Noisy Rate",fontsize=TICK_FONT_SIZE)
@@ -133,7 +133,7 @@ def plot_batch_rate_congestion(file_path, save_path):
 
     # Filter rows for specific algorithms
     data = data[data['algorithm'].isin(algorithms)]
-    plt.figure(figsize=(9, 6))
+    plt.figure(figsize=(7, 6))
 
     # Initialize the plot
 
@@ -165,40 +165,40 @@ def plot_batch_rate_congestion(file_path, save_path):
     plt.ylabel("QPS", fontsize=TICK_FONT_SIZE)
     plt.grid(True)
 
-    # Custom algorithm legend
-    legend_handles = []
-    # Tree category
-    legend_handles.append(Line2D([0], [0], color='none', label="Tree"))
-    for alg in categories['Tree']:
-        label = alg.split('_')[1].upper() if '_' in alg else alg.upper()
-        legend_handles.append(Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[algorithms.index(alg)],
-                                     markersize=MARKER_SIZE, label=label))
-
-    # Graph-based category
-    legend_handles.append(Line2D([0], [0], color='none', label="Graph"))
-    for alg in categories['Graph-based']:
-        label = alg.split('_')[1].upper() if '_' in alg else alg.upper()
-        legend_handles.append(Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[algorithms.index(alg)],
-                                     markersize=MARKER_SIZE, label=label))
-
-    # Hash category
-    legend_handles.append(Line2D([0], [0], color='none', label="LSH"))
-    for alg in categories['Hash']:
-        label = alg.split('_')[1].upper() if '_' in alg else alg.upper()
-        legend_handles.append(Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[algorithms.index(alg)],
-                                     markersize=MARKER_SIZE, label=label))
-
-    # Clustering category
-    legend_handles.append(Line2D([0], [0], color='none', label="Clustering"))
-    for alg in categories['Clustering']:
-        label = alg.split('_')[1].upper() if '_' in alg else alg.upper()
-        if label == "FAST":
-            label = "SCANN"
-        legend_handles.append(Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[algorithms.index(alg)],
-                                     markersize=MARKER_SIZE, label=label))
-
-
-
+    # # Custom algorithm legend
+    # legend_handles = []
+    # # Tree category
+    # legend_handles.append(Line2D([0], [0], color='none', label="Tree"))
+    # for alg in categories['Tree']:
+    #     label = alg.split('_')[1].upper() if '_' in alg else alg.upper()
+    #     legend_handles.append(Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[algorithms.index(alg)],
+    #                                  markersize=MARKER_SIZE, label=label))
+    #
+    # # Graph-based category
+    # legend_handles.append(Line2D([0], [0], color='none', label="Graph"))
+    # for alg in categories['Graph-based']:
+    #     label = alg.split('_')[1].upper() if '_' in alg else alg.upper()
+    #     legend_handles.append(Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[algorithms.index(alg)],
+    #                                  markersize=MARKER_SIZE, label=label))
+    #
+    # # Hash category
+    # legend_handles.append(Line2D([0], [0], color='none', label="LSH"))
+    # for alg in categories['Hash']:
+    #     label = alg.split('_')[1].upper() if '_' in alg else alg.upper()
+    #     legend_handles.append(Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[algorithms.index(alg)],
+    #                                  markersize=MARKER_SIZE, label=label))
+    #
+    # # Clustering category
+    # legend_handles.append(Line2D([0], [0], color='none', label="Clustering"))
+    # for alg in categories['Clustering']:
+    #     label = alg.split('_')[1].upper() if '_' in alg else alg.upper()
+    #     if label == "FAST":
+    #         label = "SCANN"
+    #     legend_handles.append(Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[algorithms.index(alg)],
+    #                                  markersize=MARKER_SIZE, label=label))
+    #
+    #
+    #
     value_legend_handles = []
     for value, marker in markers_map.items():
         value_legend_handles.append(Line2D([0], [0], marker=marker, color='w', markerfacecolor='black',
@@ -206,21 +206,21 @@ def plot_batch_rate_congestion(file_path, save_path):
 
     value_legend = plt.legend(handles=value_legend_handles, prop={'size': 13},loc='upper right',bbox_to_anchor=(1.03,1.015),fontsize=15)
     plt.gca().add_artist(value_legend)
-
-    custom_legend = plt.legend(handles=legend_handles, prop={'size': 13}, loc='center left', bbox_to_anchor=(1.05, 0.5),
-                               frameon=True, edgecolor='black', borderpad=1, ncol=1)
-
-    for text, entry in zip(custom_legend.get_texts(), legend_handles):
-        if isinstance(entry, Line2D) and entry.get_color() == 'none':
-            text.set_fontweight('bold')
-            text.set_style('italic')
-
-
+    #
+    # custom_legend = plt.legend(handles=legend_handles, prop={'size': 13}, loc='center left', bbox_to_anchor=(1.05, 0.5),
+    #                            frameon=True, edgecolor='black', borderpad=1, ncol=1)
+    #
+    # for text, entry in zip(custom_legend.get_texts(), legend_handles):
+    #     if isinstance(entry, Line2D) and entry.get_color() == 'none':
+    #         text.set_fontweight('bold')
+    #         text.set_style('italic')
+    #
+    #
 
 
     # Set xticks and xlim as requested
-    plt.xticks([0.5, 0.65, 0.8, 0.95])
-    plt.xlim(0.5, 1.0)
+    plt.xticks([0.2, 0.4, 0.6, 0.8])
+    # plt.xlim(0.5, 1.0)
 
     # Save the plot
     plt.tight_layout()
@@ -228,7 +228,7 @@ def plot_batch_rate_congestion(file_path, save_path):
     plt.close()
 
 # File paths
-input_file = "randomContamination-congestion.csv"
+input_file = "F10_randomContamination-congestion.csv"
 output_dir = "scripts/plotting/plots/randomContamination/"
 
 # Create the output directory if it doesn't exist

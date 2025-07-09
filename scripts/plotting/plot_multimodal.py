@@ -47,71 +47,69 @@ categories = {
     'Graph-based': ['faiss_NSW', 'faiss_HNSW', 'candy_mnru', 'diskann', 'cufe', 'pyanns']
 }
 
-def plot_recall_vs_event_rate(file_path, save_path):
+def plot_recall_vs_batch_rate(file_path, save_path):
     # Load the CSV file
     data = pd.read_csv(file_path)
 
-    # Filter rows with dataset containing "event" between 1000-50000
-    data = data[data['dataset'].str.contains(r'event(?:2500|10000|100000|200000|500000)\.yaml')]
+    # Filter rows with dataset containing "batch" between 1000-50000
+    # Filter rows with dataset containing "batch" between 1000-50000
+    data = data[data['dataset'].str.contains(r'multiModalProp-(0\.05|0\.2|0\.4|0\.6|0\.8)')]
 
     # Filter rows for specific algorithms
     data = data[data['algorithm'].isin(algorithms)]
-    data["eventRate"] = data["dataset"].str.extract(r"event(\d+)\.yaml").astype(int)
+    data["ImageProportion"] = data["dataset"].str.extract(r"multiModalProp-(0\.05|0\.2|0\.4|0\.6|0\.8)").astype(float)
 
     plt.figure(figsize=(7, 6))
     for (algorithm, group), (marker, color) in zip(data.groupby("algorithm"), zip(markers, colors)):
-        group = group.sort_values(by="eventRate")
-        x = group["eventRate"].to_numpy()
+        group = group.sort_values(by="ImageProportion")
+        x = group["ImageProportion"].replace(0.05, 0.0).to_numpy()
         y = group["continuousRecall_0"].to_numpy()
         plt.plot(x, y, marker='o', markersize=8, color=colors[algorithms.index(algorithm)], label=algorithm)
 
-    plt.xlabel("Event Rate",fontsize=TICK_FONT_SIZE)
+    plt.xlabel("Image Proportion",fontsize=TICK_FONT_SIZE)
     plt.ylabel("Recall@10",fontsize=TICK_FONT_SIZE)
-    plt.xscale('log')
-    plt.gca().xaxis.set_major_locator(LogLocator(base=10.0, subs=np.arange(1, 10) * 0.1, numticks=5))
+    plt.xticks([0.0, 0.2, 0.4, 0.6, 0.8])
 
     # Remove gridlines for x-axis (log scale brings them, but we want to remove them)
     plt.gca().get_xaxis().grid(False)
     plt.grid(True, which='both', axis='y')
-    plt.gca().yaxis.set_major_locator(plt.MaxNLocator(integer=True, prune='lower', steps=[1, 2, 3, 4, 5]))
+    #plt.gca().yaxis.set_major_locator(plt.MaxNLocator(integer=True, prune='lower', steps=[1, 2, 3, 4, 5]))
 
     # Add the custom unified legend for the first plot
 
 
-    # Adjust layout to prevent overlapping
+    # Adjust layout to prbatch overlapping
     plt.tight_layout()
 
     # Save the plot
     plt.savefig(save_path, format="pdf")
     plt.close()
 
-def plot_throughput_vs_event_rate(file_path, save_path):
+def plot_throughput_vs_batch_rate(file_path, save_path):
     # Load the CSV file
     data = pd.read_csv(file_path)
 
-    # Filter rows with dataset containing "event" between 1000-500000
-    data = data[data['dataset'].str.contains(r'event(?:2500|10000|100000|200000|500000)\.yaml')]
-    data["eventRate"] = data["dataset"].str.extract(r"event(\d+)\.yaml").astype(int)
+    # Filter rows with dataset containing "batch" between 1000-50000
+    # Filter rows with dataset containing "batch" between 1000-50000
+    data = data[data['dataset'].str.contains(r'multiModalProp-(0\.05|0\.2|0\.4|0\.6|0\.8)')]
 
-    # Filter for specific algorithms
+    # Filter rows for specific algorithms
     data = data[data['algorithm'].isin(algorithms)]
+    data["ImageProportion"] = data["dataset"].str.extract(r"multiModalProp-(0\.05|0\.2|0\.4|0\.6|0\.8)").astype(float)
 
-    # Create figure
     plt.figure(figsize=(9, 6))
-
-    # Plot each algorithm's throughput
     for (algorithm, group), (marker, color) in zip(data.groupby("algorithm"), zip(markers, colors)):
-        group = group.sort_values(by="eventRate")
-        x = group["eventRate"].to_numpy()
+        group = group.sort_values(by="ImageProportion")
+        x = group["ImageProportion"].replace(0.05, 0.0).to_numpy()
         y = group["continuousThroughput_0"].to_numpy()
-        plt.plot(x, y, marker='o', markersize=8,
-                 color=colors[algorithms.index(algorithm)],
-                 label=algorithm)
+        plt.plot(x, y, marker='o',markersize=8, color=colors[algorithms.index(algorithm)], label=algorithm)
 
-    plt.xlabel("Event Rate", fontsize=TICK_FONT_SIZE)
-    plt.ylabel("QPS", fontsize=TICK_FONT_SIZE)
-    plt.xscale('log')
-    plt.gca().xaxis.set_major_locator(LogLocator(base=10.0, subs=np.arange(1, 10) * 0.1, numticks=5))
+    plt.xlabel("Image Proportion",fontsize=TICK_FONT_SIZE)
+    plt.ylabel("QPS",fontsize=TICK_FONT_SIZE)
+    plt.xticks([0.0,0.2,0.4,0.6,0.8])
+
+
+    # Remove gridlines for x-axis (log scale brings them, but we want to remove them)
     plt.gca().get_xaxis().grid(False)
     plt.grid(True, which='both', axis='y')
     plt.gca().yaxis.set_major_locator(plt.MaxNLocator(integer=True, prune='lower', steps=[1, 2, 3, 4, 5]))
@@ -172,14 +170,17 @@ def plot_throughput_vs_event_rate(file_path, save_path):
     plt.savefig(save_path, format="pdf")
     plt.close()
 
-
-def plot_event_rate_congestion(file_path, save_path):
+def plot_batch_rate_congestion(file_path, save_path):
     # Load the CSV file
     data = pd.read_csv(file_path)
 
-    # Filter rows with dataset containing "event" between 1000-50000
-    data = data[data['dataset'].str.contains(r'event(?:2500|10000|100000|200000|500000)\.yaml')]
-    data["eventRate"] = data["dataset"].str.extract(r"event(\d+)\.yaml").astype(int)
+    # Filter rows with dataset containing "batch" between 1000-50000
+    # Filter rows with dataset containing "batch" between 1000-50000
+    data = data[data['dataset'].str.contains(r'multiModalProp-(0\.05|0\.2|0\.4|0\.6|0\.8)')]
+
+    # Filter rows for specific algorithms
+    data = data[data['algorithm'].isin(algorithms)]
+    data["ImageProportion"] = data["dataset"].str.extract(r"multiModalProp-(0\.05|0\.2|0\.4|0\.6|0\.8)").astype(float)
 
     # Filter rows for specific algorithms
     data = data[data['algorithm'].isin(algorithms)]
@@ -187,24 +188,24 @@ def plot_event_rate_congestion(file_path, save_path):
 
     # Initialize the plot
 
-    # Sort unique event rates for consistent marker assignment
-    unique_values = sorted(data["eventRate"].unique())
+    # Sort unique Batch Deletions for consistent marker assignment
+    unique_values = sorted(data["ImageProportion"].unique())
     markers_map = {value: markers[i % len(markers)] for i, value in enumerate(unique_values)}
 
     # Plotting
 
     plot_lines = []
     for (algorithm, group), (marker, color) in zip(data.groupby("algorithm"), zip(markers, colors)):
-        group = group.sort_values(by="eventRate")
+        group = group.sort_values(by="ImageProportion")
         plot_lines.append([])
-        for value, sub_group in group.groupby("eventRate"):
+        for value, sub_group in group.groupby("ImageProportion"):
             l1 = plt.scatter(
                 sub_group["continuousRecall_0"],
                 sub_group["continuousThroughput_0"],
                 marker=markers_map[value],
                 color=colors[algorithms.index(algorithm)],
                 s=150,
-                label=algorithm if value == group["eventRate"].iloc[0] else "",
+                label=algorithm if value == group["ImageProportion"].iloc[0] else "",
                 edgecolors="black", linewidth=1
             )
             plot_lines[-1].append(l1)
@@ -254,7 +255,7 @@ def plot_event_rate_congestion(file_path, save_path):
         value_legend_handles.append(Line2D([0], [0], marker=marker, color='w', markerfacecolor='black',
                                                       markersize=12.5, label=f'{value}'))
 
-    value_legend = plt.legend(handles=value_legend_handles, prop={'size': 13},loc='upper right',bbox_to_anchor=(1.03,1.015),fontsize=15)
+    value_legend = plt.legend(handles=value_legend_handles, prop={'size': 13},loc='upper right',bbox_to_anchor=(0.23,1.015),fontsize=15)
     plt.gca().add_artist(value_legend)
 
     custom_legend = plt.legend(handles=legend_handles, prop={'size': 13}, loc='center left', bbox_to_anchor=(1.05, 0.5),
@@ -278,17 +279,14 @@ def plot_event_rate_congestion(file_path, save_path):
     plt.close()
 
 # File paths
-input_file = "F4_Event_Rate .csv"
-output_dir = "scripts/plotting/plots/event/"
+input_file = "F9_multiModalProp.csv"
+output_dir = "scripts/plotting/plots/multiModal/"
 
 # Create the output directory if it doesn't exist
 os.makedirs(output_dir, exist_ok=True)
 
 # Save each plot separately
-plot_throughput_vs_event_rate(input_file, os.path.join(output_dir, "QPS.pdf"))
-plot_recall_vs_event_rate(input_file, os.path.join(output_dir, "recall.pdf"))
-plot_event_rate_congestion(input_file, os.path.join(output_dir,"vs.pdf"))
-
-
-
+plot_throughput_vs_batch_rate(input_file, os.path.join(output_dir, "QPS.pdf"))
+plot_recall_vs_batch_rate(input_file, os.path.join(output_dir, "recall.pdf"))
+plot_batch_rate_congestion(input_file, os.path.join(output_dir,"vs.pdf"))
 

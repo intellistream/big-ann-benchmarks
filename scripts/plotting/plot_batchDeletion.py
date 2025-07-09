@@ -62,8 +62,8 @@ def plot_recall_vs_batch_rate(file_path, save_path):
     plt.figure(figsize=(7, 6))
     for (algorithm, group), (marker, color) in zip(data.groupby("algorithm"), zip(markers, colors)):
         group = group.sort_values(by="batchDeletion")
-        x = group["batchDeletion"]
-        y = group["continuousRecall_0"]
+        x = group["batchDeletion"].to_numpy()
+        y = group["continuousRecall_0"].to_numpy()
         plt.plot(x, y, marker='o', markersize=8, color=colors[algorithms.index(algorithm)], label=algorithm)
 
     plt.xlabel("Deletion Proportion",fontsize=TICK_FONT_SIZE)
@@ -100,8 +100,8 @@ def plot_throughput_vs_batch_rate(file_path, save_path):
     plt.figure(figsize=(7, 6))
     for (algorithm, group), (marker, color) in zip(data.groupby("algorithm"), zip(markers, colors)):
         group = group.sort_values(by="batchDeletion")
-        x = group["batchDeletion"]
-        y = group["continuousThroughput_0"]
+        x = group["batchDeletion"].to_numpy()
+        y = group["continuousThroughput_0"].to_numpy()
         plt.plot(x, y, marker='o',markersize=8, color=colors[algorithms.index(algorithm)], label=algorithm)
 
     plt.xlabel("Deletion Proportion",fontsize=TICK_FONT_SIZE)
@@ -219,8 +219,8 @@ def plot_batch_rate_congestion(file_path, save_path):
 
 
     # Set xticks and xlim as requested
-    plt.xticks([0.5, 0.65, 0.8, 0.95])
-    plt.xlim(0.5, 1.0)
+    plt.xticks([0.2, 0.4, 0.6, 0.8])
+    # plt.xlim(0.5, 1.0)
 
     # Save the plot
     plt.tight_layout()
@@ -228,7 +228,7 @@ def plot_batch_rate_congestion(file_path, save_path):
     plt.close()
 
 # File paths
-input_file = "batchDeletion-congestion.csv"
+input_file = "F6_batchDeletion.csv"
 output_dir = "scripts/plotting/plots/batchDeletion/"
 
 # Create the output directory if it doesn't exist

@@ -62,11 +62,11 @@ def plot_recall_vs_batch_rate(file_path, save_path):
     plt.figure(figsize=(7, 6))
     for (algorithm, group), (marker, color) in zip(data.groupby("algorithm"), zip(markers, colors)):
         group = group.sort_values(by="wordContamination")
-        x = group["wordContamination"]
-        y = group["continuousRecall_0"]
+        x = group["wordContamination"].to_numpy()
+        y = group["continuousRecall_0"].to_numpy()
         plt.plot(x, y, marker='o', markersize=8, color=colors[algorithms.index(algorithm)], label=algorithm)
 
-    plt.xlabel("Contamination Rate",fontsize=TICK_FONT_SIZE)
+    plt.xlabel("Hot Spot Proportion",fontsize=TICK_FONT_SIZE)
     plt.ylabel("Recall@10",fontsize=TICK_FONT_SIZE)
     plt.xticks([0.05, 0.2, 0.4, 0.6, 0.8])
 
@@ -97,14 +97,14 @@ def plot_throughput_vs_batch_rate(file_path, save_path):
     data = data[data['algorithm'].isin(algorithms)]
     data["wordContamination"] = data["dataset"].str.extract(r"wte-(0\.05|0\.2|0\.4|0\.6|0\.8)").astype(float)
 
-    plt.figure(figsize=(7, 6))
+    plt.figure(figsize=(9, 6))
     for (algorithm, group), (marker, color) in zip(data.groupby("algorithm"), zip(markers, colors)):
         group = group.sort_values(by="wordContamination")
-        x = group["wordContamination"]
-        y = group["continuousThroughput_0"]
+        x = group["wordContamination"].to_numpy()
+        y = group["continuousThroughput_0"].to_numpy()
         plt.plot(x, y, marker='o',markersize=8, color=colors[algorithms.index(algorithm)], label=algorithm)
 
-    plt.xlabel("Contamination Rate",fontsize=TICK_FONT_SIZE)
+    plt.xlabel("Hot Spot Proportion",fontsize=TICK_FONT_SIZE)
     plt.ylabel("QPS",fontsize=TICK_FONT_SIZE)
     plt.xticks([0.05,0.2,0.4,0.6,0.8])
 
@@ -114,9 +114,60 @@ def plot_throughput_vs_batch_rate(file_path, save_path):
     plt.grid(True, which='both', axis='y')
     plt.gca().yaxis.set_major_locator(plt.MaxNLocator(integer=True, prune='lower', steps=[1, 2, 3, 4, 5]))
 
-    # Save the plot
+    # ==== Add categorized algorithm legend ====
+    legend_handles = []
+
+    # Tree
+    legend_handles.append(Line2D([0], [0], color='none', label="Tree"))
+    for alg in categories['Tree']:
+        label = alg.split('_')[1].upper() if '_' in alg else alg.upper()
+        legend_handles.append(Line2D([0], [0], marker='o', color='w',
+                                     markerfacecolor=colors[algorithms.index(alg)],
+                                     markersize=MARKER_SIZE, label=label))
+
+    # Graph
+    legend_handles.append(Line2D([0], [0], color='none', label="Graph"))
+    for alg in categories['Graph-based']:
+        label = alg.split('_')[1].upper() if '_' in alg else alg.upper()
+        legend_handles.append(Line2D([0], [0], marker='o', color='w',
+                                     markerfacecolor=colors[algorithms.index(alg)],
+                                     markersize=MARKER_SIZE, label=label))
+
+    # LSH
+    legend_handles.append(Line2D([0], [0], color='none', label="LSH"))
+    for alg in categories['Hash']:
+        label = alg.split('_')[1].upper() if '_' in alg else alg.upper()
+        legend_handles.append(Line2D([0], [0], marker='o', color='w',
+                                     markerfacecolor=colors[algorithms.index(alg)],
+                                     markersize=MARKER_SIZE, label=label))
+
+    # Clustering
+    legend_handles.append(Line2D([0], [0], color='none', label="Clustering"))
+    for alg in categories['Clustering']:
+        label = alg.split('_')[1].upper() if '_' in alg else alg.upper()
+        if label == "FAST":
+            label = "SCANN"
+        legend_handles.append(Line2D([0], [0], marker='o', color='w',
+                                     markerfacecolor=colors[algorithms.index(alg)],
+                                     markersize=MARKER_SIZE, label=label))
+
+    # Plot legend on right side
+    custom_legend = plt.legend(handles=legend_handles, prop={'size': 13},
+                               loc='center left', bbox_to_anchor=(1.05, 0.5),
+                               frameon=True, edgecolor='black', borderpad=1, ncol=1)
+
+    # Bold+Italic for category titles
+    for text, entry in zip(custom_legend.get_texts(), legend_handles):
+        if isinstance(entry, Line2D) and entry.get_color() == 'none':
+            text.set_fontweight('bold')
+            text.set_style('italic')
+
+    # Adjust layout
     plt.tight_layout()
-    plt.savefig(save_path,format="pdf")
+    plt.subplots_adjust(right=0.75)  # Reserve space for legend
+
+    # Save the plot
+    plt.savefig(save_path, format="pdf")
     plt.close()
 
 def plot_batch_rate_congestion(file_path, save_path):
@@ -228,7 +279,7 @@ def plot_batch_rate_congestion(file_path, save_path):
     plt.close()
 
 # File paths
-input_file = "wordContamination-congestion.csv"
+input_file = "F7_wordContamination.csv"
 output_dir = "scripts/plotting/plots/wordContamination/"
 
 # Create the output directory if it doesn't exist

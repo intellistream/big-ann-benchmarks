@@ -62,8 +62,8 @@ def plot_recall_vs_bulk_rate(file_path, save_path):
     plt.figure(figsize=(7, 6))
     for (algorithm, group), (marker, color) in zip(data.groupby("algorithm"), zip(markers, colors)):
         group = group.sort_values(by="bulkDeletion")
-        x = group["bulkDeletion"]
-        y = group["knn_0"]
+        x = group["bulkDeletion"].to_numpy()
+        y = group["knn_0"].to_numpy()
         plt.plot(x, y, marker='o', markersize=8, color=colors[algorithms.index(algorithm)], label=algorithm)
 
     plt.xlabel("Deletion Proportion",fontsize=TICK_FONT_SIZE)
@@ -97,11 +97,11 @@ def plot_throughput_vs_bulk_rate(file_path, save_path):
     data = data[data['algorithm'].isin(algorithms)]
     data["bulkDeletion"] = data["dataset"].str.extract(r"bulkDeletion(\d+\.\d{1})\.yaml").astype(float)
 
-    plt.figure(figsize=(7, 6))
+    plt.figure(figsize=(9, 6))
     for (algorithm, group), (marker, color) in zip(data.groupby("algorithm"), zip(markers, colors)):
         group = group.sort_values(by="bulkDeletion")
-        x = group["bulkDeletion"]
-        y = group["queryThroughput0"]
+        x = group["bulkDeletion"].to_numpy()
+        y = group["queryThroughput0"].to_numpy()
         plt.plot(x, y, marker='o',markersize=8, color=colors[algorithms.index(algorithm)], label=algorithm)
 
     plt.xlabel("Deletion Proportion",fontsize=TICK_FONT_SIZE)
@@ -114,9 +114,60 @@ def plot_throughput_vs_bulk_rate(file_path, save_path):
     plt.grid(True, which='both', axis='y')
     plt.gca().yaxis.set_major_locator(plt.MaxNLocator(integer=True, prune='lower', steps=[1, 2, 3, 4, 5]))
 
-    # Save the plot
+    # ==== Add categorized algorithm legend ====
+    legend_handles = []
+
+    # Tree
+    legend_handles.append(Line2D([0], [0], color='none', label="Tree"))
+    for alg in categories['Tree']:
+        label = alg.split('_')[1].upper() if '_' in alg else alg.upper()
+        legend_handles.append(Line2D([0], [0], marker='o', color='w',
+                                     markerfacecolor=colors[algorithms.index(alg)],
+                                     markersize=MARKER_SIZE, label=label))
+
+    # Graph
+    legend_handles.append(Line2D([0], [0], color='none', label="Graph"))
+    for alg in categories['Graph-based']:
+        label = alg.split('_')[1].upper() if '_' in alg else alg.upper()
+        legend_handles.append(Line2D([0], [0], marker='o', color='w',
+                                     markerfacecolor=colors[algorithms.index(alg)],
+                                     markersize=MARKER_SIZE, label=label))
+
+    # LSH
+    legend_handles.append(Line2D([0], [0], color='none', label="LSH"))
+    for alg in categories['Hash']:
+        label = alg.split('_')[1].upper() if '_' in alg else alg.upper()
+        legend_handles.append(Line2D([0], [0], marker='o', color='w',
+                                     markerfacecolor=colors[algorithms.index(alg)],
+                                     markersize=MARKER_SIZE, label=label))
+
+    # Clustering
+    legend_handles.append(Line2D([0], [0], color='none', label="Clustering"))
+    for alg in categories['Clustering']:
+        label = alg.split('_')[1].upper() if '_' in alg else alg.upper()
+        if label == "FAST":
+            label = "SCANN"
+        legend_handles.append(Line2D([0], [0], marker='o', color='w',
+                                     markerfacecolor=colors[algorithms.index(alg)],
+                                     markersize=MARKER_SIZE, label=label))
+
+    # Plot legend on right side
+    custom_legend = plt.legend(handles=legend_handles, prop={'size': 13},
+                               loc='center left', bbox_to_anchor=(1.05, 0.5),
+                               frameon=True, edgecolor='black', borderpad=1, ncol=1)
+
+    # Bold+Italic for category titles
+    for text, entry in zip(custom_legend.get_texts(), legend_handles):
+        if isinstance(entry, Line2D) and entry.get_color() == 'none':
+            text.set_fontweight('bold')
+            text.set_style('italic')
+
+    # Adjust layout
     plt.tight_layout()
-    plt.savefig(save_path,format="pdf")
+    plt.subplots_adjust(right=0.75)  # Reserve space for legend
+
+    # Save the plot
+    plt.savefig(save_path, format="pdf")
     plt.close()
 
 def plot_bulk_rate_congestion(file_path, save_path):
@@ -133,7 +184,7 @@ def plot_bulk_rate_congestion(file_path, save_path):
 
     # Filter rows for specific algorithms
     data = data[data['algorithm'].isin(algorithms)]
-    plt.figure(figsize=(9, 6))
+    plt.figure(figsize=(7, 6))
 
     # Initialize the plot
 
@@ -165,38 +216,39 @@ def plot_bulk_rate_congestion(file_path, save_path):
     plt.ylabel("QPS", fontsize=TICK_FONT_SIZE)
     plt.grid(True)
 
-    # Custom algorithm legend
-    legend_handles = []
-    # Tree category
-    legend_handles.append(Line2D([0], [0], color='none', label="Tree"))
-    for alg in categories['Tree']:
-        label = alg.split('_')[1].upper() if '_' in alg else alg.upper()
-        legend_handles.append(Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[algorithms.index(alg)],
-                                     markersize=MARKER_SIZE, label=label))
-
-    # Graph-based category
-    legend_handles.append(Line2D([0], [0], color='none', label="Graph"))
-    for alg in categories['Graph-based']:
-        label = alg.split('_')[1].upper() if '_' in alg else alg.upper()
-        legend_handles.append(Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[algorithms.index(alg)],
-                                     markersize=MARKER_SIZE, label=label))
-
-    # Hash category
-    legend_handles.append(Line2D([0], [0], color='none', label="LSH"))
-    for alg in categories['Hash']:
-        label = alg.split('_')[1].upper() if '_' in alg else alg.upper()
-        legend_handles.append(Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[algorithms.index(alg)],
-                                     markersize=MARKER_SIZE, label=label))
-
-    # Clustering category
-    legend_handles.append(Line2D([0], [0], color='none', label="Clustering"))
-    for alg in categories['Clustering']:
-        label = alg.split('_')[1].upper() if '_' in alg else alg.upper()
-        if label == "FAST":
-            label = "SCANN"
-        legend_handles.append(Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[algorithms.index(alg)],
-                                     markersize=MARKER_SIZE, label=label))
-
+    #
+    # # Custom algorithm legend
+    # legend_handles = []
+    # # Tree category
+    # legend_handles.append(Line2D([0], [0], color='none', label="Tree"))
+    # for alg in categories['Tree']:
+    #     label = alg.split('_')[1].upper() if '_' in alg else alg.upper()
+    #     legend_handles.append(Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[algorithms.index(alg)],
+    #                                  markersize=MARKER_SIZE, label=label))
+    #
+    # # Graph-based category
+    # legend_handles.append(Line2D([0], [0], color='none', label="Graph"))
+    # for alg in categories['Graph-based']:
+    #     label = alg.split('_')[1].upper() if '_' in alg else alg.upper()
+    #     legend_handles.append(Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[algorithms.index(alg)],
+    #                                  markersize=MARKER_SIZE, label=label))
+    #
+    # # Hash category
+    # legend_handles.append(Line2D([0], [0], color='none', label="LSH"))
+    # for alg in categories['Hash']:
+    #     label = alg.split('_')[1].upper() if '_' in alg else alg.upper()
+    #     legend_handles.append(Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[algorithms.index(alg)],
+    #                                  markersize=MARKER_SIZE, label=label))
+    #
+    # # Clustering category
+    # legend_handles.append(Line2D([0], [0], color='none', label="Clustering"))
+    # for alg in categories['Clustering']:
+    #     label = alg.split('_')[1].upper() if '_' in alg else alg.upper()
+    #     if label == "FAST":
+    #         label = "SCANN"
+    #     legend_handles.append(Line2D([0], [0], marker='o', color='w', markerfacecolor=colors[algorithms.index(alg)],
+    #                                  markersize=MARKER_SIZE, label=label))
+    #
 
 
     value_legend_handles = []
@@ -207,13 +259,13 @@ def plot_bulk_rate_congestion(file_path, save_path):
     value_legend = plt.legend(handles=value_legend_handles, prop={'size': 13},loc='upper right',bbox_to_anchor=(1.03,1.015),fontsize=15)
     plt.gca().add_artist(value_legend)
 
-    custom_legend = plt.legend(handles=legend_handles, prop={'size': 13}, loc='center left', bbox_to_anchor=(1.05, 0.5),
-                               frameon=True, edgecolor='black', borderpad=1, ncol=1)
+    # custom_legend = plt.legend(handles=legend_handles, prop={'size': 13}, loc='center left', bbox_to_anchor=(1.05, 0.5),
+    #                            frameon=True, edgecolor='black', borderpad=1, ncol=1)
 
-    for text, entry in zip(custom_legend.get_texts(), legend_handles):
-        if isinstance(entry, Line2D) and entry.get_color() == 'none':
-            text.set_fontweight('bold')
-            text.set_style('italic')
+    # for text, entry in zip(custom_legend.get_texts(), legend_handles):
+    #     if isinstance(entry, Line2D) and entry.get_color() == 'none':
+    #         text.set_fontweight('bold')
+    #         text.set_style('italic')
 
 
 
@@ -228,7 +280,7 @@ def plot_bulk_rate_congestion(file_path, save_path):
     plt.close()
 
 # File paths
-input_file = "bulkDeletion-congestion.csv"
+input_file = "F6_bulkDeletion.csv"
 output_dir = "scripts/plotting/plots/bulkDeletion/"
 
 # Create the output directory if it doesn't exist
