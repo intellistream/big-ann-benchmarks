@@ -7,13 +7,13 @@ random-xs:
     run-groups:
       base:
         args: |
-          [{
-            "capacity_up_i": 100,
-            "capacity_up_l": 100,
-            "m": 16
-          }]
+          [
+            {"capacity_up_i": 64, "capacity_up_l": 2, "m": 16},
+            {"capacity_up_i": 64, "capacity_up_l": 4, "m": 16},
+            {"capacity_up_i": 128, "capacity_up_l": 2, "m": 16},
+            {"capacity_up_i": 128, "capacity_up_l": 4, "m": 16}
+          ]
         query-args: |
-          [{
-            "L": 200,
-            "K": 10
-          }]
+          [
+            {"L": 60,"K": 10}
+          ]

@@ -12,9 +12,9 @@ class GTI_Index(BaseStreamingANN):
         self.wrapper = None
 
         # Extract parameters with defaults
-        self.capacity_up_i = index_params.get("capacity_up_i", 200)
-        self.capacity_up_l = index_params.get("capacity_up_l", 200)
-        self.m = index_params.get("m", 16)
+        self.capacity_up_i = index_params.get("capacity_up_i", 100)
+        self.capacity_up_l = index_params.get("capacity_up_l", 100)
+        self.m = index_params.get("m", 4)
 
         # Query parameters
         self.query_L = 60  # Default L value for search
@@ -28,25 +28,41 @@ class GTI_Index(BaseStreamingANN):
         # Initialize the wrapper
         self.index = GTIWrapper()
         self.index.setup(max_pts, ndim, self.capacity_up_i, self.capacity_up_l, self.m)
-
         print(f"GTI setup: max_pts={max_pts}, ndim={ndim}, capacity_up_i={self.capacity_up_i}, "
               f"capacity_up_l={self.capacity_up_l}, m={self.m}")
 
     def insert(self, X, ids):
         """Insert vectors into the GTI index"""
         # Convert to appropriate types
-        X = X.astype(np.float32)
+        # X = X.astype(np.float32)
+        X = np.ascontiguousarray(X.astype(np.float32))
+        # print(X.flags['C_CONTIGUOUS'])
+        # print(X.shape)
         ids = ids.astype(np.int32)
-
+        # print(ids.dtype == np.int32)
+        # print(len(np.unique(ids)) == len(ids))
         if not self.is_built:
             # First insertion - build the index
             self.index.build(X, ids, self.capacity_up_i, self.capacity_up_l, self.m)
             self.is_built = True
             print("GTI index built successfully")
+
+            # num_points = 50000
+            # dim = 512
+            # data_array = np.random.rand(num_points, dim).astype(np.float32).copy()
+            # self.temp_data = data_array
+            # # 2. 生成外部ID
+            # print("test")
+            # external_ids = np.arange(1000, 1000 + num_points, dtype=np.int32)
+            # print("begin")
+            # self.index.build(data_array, external_ids, 100, 100, 16)
+            # print("end")
+            # results, distances = self.index.query(data_array[0:10], 10, 60)
+            # print(results)
         else:
             # Subsequent insertions
             self.index.insert(X, ids)
-            self.index.debug_info()
+            # self.index.debug_info()
 
     def delete(self, ids):
         """Delete vectors from the GTI index by their IDs"""
@@ -56,7 +72,7 @@ class GTI_Index(BaseStreamingANN):
 
         ids = ids.astype(np.int32)
         self.index.remove(ids)
-        self.index.debug_info()
+        # self.index.debug_info()
         print("Vectors deleted successfully")
 
     def query(self, X, k):
@@ -64,15 +80,15 @@ class GTI_Index(BaseStreamingANN):
         if not self.is_built:
             raise RuntimeError("Index must be built before querying")
 
-        X = X.astype(np.float32)
+        # X = X.astype(np.float32)
+        X = np.ascontiguousarray(X.astype(np.float32))
         n = X.shape[0]
-
 
         # Perform the query
         results, distances = self.index.query(X, k, self.query_L)
-
+        # results, distances = self.index.query(self.temp_data[10:20], k, self.query_L)
         # Store results for later access
-        print(results)
+        # print(results)
         self.res = results
 
 

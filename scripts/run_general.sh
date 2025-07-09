@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define the algorithms and datasets
-ALGORITHMS=("candy_lshapg" "candy_mnru" "candy_sptag" "cufe" "diskann" "faiss_fast_scan" "faiss_HNSW" "faiss_IVFPQ" "faiss_lsh" "faiss_NSW" "faiss_onlinepq" "faiss_pq" "puck" "pyanns")
+ALGORITHMS=("ipdiskann" "gti")
 DATASETS=("glove" "msong" "sun" "trevi" "dpr" "reddit" "random-experiment" "sift" "msturing-30M-clustered")
 
 # Iterate through each combination of algorithm and dataset

@@ -10,7 +10,7 @@ random-xs:
           [{
             "capacity_up_i": 164,
             "capacity_up_l": 2,
-            "m": 16
+            "m": 4
           }]
         query-args: |
           [{
