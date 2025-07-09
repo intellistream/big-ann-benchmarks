@@ -32,7 +32,7 @@ matplotlib.rcParams['pdf.fonttype'] = 42
 
 markers = ['o', 's', 'D', 'v', '^', 'P', '*', 'X', 'h', '>', '<', 'p', 'H', 'd', '1', '2', '3', '4']
 colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'orange', 'pink', 'brown', 'purple', 'gray', 'lime', 'teal', 'indigo',
-          'violet', 'gold', 'coral']
+          'violet', 'gold', 'coral', '']
 algorithms = [
     "candy_lshapg", "candy_mnru", "candy_sptag", "cufe", "diskann", "faiss_fast_scan",
     "faiss_HNSW", "faiss_IVFPQ", "faiss_lsh", "faiss_NSW", "faiss_onlinepq",
