@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Define the algorithms and datasets
-ALGORITHMS=("ipdiskann" "gti")
-DATASETS=("glove" "msong" "sun" "trevi" "dpr" "reddit" "random-experiment" "sift" "msturing-30M-clustered")
+ALGORITHMS=("ipdiskann" )
+DATASETS=("glove" "msong" "sift" )
 
 # Iterate through each combination of algorithm and dataset
 for DS in "${DATASETS[@]}"; do
