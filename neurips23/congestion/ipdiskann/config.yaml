@@ -14,27 +14,6 @@ random-xs:
             "num_threads": 32,
             "insert_thread_count": 32,
             "search_thread_count": 32
-            },
-            {
-            "R": 50,
-            "L": 50,
-            "num_threads": 32,
-            "insert_thread_count": 32,
-            "search_thread_count": 32
-            },
-            {
-            "R": 32,
-            "L": 70,
-            "num_threads": 32,
-            "insert_thread_count": 32,
-            "search_thread_count": 32
-            },
-            {
-            "R": 50,
-            "L": 70,
-            "num_threads": 32,
-            "insert_thread_count": 32,
-            "search_thread_count": 32
             }
           ]
         query-args: |
