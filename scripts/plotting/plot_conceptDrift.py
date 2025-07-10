@@ -22,12 +22,14 @@ matplotlib.rcParams['pdf.fonttype'] = 42
 
 # ===== 算法和颜色 =====
 algorithms = [
+    "ipdiskann", "gti",
     "candy_lshapg", "candy_mnru", "candy_sptag", "cufe", "diskann", "faiss_fast_scan",
     "faiss_HNSW", "faiss_IVFPQ", "faiss_lsh", "faiss_NSW", "faiss_onlinepq",
     "faiss_pq", "puck", "pyanns"
 ]
-colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'orange', 'pink', 'brown', 'purple', 'gray',
-          'lime', 'teal', 'indigo', 'violet', 'gold', 'coral']
+colors = [
+    'gold', 'crimson', 'b', 'g', 'r', 'c', 'm', 'y', 'k', 'orange', 'pink', 'brown', 'purple', 'gray',
+          'lime', 'teal']
 
 def plot_concept_drift_recall():
     # 文件路径写死
@@ -66,7 +68,11 @@ def plot_concept_drift_recall():
     # 构造图例（正方形块，顶部两排）
     legend_handles = []
     for alg in df['algorithm']:
-        if '_' in alg:
+        if alg == 'gti':
+            label = 'GTI'
+        elif alg == 'ipdiskann':
+            label = 'IPDISKANN'
+        elif '_' in alg:
             label = alg.split('_')[1].upper()
         else:
             label = alg.upper()
@@ -78,10 +84,10 @@ def plot_concept_drift_recall():
                                      markersize=MARKER_SIZE, label=label))
 
     plt.legend(handles=legend_handles,
-               prop={'size': 13},
+               prop={'size': 12},
                loc='upper center',
                bbox_to_anchor=(0.5, 1.19),
-               ncol=7,
+               ncol=8,
                frameon=False,
                edgecolor='black')
 
