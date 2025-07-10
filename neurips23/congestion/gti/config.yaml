@@ -8,10 +8,7 @@ random-xs:
       base:
         args: |
           [
-            {"capacity_up_i": 64, "capacity_up_l": 10, "m": 8},
-            {"capacity_up_i": 64, "capacity_up_l": 8, "m": 8},
-            {"capacity_up_i": 100, "capacity_up_l": 10, "m": 8},
-            {"capacity_up_i": 100, "capacity_up_l": 8, "m": 8}
+            {"capacity_up_i": 64, "capacity_up_l": 8, "m": 8}
           ]
         query-args: |
           [
