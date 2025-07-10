@@ -7,9 +7,31 @@ random-xs:
     run-groups:
       base:
         args: |
-          [{
+          [
+            {
             "R": 32,
             "L": 50,
+            "num_threads": 32,
+            "insert_thread_count": 32,
+            "search_thread_count": 32
+            },
+            {
+            "R": 50,
+            "L": 50,
+            "num_threads": 32,
+            "insert_thread_count": 32,
+            "search_thread_count": 32
+            },
+            {
+            "R": 32,
+            "L": 70,
+            "num_threads": 32,
+            "insert_thread_count": 32,
+            "search_thread_count": 32
+            },
+            {
+            "R": 50,
+            "L": 70,
             "num_threads": 32,
             "insert_thread_count": 32,
             "search_thread_count": 32
@@ -18,7 +40,7 @@ random-xs:
         query-args: |
           [
             {
-            "L": 100,
+            "L": 70,
             "K": 10
             }
           ]
