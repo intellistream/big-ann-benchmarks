@@ -1,0 +1,21 @@
+random-xs:
+  ipdiskann:
+    docker-tag: neurips23-streaming-ipdiskann
+    module: neurips23.streaming.ipdiskann.ipdiskann
+    constructor: IPdiskann
+    base-args: [ "@metric" ]
+    run-groups:
+      base:
+        args: |
+          [{
+            "R": 64,
+            "L": 100,
+            "num_threads": 1,
+            "insert_thread_count": 8,
+            "search_thread_count": 8
+          }]
+        query-args: |
+          [{
+            "L": 128,
+            "K": 10
+          }]

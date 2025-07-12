@@ -194,8 +194,6 @@ class CongestionRunner(BaseRunner):
                     inserted_total = 0
                     for i in range(batch_step):
 
-                        attrs['batchLatency'].append(0)
-                        attrs['batchThroughput'].append(0)
 
                         data = ds.get_data_in_range(start+i*batchSize,start+(i+1)*batchSize)
                         insert_ids = ids[i*batchSize:(i+1)*batchSize]
@@ -236,18 +234,21 @@ class CongestionRunner(BaseRunner):
                         # continuous query phase
                         continuous_counter += batchSize
                         if(continuous_counter >= (end-start)/100):
+                            attrs['batchLatency'].append(0)
+                            attrs['batchThroughput'].append(0)
                             print(f"{i}: {start + i * batchSize}~{start + (i + 1) * batchSize} querying")
                             t1 = time.time()
                             algo.query(Q, count)
                             attrs['continuousQueryLatencies'][-1].append((time.time() - t1) * 1e6)
-
+                            attrs['batchLatency'][-1] += (time.time() - t1) * 1e6
+                            querysize = Q.shape[0]
+                            attrs['batchThroughput'][-1] += (querysize / ((attrs['batchLatency'][-1]) / 1e6))
                             results = algo.get_results()
                             attrs[f'continuousQueryResults'][-1].append(results)
                             #attrs[f'continuousQueryRecall{num_batch}_{i}'] = results
                             continuous_counter = 0
 
-                        attrs['batchLatency'][-1] += (time.time() - t0) * 1e6
-                        attrs['batchThroughput'][-1] += (batchSize / ((attrs['batchLatency'][-1]) / 1e6))
+
 
                         if inserted_total >= MERGE_THRESHOLD and algo.name == "freshdiskann":
                             print(f"MERGE THRESHOLD reached at {inserted_total} insertions — Performing final_merge()")
@@ -256,8 +257,7 @@ class CongestionRunner(BaseRunner):
 
                     # process the rest
                     if(start+batch_step*batchSize<end and start+(batch_step+1)*batchSize>end):
-                        attrs['batchLatency'].append(0)
-                        attrs['batchThroughput'].append(0)
+
                         tNow = (time.time()-start_time)*1e6
                         tExpectedArrival = eventTimeStamps[end-start-1]
                         while tNow<tExpectedArrival:
@@ -292,18 +292,20 @@ class CongestionRunner(BaseRunner):
                         # continuous query phase
                         continuous_counter += batchSize
                         if(continuous_counter >= (end-start)/100):
+                            attrs['batchLatency'].append(0)
+                            attrs['batchThroughput'].append(0)
                             print(f"{i}: {start + i * batchSize}~{end} querying")
 
                             t1 = time.time()
                             algo.query(Q, count)
                             attrs['continuousQueryLatencies'][-1].append((time.time() - t1) * 1e6)
-
+                            attrs['batchLatency'][-1] += (time.time() - t1) * 1e6
+                            attrs['batchThroughput'][-1] += ((end-start-batch_step*batchSize) / ((attrs['batchLatency'][-1]) / 1e6))
                             results = algo.get_results()
                             attrs['continuousQueryResults'][-1].append(results)
                             #attrs[f'continuousQueryRecall{num_batch}_{batch_step}'] = results
                             continuous_counter = 0
-                        attrs['batchLatency'][-1] += ((time.time() - t0) * 1e6)
-                        attrs['batchThroughput'][-1] += ((end-start-batch_step*batchSize) / ((attrs['batchLatency'][-1]) / 1e6))
+
 
                     attrs['insertThroughput'].append((end-start)/((attrs['latencyInsert'][-1])/1e6))
                     filename = get_result_filename(dataset, count, definition, query_arguments, neurips23track="congestion", runbook_path=runbook_path)
@@ -326,6 +328,8 @@ class CongestionRunner(BaseRunner):
                     counts['insert'] +=1
                 case 'delete':
                     ids = np.arange(entry['start'], entry['end'], dtype=np.uint32)
+                    start = entry['start']
+                    end = entry['end']
                     print(f'delete {start}:{end}')
                     algo.delete(ids)
 

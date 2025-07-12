@@ -1,6 +1,6 @@
 #!/bin/bash
-DATASETS=("random-plus-experiment" "sift")
-RUNBOOKS=("1000.yaml" "2500.yaml" "5000.yaml" "20000.yaml" "50000.yaml")
+DATASETS=("sift")
+RUNBOOKS=("2500.yaml" "10000.yaml" "100000.yaml" "200000.yaml" "500000.yaml")
 
 # Iterate through each combination of algorithm and dataset
 for RUN in "${RUNBOOKS[@]}"; do

@@ -1,0 +1,25 @@
+random-xs:
+  ipdiskann:
+    docker-tag: neurips23-congestion-ipdiskann
+    module: neurips23.congestion.ipdiskann.ipdiskann
+    constructor: IPdiskann
+    base-args: [ "@metric" ]
+    run-groups:
+      base:
+        args: |
+          [
+            {
+            "R": 32,
+            "L": 50,
+            "num_threads": 32,
+            "insert_thread_count": 32,
+            "search_thread_count": 32
+            }
+          ]
+        query-args: |
+          [
+            {
+            "L": 70,
+            "K": 10
+            }
+          ]

@@ -54,8 +54,8 @@ glove:
     operation: "batch_insert"
     start: 50000
     end: 1192514
-    batchSize: 2500
-    eventRate: 10000
+    batchSize: 12500
+    eventRate: 50000
   4:
     operation: "waitPending"
   5:
@@ -76,8 +76,8 @@ msong:
     operation: "batch_insert"
     start: 50000
     end: 992272
-    batchSize: 2500
-    eventRate: 10000
+    batchSize: 10000
+    eventRate: 40000
   4:
     operation: "waitPending"
   5:
@@ -208,8 +208,8 @@ msturing-30M-clustered:
     operation: "batch_insert"
     start: 50000
     end: 29990000
-    batchSize: 2500
-    eventRate: 10000
+    batchSize: 302500
+    eventRate: 1210000
   4:
     operation: "waitPending"
   5:
@@ -252,8 +252,8 @@ random-experiment:
     operation: "batch_insert"
     start: 50000
     end: 500000
-    batchSize: 2500
-    eventRate: 10000
+    batchSize: 5000
+    eventRate: 20000
   4:
     operation: "waitPending"
   5:

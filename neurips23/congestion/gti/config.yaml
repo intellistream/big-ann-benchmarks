@@ -1,0 +1,16 @@
+random-xs:
+  gti:
+    docker-tag: neurips23-congestion-gti
+    module: neurips23.congestion.gti.gti
+    constructor: GTI_Index
+    base-args: [ "@metric" ]
+    run-groups:
+      base:
+        args: |
+          [
+            {"capacity_up_i": 64, "capacity_up_l": 8, "m": 8}
+          ]
+        query-args: |
+          [
+            {"L": 20,"K": 10}
+          ]

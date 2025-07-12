@@ -162,7 +162,7 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
                     
     except:
         print(f"Groundtruth for {dataset} not found.")
-        #traceback.print_exc()
+        traceback.print_exc()
         return
     
     search_type = dataset.search_type()
@@ -293,7 +293,6 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
                         run_result['knn_'+str(i)] = v[i]
 
                     long_data = []
-
                     for batch_idx, batch_values in enumerate(bv):
                         for value_idx, value in enumerate(batch_values):
                             long_data.append({
@@ -302,14 +301,17 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
                                 'value': value,
                             })
 
+                    tag = properties['updateMemoryFootPrint']
                     if long_data:
                         df = pd.DataFrame(long_data)
-                        output_dir = "results_temp"
-                        os.makedirs(output_dir, exist_ok=True)
-                        rand_suffix = random.randint(10000, 99999)
-                        filename = os.path.join(output_dir,
-                                                f"continuous_recall_{algo}_{dataset_name}_{rand_suffix}.csv")
-                        df.to_csv(filename, index=False)
+                        # output_dir = "results_temp"
+                        # os.makedirs(output_dir, exist_ok=True)
+                        if neurips23track == 'congestion' and runbook_path:
+                            last_part = runbook_path.split('/')[-1]
+                            filename = os.path.join('results/neurips23/congestion',last_part)
+                            f3 = os.path.join(filename,
+                                                f"{dataset_name}/10/{algo_name}/continuous_recall_{algo}_{dataset_name}_{tag}.csv")
+                            df.to_csv(f3, index=False)
 
                     for i in range(len(bv)):
                         recall_sum = 0
