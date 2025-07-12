@@ -18,9 +18,9 @@ class FreshDiskANN(BaseStreamingANN):
         # 提取参数
         R = self.index_params.get("R", 64)
         L = self.index_params.get("L", 100)
-        num_threads = self.index_params.get("num_threads", 8)
-        self.insert_thread_count = self.index_params.get("insert_thread_count", 4)
-        self.search_thread_count = self.index_params.get("search_thread_count", 4)
+        num_threads = self.index_params.get("num_threads", 32)
+        self.insert_thread_count = self.index_params.get("insert_thread_count", 32)
+        self.search_thread_count = self.index_params.get("search_thread_count", 32)
 
         # 设置索引参数
         self.index.setup(max_pts, ndim, R, L, num_threads)

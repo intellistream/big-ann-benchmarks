@@ -190,7 +190,7 @@ class CongestionRunner(BaseRunner):
 
                     start_time = time.time()
                     continuous_counter = 0
-                    MERGE_THRESHOLD = 100000  # 每10万条做一次合并
+                    MERGE_THRESHOLD = 5000000
                     inserted_total = 0
                     for i in range(batch_step):
 
@@ -251,7 +251,7 @@ class CongestionRunner(BaseRunner):
 
 
                         if inserted_total >= MERGE_THRESHOLD and algo.name == "freshdiskann":
-                            print(f"MERGE THRESHOLD reached at {inserted_total} insertions — Performing final_merge()")
+                            print(f"MERGE THRESHOLD reached at {inserted_total} insertions — Performing merge()")
                             algo.final_merge()
                             inserted_total = 0
 

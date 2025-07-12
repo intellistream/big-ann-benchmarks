@@ -7,9 +7,9 @@ random-xs:
     run-groups:
       base:
         args: |
-          [{"R": 10, "L": 20, "num_threads": 8, "insert_thread_count": 4, "search_thread_count": 4}]
+          [{"R": 32, "L": 50, "num_threads": 32, "insert_thread_count": 32, "search_thread_count": 32}]
         query-args: |
-            [{"L": 20}]
+            [{"L": 50}]
 msturing-10M-clustered:
   FreshDiskANN:
     docker-tag: neurips23-congestion-FreshDiskANN
@@ -19,6 +19,6 @@ msturing-10M-clustered:
     run-groups:
       base:
         args: |
-          [{"R": 64, "L": 100, "num_threads": 8, "insert_thread_count": 4, "search_thread_count": 4}]
+          [{"R": 32, "L": 50, "num_threads": 32, "insert_thread_count": 32, "search_thread_count": 32}]
         query-args: |
-            [{"L": 20}]
+            [{"L": 50}]
