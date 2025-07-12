@@ -30,7 +30,7 @@ matplotlib.rcParams['ytick.labelsize'] = TICK_FONT_SIZE
 matplotlib.rcParams['font.family'] = OPT_FONT_NAME
 matplotlib.rcParams['pdf.fonttype'] = 42
 
-markers = ['h', 'P','o', 's', 'D', 'v', '^', 'P', '*', 'X', 'h', '>', '<', 'p', 'H', 'd', '1', '2', '3', '4']
+markers = ['o', 's', 'D', 'v', '^', 'P', '*', 'X', 'h', '>', '<', 'p', 'H', 'd', '1', '2', '3', '4']
 colors = ['crimson', 'gold','b', 'g', 'r', 'c', 'm', 'y', 'k', 'orange', 'pink', 'brown', 'purple', 'gray', 'lime', 'teal', 'indigo',
           'violet', 'gold', 'coral', '']
 algorithms = [

@@ -31,9 +31,10 @@ matplotlib.rcParams['font.family'] = OPT_FONT_NAME
 matplotlib.rcParams['pdf.fonttype'] = 42
 
 markers = ['o', 's', 'D', 'v', '^', 'P', '*', 'X', 'h', '>', '<', 'p', 'H', 'd', '1', '2', '3', '4']
-colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'orange', 'pink', 'brown', 'purple', 'gray', 'lime', 'teal', 'indigo',
+colors = ['crimson', 'gold','b', 'g', 'r', 'c', 'm', 'y', 'k', 'orange', 'pink', 'brown', 'purple', 'gray', 'lime', 'teal', 'indigo',
           'violet', 'gold', 'coral']
 algorithms = [
+    "gti", "ipdiskann",
     "candy_lshapg", "candy_mnru", "candy_sptag", "cufe", "diskann", "faiss_fast_scan",
     "faiss_HNSW", "faiss_IVFPQ", "faiss_lsh", "faiss_NSW", "faiss_onlinepq",
     "faiss_pq", "puck", "pyanns"
@@ -44,7 +45,7 @@ categories = {
     'Tree': ['candy_sptag'],
     'Hash': ['candy_lshapg', 'faiss_lsh'],
     'Clustering': ['faiss_pq', 'faiss_onlinepq', 'faiss_IVFPQ', 'puck', 'faiss_fast_scan'],
-    'Graph-based': ['faiss_NSW', 'faiss_HNSW', 'candy_mnru', 'diskann', 'cufe', 'pyanns']
+    'Graph-based': ['faiss_NSW', 'faiss_HNSW', 'candy_mnru', 'diskann', 'cufe', 'pyanns',"gti", "ipdiskann",]
 }
 
 def plot_recall_vs_event_rate(file_path, save_path):
