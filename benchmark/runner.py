@@ -134,6 +134,7 @@ def run(definition, dataset, count, run_count, rebuild=True,
                 descriptor["algo"] = definition.algorithm
                 descriptor["dataset"] = dataset
 
+
                 f1 = get_result_filename(
                     dataset, count, definition, query_arguments, neurips23track, runbook_path) + '_batchLatency.csv'
                 f2 = get_result_filename(
