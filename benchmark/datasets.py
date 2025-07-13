@@ -1855,9 +1855,9 @@ class G(DatasetCompetitionFormat):
         self.nb = 100000
         self.nq = 10000
         self.dtype = "float32"
-        self.ds_fn = f"learn_G"
-        self.qs_fn = f"query_G"
-        self.gt_fn = f"gt_G"
+        self.ds_fn = f"data_{self.nb}_{self.d}"
+        self.qs_fn = f"queries_{self.nq}_{self.d}"
+        self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
         self.basedir = os.path.join(BASEDIR, "G")
         if not os.path.exists(self.basedir):
             os.makedirs(self.basedir)
@@ -1903,9 +1903,9 @@ class B(DatasetCompetitionFormat):
         self.nb = 100000
         self.nq = 10000
         self.dtype = "float32"
-        self.ds_fn = f"learn_B"
-        self.qs_fn = f"query_B"
-        self.gt_fn = f"gt_B"
+        self.ds_fn = f"data_{self.nb}_{self.d}"
+        self.qs_fn = f"queries_{self.nq}_{self.d}"
+        self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
         self.basedir = os.path.join(BASEDIR, "B")
         if not os.path.exists(self.basedir):
             os.makedirs(self.basedir)
@@ -1949,12 +1949,12 @@ class A1(DatasetCompetitionFormat):
     def __init__(self):
         self.d = 128
         self.nb = 100000
-        self.nq = 10000
+        self.nq = 1000
         self.dtype = "float32"
-        self.ds_fn = f"learn_A1"
-        self.qs_fn = f"query_A1"
-        self.gt_fn = f"gt_A1"
-        self.basedir = os.path.join(BASEDIR, "G")
+        self.ds_fn = f"data_{self.nb}_{self.d}"
+        self.qs_fn = f"queries_{self.nq}_{self.d}"
+        self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
+        self.basedir = os.path.join(BASEDIR, "A1")
         if not os.path.exists(self.basedir):
             os.makedirs(self.basedir)
 
@@ -1999,10 +1999,10 @@ class A2(DatasetCompetitionFormat):
         self.nb = 100000
         self.nq = 10000
         self.dtype = "float32"
-        self.ds_fn = f"learn_A2"
-        self.qs_fn = f"query_A2"
-        self.gt_fn = f"gt_A2"
-        self.basedir = os.path.join(BASEDIR, "G")
+        self.ds_fn = f"data_{self.nb}_{self.d}"
+        self.qs_fn = f"queries_{self.nq}_{self.d}"
+        self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
+        self.basedir = os.path.join(BASEDIR, "A2")
         if not os.path.exists(self.basedir):
             os.makedirs(self.basedir)
 
