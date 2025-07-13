@@ -1848,7 +1848,59 @@ class SIFT(DatasetCompetitionFormat):
 
     def default_count(self):
         return 10
-    
+
+class SIFT100M(DatasetCompetitionFormat):
+    def __init__(self):
+        self.d = 128
+        self.nb = 100000000
+        self.nq = 10000
+        self.dtype = "uint8"
+        self.ds_fn = f"data_{self.nb}_{self.d}"
+        self.qs_fn = f"queries_{self.nq}_{self.d}"
+        self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
+        self.basedir = os.path.join(BASEDIR, "SIFT100M")
+        if not os.path.exists(self.basedir):
+            os.makedirs(self.basedir)
+
+    def prepare(self, skip_data=False):
+        downloadflag = 0
+        for item in os.listdir(self.basedir):
+            item_path = os.path.join(self.basedir, item)
+            if os.path.isdir(item_path) or os.path.isfile(item_path):
+                print("SIFT100M has already installed!")
+                downloadflag = 1
+                break
+        if downloadflag == 0:
+            import gdown
+            folder_url = ""
+            gdown.download_folder(folder_url, output=self.basedir)
+
+        prepocessflag = 0
+        data_file_path = os.path.join(self.basedir, self.ds_fn)
+        queries_file_path = os.path.join(self.basedir, self.qs_fn)
+
+        if os.path.exists(data_file_path) and os.path.exists(queries_file_path):
+            print("Preprocessed data already exists. Skipping data generation.")
+            prepocessflag = 1
+
+        if prepocessflag == 0:
+            num, dim, vectors = load_data(self.basedir+'/data_100000000_128')
+            index_vectors, _ = sample_vectors(vectors, self.nb, self.nq)
+            save_data(index_vectors, type='data', basedir=self.basedir)
+
+            num, dim, vectors = load_data(self.basedir+'/queries_10000_128')
+            _, query_vectors = sample_vectors(vectors, 0, self.nq)
+            save_data(query_vectors, type='queries', basedir=self.basedir)
+
+    def search_type(self):
+        return "knn"
+
+    def distance(self):
+        return "euclidean"
+
+    def default_count(self):
+        return 10
+
 class G(DatasetCompetitionFormat):
     def __init__(self):
         self.d = 128
@@ -1881,6 +1933,54 @@ class G(DatasetCompetitionFormat):
 
         if prepocessflag == 0:
             num, dim, vectors = load_data(self.basedir+'/data_100000_128')
+            index_vectors, _ = sample_vectors(vectors, self.nb, self.nq)
+            save_data(index_vectors, type='data', basedir=self.basedir)
+
+            num, dim, vectors = load_data(self.basedir+'/queries_10000_128')
+            _, query_vectors = sample_vectors(vectors, 0, self.nq)
+            save_data(query_vectors, type='queries', basedir=self.basedir)
+
+    def search_type(self):
+        return "knn"
+
+    def distance(self):
+        return "euclidean"
+
+    def default_count(self):
+        return 10
+    
+class B(DatasetCompetitionFormat):
+    def __init__(self):
+        self.d = 128
+        self.nb = 100000
+        self.nq = 10000
+        self.dtype = "float32"
+        self.ds_fn = f"data_{self.nb}_{self.d}"
+        self.qs_fn = f"queries_{self.nq}_{self.d}"
+        self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
+        self.basedir = os.path.join(BASEDIR, "B")
+        if not os.path.exists(self.basedir):
+            os.makedirs(self.basedir)
+
+    def prepare(self, skip_data=False):
+        downloadflag = 0
+        for item in os.listdir(self.basedir):
+            item_path = os.path.join(self.basedir, item)
+            if os.path.isdir(item_path) or os.path.isfile(item_path):
+                print("B has already installed!")
+                downloadflag = 1
+                break
+
+        prepocessflag = 0
+        data_file_path = os.path.join(self.basedir, self.ds_fn)
+        queries_file_path = os.path.join(self.basedir, self.qs_fn)
+
+        if os.path.exists(data_file_path) and os.path.exists(queries_file_path):
+            print("Preprocessed data already exists. Skipping data generation.")
+            prepocessflag = 1
+
+        if prepocessflag == 0:
+            num, dim, vectors = load_data(self.basedir+'/data_1000000_128')
             index_vectors, _ = sample_vectors(vectors, self.nb, self.nq)
             save_data(index_vectors, type='data', basedir=self.basedir)
 
@@ -2484,6 +2584,7 @@ DATASETS = {
     'sift-small': lambda: SIFTSMALL(),
     'glove': lambda: GLOVE(),
     'sift': lambda: SIFT(),
+    'sift100M': lambda: SIFT100M(),
     'msong': lambda: MSONG(),
     'sun': lambda: SUN(),
     'dpr': lambda: DPR(),
