@@ -1853,11 +1853,11 @@ class G(DatasetCompetitionFormat):
     def __init__(self):
         self.d = 128
         self.nb = 100000
-        self.nq = 10000
+        self.nq = 1000
         self.dtype = "float32"
-        self.ds_fn = f"learn_G"
-        self.qs_fn = f"query_G"
-        self.gt_fn = f"gt_G"
+        self.ds_fn = f"data_{self.nb}_{self.d}"
+        self.qs_fn = f"queries_{self.nq}_{self.d}"
+        self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
         self.basedir = os.path.join(BASEDIR, "G")
         if not os.path.exists(self.basedir):
             os.makedirs(self.basedir)
@@ -1880,55 +1880,7 @@ class G(DatasetCompetitionFormat):
             prepocessflag = 1
 
         if prepocessflag == 0:
-            num, dim, vectors = load_data(self.basedir+'/data_1000000_128')
-            index_vectors, _ = sample_vectors(vectors, self.nb, self.nq)
-            save_data(index_vectors, type='data', basedir=self.basedir)
-
-            num, dim, vectors = load_data(self.basedir+'/queries_10000_128')
-            _, query_vectors = sample_vectors(vectors, 0, self.nq)
-            save_data(query_vectors, type='queries', basedir=self.basedir)
-
-    def search_type(self):
-        return "knn"
-
-    def distance(self):
-        return "euclidean"
-
-    def default_count(self):
-        return 10
-    
-class B(DatasetCompetitionFormat):
-    def __init__(self):
-        self.d = 128
-        self.nb = 100000
-        self.nq = 10000
-        self.dtype = "float32"
-        self.ds_fn = f"learn_B"
-        self.qs_fn = f"query_B"
-        self.gt_fn = f"gt_B"
-        self.basedir = os.path.join(BASEDIR, "B")
-        if not os.path.exists(self.basedir):
-            os.makedirs(self.basedir)
-
-    def prepare(self, skip_data=False):
-        downloadflag = 0
-        for item in os.listdir(self.basedir):
-            item_path = os.path.join(self.basedir, item)
-            if os.path.isdir(item_path) or os.path.isfile(item_path):
-                print("B has already installed!")
-                downloadflag = 1
-                break
-
-        prepocessflag = 0
-        data_file_path = os.path.join(self.basedir, self.ds_fn)
-        queries_file_path = os.path.join(self.basedir, self.qs_fn)
-
-        if os.path.exists(data_file_path) and os.path.exists(queries_file_path):
-            print("Preprocessed data already exists. Skipping data generation.")
-            prepocessflag = 1
-
-        if prepocessflag == 0:
-            num, dim, vectors = load_data(self.basedir+'/data_1000000_128')
+            num, dim, vectors = load_data(self.basedir+'/data_100000_128')
             index_vectors, _ = sample_vectors(vectors, self.nb, self.nq)
             save_data(index_vectors, type='data', basedir=self.basedir)
 
@@ -1949,12 +1901,12 @@ class A1(DatasetCompetitionFormat):
     def __init__(self):
         self.d = 128
         self.nb = 100000
-        self.nq = 10000
+        self.nq = 1000
         self.dtype = "float32"
-        self.ds_fn = f"learn_A1"
-        self.qs_fn = f"query_A1"
-        self.gt_fn = f"gt_A1"
-        self.basedir = os.path.join(BASEDIR, "G")
+        self.ds_fn = f"data_{self.nb}_{self.d}"
+        self.qs_fn = f"queries_{self.nq}_{self.d}"
+        self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
+        self.basedir = os.path.join(BASEDIR, "A1")
         if not os.path.exists(self.basedir):
             os.makedirs(self.basedir)
 
@@ -1976,7 +1928,7 @@ class A1(DatasetCompetitionFormat):
             prepocessflag = 1
 
         if prepocessflag == 0:
-            num, dim, vectors = load_data(self.basedir+'/data_1000000_128')
+            num, dim, vectors = load_data(self.basedir+'/data_100000_128')
             index_vectors, _ = sample_vectors(vectors, self.nb, self.nq)
             save_data(index_vectors, type='data', basedir=self.basedir)
 
@@ -1997,12 +1949,12 @@ class A2(DatasetCompetitionFormat):
     def __init__(self):
         self.d = 128
         self.nb = 100000
-        self.nq = 10000
+        self.nq = 1000
         self.dtype = "float32"
-        self.ds_fn = f"learn_A2"
-        self.qs_fn = f"query_A2"
-        self.gt_fn = f"gt_A2"
-        self.basedir = os.path.join(BASEDIR, "G")
+        self.ds_fn = f"data_{self.nb}_{self.d}"
+        self.qs_fn = f"queries_{self.nq}_{self.d}"
+        self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
+        self.basedir = os.path.join(BASEDIR, "A2")
         if not os.path.exists(self.basedir):
             os.makedirs(self.basedir)
 
@@ -2024,7 +1976,295 @@ class A2(DatasetCompetitionFormat):
             prepocessflag = 1
 
         if prepocessflag == 0:
-            num, dim, vectors = load_data(self.basedir+'/data_1000000_128')
+            num, dim, vectors = load_data(self.basedir+'/data_100000_128')
+            index_vectors, _ = sample_vectors(vectors, self.nb, self.nq)
+            save_data(index_vectors, type='data', basedir=self.basedir)
+
+            num, dim, vectors = load_data(self.basedir+'/queries_10000_128')
+            _, query_vectors = sample_vectors(vectors, 0, self.nq)
+            save_data(query_vectors, type='queries', basedir=self.basedir)
+
+    def search_type(self):
+        return "knn"
+
+    def distance(self):
+        return "euclidean"
+
+    def default_count(self):
+        return 10
+
+class B1(DatasetCompetitionFormat):
+    def __init__(self):
+        self.d = 128
+        self.nb = 100000
+        self.nq = 1000
+        self.dtype = "float32"
+        self.ds_fn = f"data_{self.nb}_{self.d}"
+        self.qs_fn = f"queries_{self.nq}_{self.d}"
+        self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
+        self.basedir = os.path.join(BASEDIR, "B1")
+        if not os.path.exists(self.basedir):
+            os.makedirs(self.basedir)
+
+    def prepare(self, skip_data=False):
+        downloadflag = 0
+        for item in os.listdir(self.basedir):
+            item_path = os.path.join(self.basedir, item)
+            if os.path.isdir(item_path) or os.path.isfile(item_path):
+                print("B has already installed!")
+                downloadflag = 1
+                break
+
+        prepocessflag = 0
+        data_file_path = os.path.join(self.basedir, self.ds_fn)
+        queries_file_path = os.path.join(self.basedir, self.qs_fn)
+
+        if os.path.exists(data_file_path) and os.path.exists(queries_file_path):
+            print("Preprocessed data already exists. Skipping data generation.")
+            prepocessflag = 1
+
+        if prepocessflag == 0:
+            num, dim, vectors = load_data(self.basedir+'/data_100000_128')
+            index_vectors, _ = sample_vectors(vectors, self.nb, self.nq)
+            save_data(index_vectors, type='data', basedir=self.basedir)
+
+            num, dim, vectors = load_data(self.basedir+'/queries_10000_128')
+            _, query_vectors = sample_vectors(vectors, 0, self.nq)
+            save_data(query_vectors, type='queries', basedir=self.basedir)
+
+    def search_type(self):
+        return "knn"
+
+    def distance(self):
+        return "euclidean"
+
+    def default_count(self):
+        return 10
+
+class B2(DatasetCompetitionFormat):
+    def __init__(self):
+        self.d = 128
+        self.nb = 100000
+        self.nq = 1000
+        self.dtype = "float32"
+        self.ds_fn = f"data_{self.nb}_{self.d}"
+        self.qs_fn = f"queries_{self.nq}_{self.d}"
+        self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
+        self.basedir = os.path.join(BASEDIR, "B2")
+        if not os.path.exists(self.basedir):
+            os.makedirs(self.basedir)
+
+    def prepare(self, skip_data=False):
+        downloadflag = 0
+        for item in os.listdir(self.basedir):
+            item_path = os.path.join(self.basedir, item)
+            if os.path.isdir(item_path) or os.path.isfile(item_path):
+                print("A2 has already installed!")
+                downloadflag = 1
+                break
+
+        prepocessflag = 0
+        data_file_path = os.path.join(self.basedir, self.ds_fn)
+        queries_file_path = os.path.join(self.basedir, self.qs_fn)
+
+        if os.path.exists(data_file_path) and os.path.exists(queries_file_path):
+            print("Preprocessed data already exists. Skipping data generation.")
+            prepocessflag = 1
+
+        if prepocessflag == 0:
+            num, dim, vectors = load_data(self.basedir+'/data_100000_128')
+            index_vectors, _ = sample_vectors(vectors, self.nb, self.nq)
+            save_data(index_vectors, type='data', basedir=self.basedir)
+
+            num, dim, vectors = load_data(self.basedir+'/queries_10000_128')
+            _, query_vectors = sample_vectors(vectors, 0, self.nq)
+            save_data(query_vectors, type='queries', basedir=self.basedir)
+
+    def search_type(self):
+        return "knn"
+
+    def distance(self):
+        return "euclidean"
+
+    def default_count(self):
+        return 10
+    
+class B3(DatasetCompetitionFormat):
+    def __init__(self):
+        self.d = 128
+        self.nb = 100000
+        self.nq = 1000
+        self.dtype = "float32"
+        self.ds_fn = f"data_{self.nb}_{self.d}"
+        self.qs_fn = f"queries_{self.nq}_{self.d}"
+        self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
+        self.basedir = os.path.join(BASEDIR, "B3")
+        if not os.path.exists(self.basedir):
+            os.makedirs(self.basedir)
+
+    def prepare(self, skip_data=False):
+        downloadflag = 0
+        for item in os.listdir(self.basedir):
+            item_path = os.path.join(self.basedir, item)
+            if os.path.isdir(item_path) or os.path.isfile(item_path):
+                print("A2 has already installed!")
+                downloadflag = 1
+                break
+
+        prepocessflag = 0
+        data_file_path = os.path.join(self.basedir, self.ds_fn)
+        queries_file_path = os.path.join(self.basedir, self.qs_fn)
+
+        if os.path.exists(data_file_path) and os.path.exists(queries_file_path):
+            print("Preprocessed data already exists. Skipping data generation.")
+            prepocessflag = 1
+
+        if prepocessflag == 0:
+            num, dim, vectors = load_data(self.basedir+'/data_100000_128')
+            index_vectors, _ = sample_vectors(vectors, self.nb, self.nq)
+            save_data(index_vectors, type='data', basedir=self.basedir)
+
+            num, dim, vectors = load_data(self.basedir+'/queries_10000_128')
+            _, query_vectors = sample_vectors(vectors, 0, self.nq)
+            save_data(query_vectors, type='queries', basedir=self.basedir)
+
+    def search_type(self):
+        return "knn"
+
+    def distance(self):
+        return "euclidean"
+
+    def default_count(self):
+        return 10
+
+class B4(DatasetCompetitionFormat):
+    def __init__(self):
+        self.d = 128
+        self.nb = 100000
+        self.nq = 1000
+        self.dtype = "float32"
+        self.ds_fn = f"data_{self.nb}_{self.d}"
+        self.qs_fn = f"queries_{self.nq}_{self.d}"
+        self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
+        self.basedir = os.path.join(BASEDIR, "B4")
+        if not os.path.exists(self.basedir):
+            os.makedirs(self.basedir)
+
+    def prepare(self, skip_data=False):
+        downloadflag = 0
+        for item in os.listdir(self.basedir):
+            item_path = os.path.join(self.basedir, item)
+            if os.path.isdir(item_path) or os.path.isfile(item_path):
+                print("A2 has already installed!")
+                downloadflag = 1
+                break
+
+        prepocessflag = 0
+        data_file_path = os.path.join(self.basedir, self.ds_fn)
+        queries_file_path = os.path.join(self.basedir, self.qs_fn)
+
+        if os.path.exists(data_file_path) and os.path.exists(queries_file_path):
+            print("Preprocessed data already exists. Skipping data generation.")
+            prepocessflag = 1
+
+        if prepocessflag == 0:
+            num, dim, vectors = load_data(self.basedir+'/data_100000_128')
+            index_vectors, _ = sample_vectors(vectors, self.nb, self.nq)
+            save_data(index_vectors, type='data', basedir=self.basedir)
+
+            num, dim, vectors = load_data(self.basedir+'/queries_10000_128')
+            _, query_vectors = sample_vectors(vectors, 0, self.nq)
+            save_data(query_vectors, type='queries', basedir=self.basedir)
+
+    def search_type(self):
+        return "knn"
+
+    def distance(self):
+        return "euclidean"
+
+    def default_count(self):
+        return 10
+
+class C1(DatasetCompetitionFormat):
+    def __init__(self):
+        self.d = 128
+        self.nb = 100000
+        self.nq = 1000
+        self.dtype = "float32"
+        self.ds_fn = f"data_{self.nb}_{self.d}"
+        self.qs_fn = f"queries_{self.nq}_{self.d}"
+        self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
+        self.basedir = os.path.join(BASEDIR, "C1")
+        if not os.path.exists(self.basedir):
+            os.makedirs(self.basedir)
+
+    def prepare(self, skip_data=False):
+        downloadflag = 0
+        for item in os.listdir(self.basedir):
+            item_path = os.path.join(self.basedir, item)
+            if os.path.isdir(item_path) or os.path.isfile(item_path):
+                print("A2 has already installed!")
+                downloadflag = 1
+                break
+
+        prepocessflag = 0
+        data_file_path = os.path.join(self.basedir, self.ds_fn)
+        queries_file_path = os.path.join(self.basedir, self.qs_fn)
+
+        if os.path.exists(data_file_path) and os.path.exists(queries_file_path):
+            print("Preprocessed data already exists. Skipping data generation.")
+            prepocessflag = 1
+
+        if prepocessflag == 0:
+            num, dim, vectors = load_data(self.basedir+'/data_100000_128')
+            index_vectors, _ = sample_vectors(vectors, self.nb, self.nq)
+            save_data(index_vectors, type='data', basedir=self.basedir)
+
+            num, dim, vectors = load_data(self.basedir+'/queries_10000_128')
+            _, query_vectors = sample_vectors(vectors, 0, self.nq)
+            save_data(query_vectors, type='queries', basedir=self.basedir)
+
+    def search_type(self):
+        return "knn"
+
+    def distance(self):
+        return "euclidean"
+
+    def default_count(self):
+        return 10
+
+class C2(DatasetCompetitionFormat):
+    def __init__(self):
+        self.d = 128
+        self.nb = 100000
+        self.nq = 1000
+        self.dtype = "float32"
+        self.ds_fn = f"data_{self.nb}_{self.d}"
+        self.qs_fn = f"queries_{self.nq}_{self.d}"
+        self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
+        self.basedir = os.path.join(BASEDIR, "C2")
+        if not os.path.exists(self.basedir):
+            os.makedirs(self.basedir)
+
+    def prepare(self, skip_data=False):
+        downloadflag = 0
+        for item in os.listdir(self.basedir):
+            item_path = os.path.join(self.basedir, item)
+            if os.path.isdir(item_path) or os.path.isfile(item_path):
+                print("A2 has already installed!")
+                downloadflag = 1
+                break
+
+        prepocessflag = 0
+        data_file_path = os.path.join(self.basedir, self.ds_fn)
+        queries_file_path = os.path.join(self.basedir, self.qs_fn)
+
+        if os.path.exists(data_file_path) and os.path.exists(queries_file_path):
+            print("Preprocessed data already exists. Skipping data generation.")
+            prepocessflag = 1
+
+        if prepocessflag == 0:
+            num, dim, vectors = load_data(self.basedir+'/data_100000_128')
             index_vectors, _ = sample_vectors(vectors, self.nb, self.nq)
             save_data(index_vectors, type='data', basedir=self.basedir)
 
@@ -2263,7 +2503,12 @@ DATASETS = {
     'G': lambda: G(),
     'A1': lambda: A1(),
     'A2': lambda: A2(),
-    'B': lambda: B(),
+    'B1': lambda: B1(),
+    'B2': lambda: B2(),
+    'B3': lambda: B3(),
+    'B4': lambda: B4(),
+    'C1': lambda: C1(),
+    'C2': lambda: C2(),
 
     'openimage-streaming': lambda: OPENIMAGESTREAMING(),
 
