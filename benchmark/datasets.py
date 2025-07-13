@@ -1854,7 +1854,7 @@ class SIFT100M(DatasetCompetitionFormat):
         self.d = 128
         self.nb = 100000000
         self.nq = 10000
-        self.dtype = "float32"
+        self.dtype = "uint8"
         self.ds_fn = f"data_{self.nb}_{self.d}"
         self.qs_fn = f"queries_{self.nq}_{self.d}"
         self.gt_fn = f"gt_{self.nb}_{self.nq}_{self.d}"
