@@ -27,7 +27,7 @@ class FreshDiskANN(BaseStreamingANN):
 
     def insert(self, X, ids):
         # ids 是一维 np.array，X 是二维 np.array
-        X = X.astype(np.float32)
+        X = X.astype(np.uint8)
         ids = ids.astype(np.uint32)
 
         if not self.is_built:
@@ -50,7 +50,7 @@ class FreshDiskANN(BaseStreamingANN):
         # 使用批量查询以提高效率
         if self.search_thread_count > 1 and n > 1:
             # 如果支持批量查询且使用多线程
-            X_query = X.astype(np.float32)
+            X_query = X.astype(np.uint8)
             tags, distances = self.index.batch_query(X_query, k, self.search_thread_count)
             results = tags.astype(np.uint32)
             results = results.reshape(n, k)
@@ -58,7 +58,7 @@ class FreshDiskANN(BaseStreamingANN):
         else:
             # 逐个查询
             for i in range(n):
-                query_vec = X[i].astype(np.float32)
+                query_vec = X[i].astype(np.uint8)
                 tags, distances = self.index.query(query_vec, k, getattr(self, 'query_L', 10))
                 results[i] = np.array(tags, dtype=np.uint32)
                 dists[i] = distances
@@ -97,6 +97,6 @@ class FreshDiskANN(BaseStreamingANN):
         if not self.is_built:
             raise RuntimeError("Index not built yet")
 
-        point = point.astype(np.float32)
+        point = point.astype(np.uint8)
         tag = np.uint32(tag) + 1  # 转换为从1开始的标签
         return self.index.insert(point, tag)
