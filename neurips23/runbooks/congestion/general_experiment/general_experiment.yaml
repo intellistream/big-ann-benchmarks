@@ -75,8 +75,8 @@ sift100M:
   3:
     operation: "batch_insert"
     start: 500000
-    end: 50000000
-    batchSize: 1000000
+    end: 10000000
+    batchSize: 500000
     eventRate: 10000
   4:
     operation: "waitPending"
