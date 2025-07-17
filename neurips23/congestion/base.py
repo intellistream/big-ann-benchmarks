@@ -142,9 +142,9 @@ class CongestionDropWorker(AbstractThread):
         if(self.single_worker_opt):
             while not self.m_mut.acquire(blocking=False):
                 pass
-            #print("Lock acquire by initial_load")
+            print("Lock acquire by initial_load")
             self.my_index_algo.insert(X,ids)
-            #print("Lock to be released by initial_load")
+            print("Lock to be released by initial_load")
             self.m_mut.release()
             return
 

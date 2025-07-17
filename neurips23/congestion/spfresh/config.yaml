@@ -1,0 +1,20 @@
+random-xs:
+  spfresh:
+    docker-tag: neurips23-congestion-spfresh
+    module: neurips23.congestion.spfresh.spfresh
+    constructor: SPFresh
+    base-args: [ "@metric" ]
+    run-groups:
+      base:
+        args: |
+          [{
+            "index_directory": "./data/spfresh_index",
+            "ssd_build_threads": 1,
+            "insert_threads": 1,
+            "delete_threads": 1,
+            "normalized": true
+          }]
+        query-args: |
+          [{
+            "search_threads": 1
+          }]

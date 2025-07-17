@@ -190,7 +190,7 @@ class CongestionRunner(BaseRunner):
 
                     start_time = time.time()
                     continuous_counter = 0
-                    MERGE_THRESHOLD = 5000000
+                    MERGE_THRESHOLD = 500000
                     inserted_total = 0
                     for i in range(batch_step):
 
