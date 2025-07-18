@@ -10,8 +10,8 @@ glove:
     operation: "batch_insert"
     start: 50000
     end: 1192514
-    batchSize: 12500
-    eventRate: 50000
+    batchSize: 2500
+    eventRate: 10000
   4:
     operation: "waitPending"
   5:
@@ -32,8 +32,8 @@ msong:
     operation: "batch_insert"
     start: 50000
     end: 992272
-    batchSize: 10000
-    eventRate: 40000
+    batchSize: 2500
+    eventRate: 10000
   4:
     operation: "waitPending"
   5:
@@ -54,8 +54,8 @@ sift:
     operation: "batch_insert"
     start: 50000
     end: 1000000
-    batchSize: 10000
-    eventRate: 40000
+    batchSize: 2500
+    eventRate: 10000
   4:
     operation: "waitPending"
   5:
@@ -76,7 +76,7 @@ sift100M:
     operation: "batch_insert"
     start: 500000
     end: 10000000
-    batchSize: 500000
+    batchSize: 2500
     eventRate: 10000
   4:
     operation: "waitPending"
