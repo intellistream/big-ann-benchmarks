@@ -46,19 +46,6 @@ class GTI_Index(BaseStreamingANN):
             self.index.build(X, ids, self.capacity_up_i, self.capacity_up_l, self.m)
             self.is_built = True
             print("GTI index built successfully")
-
-            # num_points = 50000
-            # dim = 512
-            # data_array = np.random.rand(num_points, dim).astype(np.float32).copy()
-            # self.temp_data = data_array
-            # # 2. 生成外部ID
-            # print("test")
-            # external_ids = np.arange(1000, 1000 + num_points, dtype=np.int32)
-            # print("begin")
-            # self.index.build(data_array, external_ids, 100, 100, 16)
-            # print("end")
-            # results, distances = self.index.query(data_array[0:10], 10, 60)
-            # print(results)
         else:
             # Subsequent insertions
             self.index.insert(X, ids)

@@ -1,6 +1,6 @@
 import numpy as np
 from neurips23.streaming.base import BaseStreamingANN
-import ipdiskann  # 对应的是 pybind11 导出的模块
+import ipdiskann
 
 class IPdiskann(BaseStreamingANN):
     def __init__(self, metric, index_params):
@@ -15,7 +15,7 @@ class IPdiskann(BaseStreamingANN):
         self.index = ipdiskann.Index()
         self.max_pts = max_pts
 
-        # 提取参数
+
         R = self.index_params.get("R", 64)
         L = self.index_params.get("L", 100)
         num_threads = self.index_params.get("num_threads", 1)
@@ -24,7 +24,7 @@ class IPdiskann(BaseStreamingANN):
         self.index.setup(max_pts, ndim, R, L, num_threads)
 
     def insert(self, X, ids):
-        # ids 是一维 np.array，X 是二维 np.array
+
         X = X.astype(np.float32)
         ids = ids.astype(np.uint32) + 1
         # print(ids)
@@ -56,12 +56,6 @@ class IPdiskann(BaseStreamingANN):
             tags, distances = self.index.query(query_vec, k)
             results[i] = np.array(tags, dtype=np.uint32) - 1
             dists[i] = distances
-
-        # tags, distances = self.index.batch_query(X, k, self.search_thread_count)
-        # results = tags.astype(np.uint32) - 1
-        # results = results.reshape(n, k)
-        # print(results)
-        # print(dists)
         self.res = results
 
     def set_query_arguments(self, query_args):

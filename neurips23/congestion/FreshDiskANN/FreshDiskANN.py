@@ -16,5 +16,4 @@ class FreshDiskANN(BaseCongestionDropANN):
         self.workers[0].my_index_algo.set_query_arguments(query_args)
 
     def final_merge(self):
-        """调用底层 streaming index 的合并操作"""
         self.workers[0].my_index_algo.final_merge()
