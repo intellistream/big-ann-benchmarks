@@ -10,7 +10,7 @@ class candy_lshapg(BaseStreamingANN):
     def __init__(self, metric, index_params):
         self.indexkey= index_params['indexkey']
         self.metric = metric
-        self.name = "candy_LSHAPG"
+        self.name = "candy_lshapg"
         self.ef=16
         self.trained = False
 

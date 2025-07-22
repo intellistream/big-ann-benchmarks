@@ -27,7 +27,8 @@ class diskann(BaseStreamingANN):
         self.consolidate_threads = index_params.get("consolidate_threads")
 
     def index_name(self):
-        return f"R{self.R}_L{self.L}"
+        # return f"R{self.R}_L{self.L}"
+        return "diskann"
 
     def create_index_dir(self, dataset):
         index_dir = os.path.join(os.getcwd(), "data", "indices", "streaming")

@@ -27,8 +27,8 @@ class diskannCUFE(BaseStreamingANN):
         self.consolidate_threads = index_params.get("consolidate_threads")
 
     def index_name(self):
-        return f"R{self.R}_L{self.L}"
-
+        # return f"R{self.R}_L{self.L}"
+        return "cufe"
     def create_index_dir(self, dataset):
         index_dir = os.path.join(os.getcwd(), "data", "indices", "streaming")
         os.makedirs(index_dir, mode=0o777, exist_ok=True)

@@ -10,7 +10,7 @@ class faiss_lsh(BaseStreamingANN):
     def __init__(self, metric, index_params):
         self.indexkey= index_params['indexkey']
         self.metric = metric
-        self.name = "faiss_LSH"
+        self.name = "faiss_lsh"
         self.ef=16
         self.trained = False
 

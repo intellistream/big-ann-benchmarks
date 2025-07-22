@@ -10,7 +10,7 @@ class faiss_pq(BaseStreamingANN):
     def __init__(self, metric, index_params):
         self.indexkey= index_params['indexkey']
         self.metric = metric
-        self.name = "faiss_PQ"
+        self.name = "faiss_pq"
         self.ef=16
         self.trained = False
 

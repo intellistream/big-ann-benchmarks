@@ -29,8 +29,8 @@ class Pyanns(BaseStreamingANN):
         self.mi = None
 
     def index_name(self):
-        return f"R{self.R}_L{self.L}"
-
+        # return f"R{self.R}_L{self.L}"
+        return "pyanns"
     def create_index_dir(self, dataset):
         index_dir = os.path.join(os.getcwd(), "data", "indices", "streaming")
         os.makedirs(index_dir, mode=0o777, exist_ok=True)
