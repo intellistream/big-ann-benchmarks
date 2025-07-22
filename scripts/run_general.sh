@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Define the algorithms and datasets
-ALGORITHMS=("candy_lshapg" "candy_mnru" "candy_sptag" "faiss_fast_scan" "faiss_HNSW" "faiss_IVFPQ" "faiss_lsh" "faiss_NSW" "faiss_onlinepq" "faiss_pq" "ipdiskann" "gti")
-DATASETS=("glove" "msong" "sift" )
+ALGORITHMS=("candy_lshapg" "candy_mnru" "candy_sptag" "cufe" "diskann" "faiss_fast_scan" "faiss_HNSW" "faiss_IVFPQ" "faiss_lsh" "faiss_NSW" "faiss_onlinepq" "faiss_pq" "puck" "pyanns")
+DATASETS=("sift" "glove" "msong")
 
 # Iterate through each combination of algorithm and dataset
 for DS in "${DATASETS[@]}"; do
