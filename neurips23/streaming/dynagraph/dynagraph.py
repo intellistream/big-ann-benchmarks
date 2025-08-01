@@ -18,7 +18,8 @@ class DynaGraph(BaseStreamingANN):
         alpha = self.index_params.get("alpha", 1.2)
         coef_L = self.index_params.get("coef_L", 100)
         coef_R = self.index_params.get("coef_R", 64)
-        batch_size = self.index_params.get("batch_size", 2000)
+        # 增大batch_size避免小数据集触发批处理问题
+        batch_size = self.index_params.get("batch_size", 10000)  
         self.insert_thread_count = self.index_params.get("insert_thread_count", 1)
         self.search_thread_count = self.index_params.get("search_thread_count", 1)
         
@@ -34,8 +35,13 @@ class DynaGraph(BaseStreamingANN):
             self.index.build(X, X.shape[0], ids.tolist())
             self.is_built = True
         else:
-            # 增量插入
-            self.index.insert_concurrent(X, ids, self.insert_thread_count)
+            # 增量插入 - 使用insert_point方法确保向量数据被正确存储
+            for i in range(len(ids)):
+                point = X[i]  # 1D数组，符合pybind11接口要求
+                id_val = ids[i]
+                success = self.index.insert_point(point, int(id_val))
+                if not success:
+                    print(f"Warning: Failed to insert point {id_val}")
 
     def delete(self, ids):
         # DynaGraph使用uint64_t，不需要+1偏移
@@ -51,8 +57,18 @@ class DynaGraph(BaseStreamingANN):
             query_vec = X[i].astype(np.float32)
             tags, distances = self.index.query(query_vec, k)
             # DynaGraph不需要-1偏移
-            results[i] = np.array(tags, dtype=np.uint64)
-            dists[i] = distances
+            tags_array = np.array(tags, dtype=np.uint64)
+            distances_array = np.array(distances, dtype=np.float32)
+            
+            # 处理返回结果可能少于k的情况
+            actual_k = min(len(tags_array), k)
+            if actual_k > 0:
+                results[i, :actual_k] = tags_array[:actual_k]
+                dists[i, :actual_k] = distances_array[:actual_k]
+                # 填充剩余位置
+                if actual_k < k:
+                    results[i, actual_k:] = tags_array[0] if len(tags_array) > 0 else 0
+                    dists[i, actual_k:] = float('inf')
 
         # 可选：使用批量查询进行优化
         # tags, distances = self.index.batch_query(X, k, self.search_thread_count)
@@ -60,6 +76,7 @@ class DynaGraph(BaseStreamingANN):
         # results = results.reshape(n, k)
         
         self.res = results
+        return results
 
     def set_query_arguments(self, query_args):
         # DynaGraph的查询参数可以在这里扩展
