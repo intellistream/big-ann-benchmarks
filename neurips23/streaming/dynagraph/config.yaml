@@ -1,0 +1,22 @@
+random-xs:
+  dynagraph:
+    docker-tag: neurips23-streaming-dynagraph
+    module: neurips23.streaming.dynagraph.dynagraph
+    constructor: DynaGraph
+    base-args: [ "@metric" ]
+    run-groups:
+      base:
+        args: |
+          [{
+            "alpha": 1.2,
+            "coef_L": 100,
+            "coef_R": 64,
+            "batch_size": 2000,
+            "insert_thread_count": 8,
+            "search_thread_count": 8
+          }]
+        query-args: |
+          [{
+            "L": 128,
+            "K": 10
+          }]
