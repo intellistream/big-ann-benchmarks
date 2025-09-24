@@ -206,6 +206,7 @@ def load_all_results(dataset=None, count=None, neurips23track="congestion", runb
             try:
                 f = h5py.File(name=os.path.join(root, fn), mode='r+', libver='latest')
                 properties = dict(f.attrs)
+                properties["filename"] = fn
                 yield properties, f
                 f.close()
             except:
