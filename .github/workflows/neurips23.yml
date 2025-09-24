@@ -119,6 +119,19 @@ jobs:
     steps:
     - uses: actions/checkout@v2 # Pull the repository
 
+    - name: Remove Non-English comments from code files
+      run: |
+          FILE_TYPES=("*.py")
+
+          for type in "${FILE_TYPES[@]}"; do
+            find . -name "$type" -print0 | while IFS= read -r -d '' file; do
+              echo "Processing $file"
+              sed -i '/\/\// s/[^\x00-\x7F]//g' "$file"
+              sed -i ':a;N;$!ba;s/\/\*.*\*\///g' "$file"
+              sed -i 's/[^\x00-\x7F]//g' "$file"
+            done
+          done
+
     - name: Set up Python 3.10
       uses: actions/setup-python@v2
       with:
