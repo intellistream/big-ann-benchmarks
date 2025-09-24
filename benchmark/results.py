@@ -10,31 +10,33 @@ import traceback
 import pandas as pd
 
 def store_latency(f1, f2, attrs):
-
     latency_data = []
     throughput_data = []
+
     # batchLatency
-    for batch_idx, latency in enumerate(attrs.get('batchLatency', [])):
-        latency_data.append({
-            'batch_id': batch_idx,
-            'batchLatency': latency,
-        })
+    for op_idx, op_latencies in enumerate(attrs.get('batchLatency', [])):
+        # op_latencies 是该操作下的所有 batch 延迟
+        for batch_idx, latency in enumerate(op_latencies[:-1]):
+            latency_data.append({
+                'op_id': op_idx,
+                'batch_id': batch_idx,
+                'batchLatency': latency,
+            })
 
     # batchThroughput
-    for batch_idx, throughput in enumerate(attrs.get('batchThroughput', [])):
-        throughput_data.append({
-            'batch_id': batch_idx,
-            'batchThroughput': throughput,
-        })
+    for op_idx, op_throughputs in enumerate(attrs.get('batchThroughput', [])):
+        for batch_idx, throughput in enumerate(op_throughputs):
+            throughput_data.append({
+                'op_id': op_idx,
+                'batch_id': batch_idx,
+                'batchThroughput': throughput,
+            })
 
     if latency_data:
-        df = pd.DataFrame(latency_data)
-        df.to_csv(f1, index=False)
+        pd.DataFrame(latency_data).to_csv(f1, index=False)
 
     if throughput_data:
-        df = pd.DataFrame(throughput_data)
-        df.to_csv(f2, index=False)
-
+        pd.DataFrame(throughput_data).to_csv(f2, index=False)
 
 
 def get_result_filename(dataset=None, count=None, definition=None,
