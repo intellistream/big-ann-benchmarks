@@ -9,13 +9,13 @@ import torch
 import traceback
 import pandas as pd
 
-def store_latency(f1, f2, attrs):
+def store_latency(f1, f2, f3, attrs):
     latency_data = []
     throughput_data = []
+    insert_latency_data = []
 
     # batchLatency
     for op_idx, op_latencies in enumerate(attrs.get('batchLatency', [])):
-        # op_latencies 是该操作下的所有 batch 延迟
         for batch_idx, latency in enumerate(op_latencies[:-1]):
             latency_data.append({
                 'op_id': op_idx,
@@ -32,11 +32,23 @@ def store_latency(f1, f2, attrs):
                 'batchThroughput': throughput,
             })
 
+    # batchInsertLatency
+    for op_idx, op_insert_latencies in enumerate(attrs.get('batchinsertThroughtput', [])):
+        for batch_idx, insert_latency in enumerate(op_insert_latencies):
+            insert_latency_data.append({
+                'op_id': op_idx,
+                'batch_id': batch_idx,
+                'batchinsertThroughtput': insert_latency,
+            })
+
     if latency_data:
         pd.DataFrame(latency_data).to_csv(f1, index=False)
 
     if throughput_data:
         pd.DataFrame(throughput_data).to_csv(f2, index=False)
+
+    if insert_latency_data:
+        pd.DataFrame(insert_latency_data).to_csv(f3, index=False)
 
 
 def get_result_filename(dataset=None, count=None, definition=None,

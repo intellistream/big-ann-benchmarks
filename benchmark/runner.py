@@ -134,14 +134,17 @@ def run(definition, dataset, count, run_count, rebuild=True,
                 descriptor["algo"] = definition.algorithm
                 descriptor["dataset"] = dataset
 
-
-                f1 = get_result_filename(
-                    dataset, count, definition, query_arguments, neurips23track, runbook_path) + '_batchLatency.csv'
-                f2 = get_result_filename(
-                    dataset, count, definition, query_arguments, neurips23track, runbook_path) + '_batchThroughput.csv'
-                store_latency(f1, f2, descriptor)
-                del descriptor['batchLatency']
-                del descriptor['batchThroughput']
+                if neurips23track== 'congestion':
+                    f1 = get_result_filename(
+                        dataset, count, definition, query_arguments, neurips23track, runbook_path) + '_batchLatency.csv'
+                    f2 = get_result_filename(
+                        dataset, count, definition, query_arguments, neurips23track, runbook_path) + '_batchqueryThroughput.csv'
+                    f3 = get_result_filename(
+                        dataset, count, definition, query_arguments, neurips23track, runbook_path) + '_batchinsertThroughtput.csv'
+                    store_latency(f1, f2, f3, descriptor)
+                    del descriptor['batchLatency']
+                    del descriptor['batchThroughput']
+                    del descriptor['batchinsertThroughtput']
 
                 cc_config = {}
                 if neurips23track == 'concurrent':

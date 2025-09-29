@@ -127,7 +127,8 @@ class CongestionRunner(BaseRunner):
             'querySize':ds.nq,
             'insertThroughput':[],
             'batchLatency':[],
-            'batchThroughput':[]
+            'batchThroughput':[],
+            'batchinsertThroughtput':[]
         }
 
         randomDrop = False
@@ -188,6 +189,7 @@ class CongestionRunner(BaseRunner):
                     attrs['continuousQueryResults'].append([])
                     attrs['batchLatency'].append([])
                     attrs['batchThroughput'].append([])
+                    attrs['batchinsertThroughtput'].append([])
 
                     # Begin
                     start_time = time.time()
@@ -220,7 +222,9 @@ class CongestionRunner(BaseRunner):
 
                         t0 = time.time()
                         algo.insert(data, insert_ids)
-                        attrs["latencyInsert"][-1]+=(time.time()-t0)*1e6
+                        total_insertion_time = time.time() - t0
+                        attrs["latencyInsert"][-1]+=total_insertion_time*1e6
+                        attrs['batchinsertThroughtput'][-1].append(batchSize/total_insertion_time)
                         processedTimeStamps[i*batchSize:(i+1)*batchSize] = (time.time()-start_time)*1e6
                         inserted_total += len(insert_ids)
 
@@ -280,7 +284,9 @@ class CongestionRunner(BaseRunner):
                         t0=time.time()
 
                         algo.insert(data, insert_ids)
-                        attrs["latencyInsert"][-1]+=(time.time()-t0)*1e6
+                        total_insertion_time = time.time() - t0
+                        attrs["latencyInsert"][-1]+=total_insertion_time*1e6
+                        attrs['batchinsertThroughtput'][-1].append((end-start-batch_step*batchSize)/total_insertion_time)
                         processedTimeStamps[batch_step*batchSize:end-start] = (time.time() - start_time) * 1e6
                         arrivalTimeStamps[batch_step*batchSize:end-start] = tExpectedArrival
 
