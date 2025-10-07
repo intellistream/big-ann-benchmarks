@@ -104,6 +104,7 @@ class CongestionRunner(BaseRunner):
         # data = ds.get_dataset()
         # ids = np.arange(1, ds.nb+1, dtype=np.uint32)
 
+        # Get Queries
         Q = ds.get_queries() if not private_query else ds.get_private_queries()
         print(fr"Got {Q.shape[0]} queries")  
 
@@ -126,7 +127,8 @@ class CongestionRunner(BaseRunner):
             'querySize':ds.nq,
             'insertThroughput':[],
             'batchLatency':[],
-            'batchThroughput':[]
+            'batchThroughput':[],
+            'batchinsertThroughtput':[]
         }
 
         randomDrop = False
@@ -148,7 +150,6 @@ class CongestionRunner(BaseRunner):
                     print(type(algo))
                     algo.startHPC()
                 case 'enableScenario':
-
                     if(entry.get("randomContamination", 0)==1):
                         randomContamination = True
                     if(entry.get("randomDrop", 0 )==1):
@@ -171,6 +172,7 @@ class CongestionRunner(BaseRunner):
                     print('Pending write time: ')
                     print(attrs['pendingWrite'])
                 case 'batch_insert':
+                    # Preparation work
                     tracemalloc.start()
                     start = entry['start']
                     end = entry['end']
@@ -185,19 +187,19 @@ class CongestionRunner(BaseRunner):
                     attrs["latencyInsert"].append(0)
                     attrs['continuousQueryLatencies'].append([])
                     attrs['continuousQueryResults'].append([])
+                    attrs['batchLatency'].append([])
+                    attrs['batchThroughput'].append([])
+                    attrs['batchinsertThroughtput'].append([])
 
-
-
+                    # Begin
                     start_time = time.time()
                     continuous_counter = 0
                     MERGE_THRESHOLD = 500000
                     inserted_total = 0
                     for i in range(batch_step):
-
-
                         data = ds.get_data_in_range(start+i*batchSize,start+(i+1)*batchSize)
                         insert_ids = ids[i*batchSize:(i+1)*batchSize]
-                        if(randomContamination ):
+                        if(randomContamination):
                             if(random.random()<randomContaminationProb):
                                 print(f"RANDOM CONTAMINATING DATA {ids[0]}:{ids[-1]}")
                                 data = np.random.random(data.shape)
@@ -216,17 +218,13 @@ class CongestionRunner(BaseRunner):
                             tNow = (time.time()-start_time)*1e6
                         arrivalTimeStamps[i*batchSize:(i+1)*batchSize] = tExpectedArrival
 
-
-
                         #print(f'step {start+i*batchSize}:{start+(i+1)*batchSize}')
-
-
-
-
 
                         t0 = time.time()
                         algo.insert(data, insert_ids)
-                        attrs["latencyInsert"][-1]+=(time.time()-t0)*1e6
+                        total_insertion_time = time.time() - t0
+                        attrs["latencyInsert"][-1]+=total_insertion_time*1e6
+                        attrs['batchinsertThroughtput'][-1].append(batchSize/total_insertion_time)
                         processedTimeStamps[i*batchSize:(i+1)*batchSize] = (time.time()-start_time)*1e6
                         inserted_total += len(insert_ids)
 
@@ -234,15 +232,20 @@ class CongestionRunner(BaseRunner):
                         # continuous query phase
                         continuous_counter += batchSize
                         if(continuous_counter >= (end-start)/100):
-                            attrs['batchLatency'].append(0)
-                            attrs['batchThroughput'].append(0)
+                            # attrs['batchLatency'].append(0)
+                            # attrs['batchThroughput'].append(0)
                             print(f"{i}: {start + i * batchSize}~{start + (i + 1) * batchSize} querying")
                             t1 = time.time()
                             algo.query(Q, count)
-                            attrs['continuousQueryLatencies'][-1].append((time.time() - t1) * 1e6)
-                            attrs['batchLatency'][-1] += (time.time() - t1) * 1e6
-                            querysize = Q.shape[0]
-                            attrs['batchThroughput'][-1] += (querysize / ((attrs['batchLatency'][-1]) / 1e6))
+                            t2 = time.time()
+
+                            batch_latency = (t2 - t1) * 1e6
+                            attrs['continuousQueryLatencies'][-1].append(batch_latency)
+                            query_size = Q.shape[0]
+                            attrs['batchLatency'][-1].append(batch_latency)
+                            batch_throughput = query_size / (t2 - t1)
+                            attrs['batchThroughput'][-1].append(batch_throughput)
+
                             results = algo.get_results()
                             attrs[f'continuousQueryResults'][-1].append(results)
                             #attrs[f'continuousQueryRecall{num_batch}_{i}'] = results
@@ -277,14 +280,13 @@ class CongestionRunner(BaseRunner):
                             data = data[order]
                             insert_ids = insert_ids[order]
 
-
                         print(f'last {start+batch_step*batchSize}:{end}')
                         t0=time.time()
 
-
-
                         algo.insert(data, insert_ids)
-                        attrs["latencyInsert"][-1]+=(time.time()-t0)*1e6
+                        total_insertion_time = time.time() - t0
+                        attrs["latencyInsert"][-1]+=total_insertion_time*1e6
+                        attrs['batchinsertThroughtput'][-1].append((end-start-batch_step*batchSize)/total_insertion_time)
                         processedTimeStamps[batch_step*batchSize:end-start] = (time.time() - start_time) * 1e6
                         arrivalTimeStamps[batch_step*batchSize:end-start] = tExpectedArrival
 
@@ -292,15 +294,21 @@ class CongestionRunner(BaseRunner):
                         # continuous query phase
                         continuous_counter += batchSize
                         if(continuous_counter >= (end-start)/100):
-                            attrs['batchLatency'].append(0)
-                            attrs['batchThroughput'].append(0)
+                            # attrs['batchLatency'].append(0)
+                            # attrs['batchThroughput'].append(0)
                             print(f"{i}: {start + i * batchSize}~{end} querying")
-
                             t1 = time.time()
                             algo.query(Q, count)
-                            attrs['continuousQueryLatencies'][-1].append((time.time() - t1) * 1e6)
-                            attrs['batchLatency'][-1] += (time.time() - t1) * 1e6
-                            attrs['batchThroughput'][-1] += ((end-start-batch_step*batchSize) / ((attrs['batchLatency'][-1]) / 1e6))
+                            t2 = time.time()
+
+                            batch_latency = (t2 - t1) * 1e6
+                            attrs['continuousQueryLatencies'][-1].append(batch_latency)
+                            attrs['batchLatency'][-1].append(batch_latency)
+
+                            query_size = Q.shape[0]
+                            batch_throughput = query_size / (t2 - t1)
+                            attrs['batchThroughput'][-1].append(batch_throughput)
+
                             results = algo.get_results()
                             attrs['continuousQueryResults'][-1].append(results)
                             #attrs[f'continuousQueryRecall{num_batch}_{batch_step}'] = results

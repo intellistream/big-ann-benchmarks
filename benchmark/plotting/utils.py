@@ -309,8 +309,12 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
                         if neurips23track == 'congestion' and runbook_path:
                             last_part = runbook_path.split('/')[-1]
                             filename = os.path.join('results/neurips23/congestion',last_part)
-                            f3 = os.path.join(filename,
-                                                f"{dataset_name}/10/{algo_name}/continuous_recall_{algo}_{dataset_name}_{tag}.csv")
+                            f3_prefix = os.path.join(filename, f"{dataset_name}/{properties['count']}/{algo_name}")
+                            base_name = os.path.splitext(os.path.basename(properties["filename"]))[0]
+                            f3 = os.path.join(
+                                f3_prefix,
+                                f"{base_name}_batch_recall.csv"
+                            )
                             df.to_csv(f3, index=False)
 
                     for i in range(len(bv)):

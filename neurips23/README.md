@@ -198,7 +198,7 @@ If your machine is capable of both building and searching an index, you can benc
 ```
 python run.py --algorithm faiss --neurips23track filter --dataset yfcc-10M
 ```
-This will write the results to the toplevel [results](../results) directory.
+This will write the results to the toplevel [results](../results_temp/results) directory.
 
 <!--
 To build the index and upload it to Azure cloud storage without querying it:
@@ -218,7 +218,7 @@ Now you can analyze the results using plot.py. Sudo might be required here. To a
 ```
 python plot.py --dataset [DATASET] --neurips23track [TRACK]
 ```
-This will place a plot of the algorithms performance into the toplevel [results](../results) directory.
+This will place a plot of the algorithms performance into the toplevel [results](../results_temp/results) directory.
 
 The plot.py script supports other benchmarks.  To see a complete list, run:
 ```

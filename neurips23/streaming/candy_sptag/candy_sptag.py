@@ -13,6 +13,7 @@ class candy_sptag(BaseStreamingANN):
         self.name = "candy_sptag"
         self.ef=16
         self.trained = False
+        self.threads = index_params.get('threads', 1)
 
     def setup(self, dtype, max_pts, ndim):
         index = PyCANDYAlgo.createIndex(self.indexkey, ndim)
@@ -22,6 +23,7 @@ class candy_sptag(BaseStreamingANN):
             cm.edit("metricType", "L2")
         else:
             cm.edit("metricType", "IP")
+        cm.edit("SPTAGThreads", str(self.threads))
         cm.edit("indexTag", self.indexkey)
         cm.edit("vecDim", ndim)
         index.setConfig(cm)

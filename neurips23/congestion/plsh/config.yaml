@@ -1,0 +1,19 @@
+random-xs:
+  plsh:
+    docker-tag: neurips23-congestion-plsh
+    module: neurips23.congestion.plsh.plsh
+    constructor: PLSH
+    base-args: [ "@metric" ]
+    run-groups:
+      base:
+        args: |
+          [{
+            "k": 8,
+            "m": 60,
+            "num_threads": 1,
+            "merge_threshold": 10000
+          }]
+        query-args: |
+          [{
+            "K": 10
+          }]
