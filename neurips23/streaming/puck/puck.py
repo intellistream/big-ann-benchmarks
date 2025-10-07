@@ -34,6 +34,8 @@ class Puck(BaseStreamingANN):
         self._index_params = index_params
         self._metric = metric
         self.indexkey = index_params.get("indexkey", "NA")
+        self.threads_count = index_params.get("threads_count", 1)
+        self.context_pool_size = 2 * self.threads_count
 
         self.index = puck.PuckSearcher()
         self.topk = 10
@@ -100,8 +102,12 @@ class Puck(BaseStreamingANN):
         #索引存储目录
         dataset = "streaming"
         puck.update_gflag('kmeans_iterations_count',"1")
-        puck.update_gflag('threads_count', "%d"%(CPU_LIMIT))
-        puck.update_gflag('context_initial_pool_size', "%d"%(2 * CPU_LIMIT))
+        # puck.update_gflag('threads_count', "%d"%(CPU_LIMIT))
+        # puck.update_gflag('context_initial_pool_size', "%d"%(2 * CPU_LIMIT))
+
+        puck.update_gflag('threads_count', f"{self.threads_count}")
+        puck.update_gflag('context_initial_pool_size', f"{self.context_pool_size}")
+
         print(self.index_name(dataset))
         puck.update_gflag('index_path', self.index_name(dataset))
 
@@ -121,8 +127,10 @@ class Puck(BaseStreamingANN):
             puck.update_gflag(key, "%s"%value)
         #query_args_list = query_args.strip().split(',')
         #self.index.update_params(int(self.topk), int(query_args_list[1]), int(query_args_list[2]),int(query_args_list[3]))
-        puck.update_gflag('threads_count', "%d"%(CPU_LIMIT))
+        # puck.update_gflag('threads_count', "%d"%(CPU_LIMIT))
+        puck.update_gflag('threads_count', f"{self.threads_count}")
         self.index.init()
+
         #topk是作为检索参数传入puck
         self.qas = query_args
     def insert(self, X, ids):
