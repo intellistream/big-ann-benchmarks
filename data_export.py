@@ -179,6 +179,12 @@ if __name__ == "__main__":
                                      'neurips23/runbooks/congestion/batchDeletion/batchDeletion0.3.yaml',
                                      'neurips23/runbooks/congestion/batchDeletion/batchDeletion0.4.yaml',
                                      'neurips23/runbooks/congestion/batchDeletion/batchDeletion0.5.yaml']
+                if args.output == 'stressTest':
+                    runbook_paths = ['neurips23/runbooks/congestion/stressTest/stressTest0.1.yaml',
+                                     'neurips23/runbooks/congestion/stressTest/stressTest0.2.yaml',
+                                     'neurips23/runbooks/congestion/stressTest/stressTest0.3.yaml',
+                                     'neurips23/runbooks/congestion/stressTest/stressTest0.4.yaml',
+                                     'neurips23/runbooks/congestion/stressTest/stressTest0.5.yaml']
                 if args.output == "curseDim":
                     runbook_paths = ['neurips23/runbooks/congestion/dimensions/dimensions_experiment.yaml']
                 if args.output == "multiModal":
