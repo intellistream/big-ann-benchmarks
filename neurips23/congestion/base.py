@@ -1,6 +1,47 @@
 from threading import Thread,Lock
 from typing import Optional,List
-from PyCANDYAlgo.utils import *
+
+try:
+    from PyCANDYAlgo.utils import *  # type: ignore
+except ModuleNotFoundError:
+    import collections
+
+    class NumpyIdxPair:
+        def __init__(self, vectors, idx):
+            self.vectors = vectors
+            self.idx = idx
+
+    class _BaseQueue:
+        def __init__(self, cap: int = 10):
+            self._dq = collections.deque()
+            self._cap = int(cap)
+
+        def capacity(self) -> int:
+            return self._cap
+
+        def size(self) -> int:
+            return len(self._dq)
+
+        def empty(self) -> bool:
+            return not self._dq
+
+        def front(self):
+            return self._dq[0]
+
+        def pop(self):
+            self._dq.popleft()
+
+        def push(self, item):
+            self._dq.append(item)
+
+    class NumpyIdxQueue(_BaseQueue):
+        pass
+
+    class IdxQueue(_BaseQueue):
+        pass
+
+    def bind_to_core(core_id: int):  # no-op 后备
+        return
 
 from benchmark.algorithms.base import BaseANN
 

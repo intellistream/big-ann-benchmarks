@@ -28,15 +28,16 @@ def load_runbook_congestion(dataset_name, max_pts, runbook_file):
                 if entry['end'] < 0 or entry['end'] > max_pts:
                     raise Exception('End out of range in runbook')
             if entry['operation'] == 'stress_test':
-                required_fields = {
-                    'warmup_batch', 'warmup_events', 'ramp_initial_batch', 'ramp_scale',
-                    'ramp_events', 'search_events', 'search_tol_pct', 'steady_events',
-                    'steady_eps_pct', 'steady_backoff_pct', 'grace_events', 'deadline_us',
-                    'query_ratio'
-                }
-                missing = [f for f in required_fields if f not in entry]
-                if missing:
-                    raise Exception(f"Missing fields for stress_test operation: {', '.join(missing)}")
+                if not entry.get('auto_tune', False):
+                    required_fields = {
+                        'warmup_batch', 'warmup_events', 'ramp_initial_batch', 'ramp_scale',
+                        'ramp_events', 'search_events', 'search_tol_pct', 'steady_events',
+                        'steady_eps_pct', 'steady_backoff_pct', 'grace_events', 'deadline_us',
+                        'query_ratio'
+                    }
+                    missing = [f for f in required_fields if f not in entry]
+                    if missing:
+                        raise Exception(f"Missing fields for stress_test operation: {', '.join(missing)}")
             if entry['operation'] in {'replace'}:
                 if 'tags_start' not in entry:
                     raise Exception('Start of indices to be replaced not specified in runbook')

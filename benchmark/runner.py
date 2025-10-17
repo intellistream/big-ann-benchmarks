@@ -30,7 +30,6 @@ from neurips23.common import RUNNERS
 
 from benchmark.streaming.load_runbook import load_runbook_streaming
 from benchmark.congestion.load_runbook import load_runbook_congestion
-from benchmark.concurrent.load_runbook import load_runbook_concurrent
 
 def run(definition, dataset, count, run_count, rebuild=True,
         upload_index=False, download_index=False,
@@ -63,6 +62,7 @@ def run(definition, dataset, count, run_count, rebuild=True,
     elif neurips23track == 'congestion':
         max_pts, runbook = load_runbook_congestion(dataset, ds.nb, runbook_path)
     elif neurips23track == 'concurrent':
+        from benchmark.concurrent.load_runbook import load_runbook_concurrent
         max_pts, cc_config, runbook = load_runbook_concurrent(dataset, ds.nb, runbook_path)
         print("loading ... ", runbook)
 
