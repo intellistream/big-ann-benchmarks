@@ -9,7 +9,7 @@ def load_runbook_congestion(dataset_name, max_pts, runbook_file):
         run_list = []
         while i in runbook:
             entry = runbook.get(i)
-            if entry['operation'] not in {'initial','insert', 'delete', 'search', 'replace', 'batch_insert','startHPC', 'endHPC', 'waitPending', 'enableScenario', 'batch_insert_delete'}:
+            if entry['operation'] not in {'initial','insert', 'delete', 'search', 'replace', 'batch_insert','startHPC', 'endHPC', 'waitPending', 'enableScenario', 'batch_insert_delete', 'stress_test'}:
                 raise Exception('Undefined runbook operation')
             if entry['operation'] in {'batch_insert'}:
                 if 'start' not in entry:
@@ -18,7 +18,7 @@ def load_runbook_congestion(dataset_name, max_pts, runbook_file):
                     raise Exception('End not specified in runbook')
                 if 'batchSize' not in entry:
                     raise Exception('batchSize not specified in runbook')
-            if entry['operation']  in {'initial','insert', 'delete'}:
+            if entry['operation']  in {'initial','insert', 'delete', 'stress_test'}:
                 if 'start' not in entry:
                     raise Exception('Start not speficied in runbook')
                 if 'end' not in entry:
@@ -27,6 +27,17 @@ def load_runbook_congestion(dataset_name, max_pts, runbook_file):
                     raise Exception('Start out of range in runbook')
                 if entry['end'] < 0 or entry['end'] > max_pts:
                     raise Exception('End out of range in runbook')
+            if entry['operation'] == 'stress_test':
+                if not entry.get('auto_tune', False):
+                    required_fields = {
+                        'warmup_batch', 'warmup_events', 'ramp_initial_batch', 'ramp_scale',
+                        'ramp_events', 'search_events', 'search_tol_pct', 'steady_events',
+                        'steady_eps_pct', 'steady_backoff_pct', 'grace_events', 'deadline_us',
+                        'query_ratio'
+                    }
+                    missing = [f for f in required_fields if f not in entry]
+                    if missing:
+                        raise Exception(f"Missing fields for stress_test operation: {', '.join(missing)}")
             if entry['operation'] in {'replace'}:
                 if 'tags_start' not in entry:
                     raise Exception('Start of indices to be replaced not specified in runbook')
