@@ -1,5 +1,5 @@
 from threading import Thread,Lock
-from typing import Optional,List
+from typing import Optional,List,Tuple
 
 try:
     from PyCANDYAlgo.utils import *  # type: ignore
@@ -100,7 +100,10 @@ class CongestionDropWorker(AbstractThread):
         self.outOfOrder = False
         self.drop_count_total = 0
         self.insert_queue_capacity = self.insert_queue.capacity()
+        self.initial_load_queue_capacity = self.initial_load_queue.capacity()
         self.delete_queue_capacity = self.delete_queue.capacity()
+        self.query_queue_capacity = self.query_queue.capacity()
+        self.cmd_queue_capacity = self.cmd_queue.capacity()
 
     def setup(self, dtype, max_pts, ndim):
         self.vec_dim=ndim
@@ -178,6 +181,17 @@ class CongestionDropWorker(AbstractThread):
             pass
         self.m_mut.release()
         return True
+
+    def reset_state(self, dtype, max_pts, ndim):
+        self.insert_queue = NumpyIdxQueue(self.insert_queue_capacity)
+        self.initial_load_queue = NumpyIdxQueue(self.initial_load_queue_capacity)
+        self.delete_queue = NumpyIdxQueue(self.delete_queue_capacity)
+        self.query_queue = NumpyIdxQueue(self.query_queue_capacity)
+        self.cmd_queue = IdxQueue(self.cmd_queue_capacity)
+        self.ingested_vectors = 0
+        self.drop_count_total = 0
+        self.vec_dim = ndim
+        self.my_index_algo.setup(dtype, max_pts, ndim)
 
     def initial_load(self,X,ids):
         """
@@ -271,6 +285,8 @@ class BaseCongestionDropANN(BaseANN):
         self.workerMap = []
         self.verbose = False
         self._drop_snapshot = 0
+        self._last_setup_params: Optional[Tuple[str, int, int]] = None
+        self._hpc_active = False
 
         for i in range(parallel_workers):
             self.workers.append(CongestionDropWorker(my_index_algo=my_index_algos[i]))
@@ -280,18 +296,25 @@ class BaseCongestionDropANN(BaseANN):
             worker = self.workers[i]
             worker.setup(dtype, max_pts, ndims)
             worker.my_id=i
+        self._last_setup_params = (dtype, max_pts, ndims)
         return
 
     def startHPC(self):
+        if self._hpc_active:
+            return
         for i in range(self.parallel_workers):
             self.workers[i].startHPC()
+        self._hpc_active = True
         return
 
     def endHPC(self):
+        if not self._hpc_active:
+            return
         for i in range(self.parallel_workers):
             self.workers[i].endHPC()
         for i in range(self.parallel_workers):
             self.workers[i].join_thread()
+        self._hpc_active = False
         return
 
     def waitPendingOperations(self):
@@ -398,6 +421,19 @@ class BaseCongestionDropANN(BaseANN):
     def replace(self,X,ids):
         self.delete(X,ids)
         self.insert(X,ids)
+
+    def reset_index(self):
+        if self._last_setup_params is None:
+            raise RuntimeError("Cannot reset index before setup.")
+        dtype, max_pts, ndims = self._last_setup_params
+        for worker in self.workers:
+            worker.reset_state(dtype, max_pts, ndims)
+        for i, worker in enumerate(self.workers):
+            worker.my_id = i
+        self.insert_idx = 0
+        self.workerMap = []
+        self._drop_snapshot = 0
+        self._hpc_active = False
 
 
     def enableScenario(self, randomContamination=False, randomContaminationProb=0.0, randomDrop=False,

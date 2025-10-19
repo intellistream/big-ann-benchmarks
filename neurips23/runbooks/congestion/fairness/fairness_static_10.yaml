@@ -1,0 +1,27 @@
+sift:
+  max_pts: 1000000
+  maintenance_policy:
+    enable: true
+    deletion_ratio_trigger: 0.1
+  1:
+    operation: "startHPC"
+  2:
+    operation: "initial"
+    start: 0
+    end: 50000
+  3:
+    operation: "waitPending"
+  4:
+    operation: "batch_insert_delete"
+    start: 50000
+    end: 1000000
+    batchSize: 500
+    eventRate: 5000
+    deletion_percentage: 0.2
+  5:
+    operation: "search"
+  6:
+    operation: "waitPending"
+  7:
+    operation: "endHPC"
+  gt_url: "none"

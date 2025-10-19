@@ -9,7 +9,7 @@ from benchmark.results import get_result_filename
 import tracemalloc
 import random
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 def generateTimestamps(rows, eventRate=4000):
     """
@@ -282,6 +282,245 @@ class StressTestConfig:
         self.adaptive_drop_rate_pct = float(max(0.1, self.adaptive_drop_rate_pct))
         self.adaptive_drop_floor = int(max(0, self.adaptive_drop_floor))
         self.adaptive_ingest_multiplier = float(max(1.0, self.adaptive_ingest_multiplier))
+
+
+def _safe_float(value) -> Optional[float]:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _safe_int(value) -> Optional[int]:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _normalise_name_list(value) -> Optional[List[str]]:
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return [value.strip().lower()]
+    try:
+        return [str(v).strip().lower() for v in value if v is not None]
+    except TypeError:
+        return None
+
+
+@dataclass
+class MaintenancePolicy:
+    enable: bool = False
+    deletion_ratio_trigger: Optional[float] = None
+    budget_us: Optional[float] = None
+    max_rebuilds: Optional[int] = None
+    exclude_algorithms: Optional[List[str]] = None
+
+    @classmethod
+    def from_dict(cls, data: Optional[Dict[str, object]]) -> "MaintenancePolicy":
+        if not data:
+            return cls(enable=False)
+
+        enable = bool(data.get('enable', True))
+        deletion_ratio_trigger = _safe_float(data.get('deletion_ratio_trigger'))
+        if deletion_ratio_trigger is not None and deletion_ratio_trigger < 0:
+            deletion_ratio_trigger = 0.0
+        budget_us = _safe_float(data.get('budget_us'))
+        if budget_us is not None and budget_us < 0:
+            budget_us = 0.0
+        max_rebuilds = _safe_int(data.get('max_rebuilds'))
+        if max_rebuilds is not None and max_rebuilds < 0:
+            max_rebuilds = 0
+
+        exclude_algorithms = _normalise_name_list(data.get('exclude_algorithms'))
+
+        return cls(
+            enable=enable,
+            deletion_ratio_trigger=deletion_ratio_trigger,
+            budget_us=budget_us,
+            max_rebuilds=max_rebuilds,
+            exclude_algorithms=exclude_algorithms,
+        )
+
+    def allows_algo(self, algo_name: str) -> bool:
+        algo_name = algo_name.lower()
+        if self.exclude_algorithms and algo_name in self.exclude_algorithms:
+            return False
+        return True
+
+    def should_execute(self, state: "MaintenanceState", algo_name: str, forced: bool = False) -> bool:
+        if not forced:
+            if not self.enable:
+                return False
+            if not self.allows_algo(algo_name):
+                return False
+            if self.max_rebuilds is not None and state.rebuild_count >= self.max_rebuilds:
+                return False
+            if self.budget_us is not None and state.budget_spent_us >= self.budget_us:
+                return False
+            if self.deletion_ratio_trigger is not None:
+                return state.deletion_ratio() >= self.deletion_ratio_trigger
+            return False
+        # forced rebuild bypasses enable/ratio checks but still honours budget / allow-list
+        if not self.allows_algo(algo_name):
+            return False
+        if self.budget_us is not None and state.budget_spent_us >= self.budget_us:
+            return False
+        if self.max_rebuilds is not None and state.rebuild_count >= self.max_rebuilds:
+            return False
+        return True
+
+    def register_cost(self, state: "MaintenanceState", cost_us: float) -> None:
+        state.budget_spent_us += max(cost_us, 0.0)
+
+
+@dataclass
+class MaintenanceState:
+    live_points: int = 0
+    deleted_points: int = 0
+    rebuild_count: int = 0
+    budget_spent_us: float = 0.0
+    live_intervals: List[Tuple[int, int]] = None
+
+    current_min_id: Optional[int] = None
+    current_max_id: Optional[int] = None
+
+    def __post_init__(self):
+        if self.live_intervals is None:
+            self.live_intervals = []
+
+    def deletion_ratio(self) -> float:
+        denominator = self.live_points if self.live_points > 0 else 0
+        if denominator <= 0:
+            return 0.0
+        return max(self.deleted_points, 0) / float(denominator)
+
+    def _recalculate(self) -> None:
+        self.live_points = sum(end - start for start, end in self.live_intervals)
+        if self.live_intervals:
+            self.current_min_id = self.live_intervals[0][0]
+            self.current_max_id = self.live_intervals[-1][1]
+        else:
+            self.current_min_id = None
+            self.current_max_id = None
+
+    def _add_interval(self, start: int, end: int) -> None:
+        if start >= end:
+            return
+        merged: List[Tuple[int, int]] = []
+        inserted = False
+        for cur_start, cur_end in self.live_intervals:
+            if cur_end < start:
+                merged.append((cur_start, cur_end))
+            elif end < cur_start:
+                if not inserted:
+                    merged.append((start, end))
+                    inserted = True
+                merged.append((cur_start, cur_end))
+            else:
+                start = min(start, cur_start)
+                end = max(end, cur_end)
+        if not inserted:
+            merged.append((start, end))
+        merged.sort()
+        self.live_intervals = merged
+        self._recalculate()
+
+    def _remove_interval(self, start: int, end: int) -> int:
+        if start >= end or not self.live_intervals:
+            return 0
+        removed = 0
+        updated: List[Tuple[int, int]] = []
+        for cur_start, cur_end in self.live_intervals:
+            if cur_end <= start or cur_start >= end:
+                updated.append((cur_start, cur_end))
+                continue
+            # overlap
+            overlap_start = max(cur_start, start)
+            overlap_end = min(cur_end, end)
+            removed += max(0, overlap_end - overlap_start)
+            if cur_start < start:
+                updated.append((cur_start, start))
+            if cur_end > end:
+                updated.append((end, cur_end))
+        updated = [(s, e) for s, e in updated if e > s]
+        updated.sort()
+        self.live_intervals = updated
+        self._recalculate()
+        return removed
+
+    def record_initial_range(self, start: int, end: int) -> None:
+        self.live_intervals = []
+        self.deleted_points = 0
+        self._add_interval(start, end)
+
+    def record_insert_range(self, start: int, end: int) -> None:
+        count = max(end - start, 0)
+        if count <= 0:
+            return
+        self._add_interval(start, end)
+
+    def record_delete_range(self, start: int, end: int) -> None:
+        removed = self._remove_interval(start, end)
+        if removed > 0:
+            self.deleted_points += removed
+
+    def record_rebuild(self, intervals: List[Tuple[int, int]], cost_us: float) -> None:
+        self.live_intervals = []
+        for start, end in intervals:
+            self._add_interval(start, end)
+        self.deleted_points = 0
+        self.rebuild_count += 1
+        self.budget_spent_us += max(cost_us, 0.0)
+
+    def get_intervals(self) -> List[Tuple[int, int]]:
+        return list(self.live_intervals)
+
+
+def perform_controlled_rebuild(algo, ds, intervals: List[Tuple[int, int]]) -> float:
+    """
+    Reset algorithm state and replay data in the given range.
+    Returns maintenance latency in microseconds.
+    """
+    rebuild_start = time.time()
+    was_running = getattr(algo, "_hpc_active", False)
+
+    valid_intervals = [(s, e) for s, e in intervals if s < e]
+    if not valid_intervals:
+        return 0.0
+
+    try:
+        if hasattr(algo, 'waitPendingOperations'):
+            try:
+                algo.waitPendingOperations()
+            except Exception:
+                pass
+
+        if was_running and hasattr(algo, 'endHPC'):
+            algo.endHPC()
+
+        if not hasattr(algo, 'reset_index'):
+            raise RuntimeError("Algorithm does not expose reset_index for maintenance rebuild.")
+        algo.reset_index()
+
+        if was_running and hasattr(algo, 'startHPC'):
+            algo.startHPC()
+
+        for interval_start, interval_end in valid_intervals:
+            ids = np.arange(interval_start, interval_end, dtype=np.uint32)
+            if ids.size == 0:
+                continue
+            data = ds.get_data_in_range(interval_start, interval_end)
+            if data.shape[0] != ids.shape[0]:
+                raise RuntimeError("Mismatch between rebuild ids and dataset slice.")
+            algo.initial_load(data, ids)
+    finally:
+        if was_running and hasattr(algo, '_hpc_active') and not algo._hpc_active and hasattr(algo, 'startHPC'):
+            # Ensure threads are running for subsequent steps.
+            algo.startHPC()
+
+    return (time.time() - rebuild_start) * 1e6
 
 
 @dataclass
@@ -801,12 +1040,19 @@ class CongestionRunner(BaseRunner):
         print(fr"Got {Q.shape[0]} queries")  
 
         # Load Runbook
+        runbook_steps = list(runbook)
+        policy_dict = getattr(runbook, 'maintenance_policy', {})
+        maintenance_policy = MaintenancePolicy.from_dict(policy_dict)
+        maintenance_state = MaintenanceState()
+        algo_name = getattr(algo, 'name', str(algo))
+        algo_name_lower = algo_name.lower()
+
         result_map = {}
         num_searches = 0
         num_batch = 0
-        counts = {'initial':0,'batch_insert':0,'insert':0,'delete':0,'search':0,'stress_test':0}
+        counts = {'initial':0,'batch_insert':0,'insert':0,'delete':0,'search':0,'stress_test':0,'maintenance_rebuild':0}
         attrs = {
-            "name": str(algo),
+            "name": algo_name,
             "pendingWrite":0,
             "totalTime":0,
             "continuousQueryLatencies":[],
@@ -822,6 +1068,15 @@ class CongestionRunner(BaseRunner):
             'batchThroughput':[],
             'batchinsertThroughtput':[]
         }
+        attrs.update({
+            'maintenanceLatency': 0.0,
+            'maintenanceRebuilds': 0,
+            'maintenanceBudgetUs': maintenance_policy.budget_us or 0.0,
+            'maintenanceBudgetUsed': 0.0,
+            'maintenancePolicyEnabled': bool(maintenance_policy.enable and maintenance_policy.allows_algo(algo_name_lower)),
+            'maintenanceDeletionRatioTrigger': maintenance_policy.deletion_ratio_trigger or 0.0,
+            'maintenanceEvents': [],
+        })
 
         randomDrop = False
         randomContamination = False
@@ -829,8 +1084,43 @@ class CongestionRunner(BaseRunner):
         randomContaminationProb = 0.0
         randomDropProb = 0.0
 
+        def trigger_rebuild_event(step_index: int, reason: str, intervals: Optional[List[Tuple[int, int]]] = None, forced: bool = False):
+            nonlocal counts
+            active_intervals = intervals if intervals else maintenance_state.get_intervals()
+            if not active_intervals:
+                print(f"Maintenance rebuild skipped at step {step_index} ({reason}): no live intervals.")
+                return
+            ratio_before = maintenance_state.deletion_ratio()
+            try:
+                cost_us = perform_controlled_rebuild(algo, ds, active_intervals)
+            except Exception as exc:
+                attrs.setdefault('maintenanceErrors', []).append(str(exc))
+                raise
+            maintenance_state.record_rebuild(active_intervals, cost_us)
+            attrs['maintenanceLatency'] += cost_us
+            attrs['maintenanceRebuilds'] += 1
+            attrs['maintenanceBudgetUsed'] = maintenance_state.budget_spent_us
+            attrs['maintenanceEvents'].append({
+                "step": step_index,
+                "reason": reason,
+                "cost_us": cost_us,
+                "intervals": active_intervals,
+                "forced": forced,
+                "deletion_ratio_before": ratio_before,
+                "deletion_ratio_after": maintenance_state.deletion_ratio(),
+            })
+            counts['maintenance_rebuild'] += 1
+            print(f"MAINTENANCE rebuild executed at step {step_index} ({reason}) cost={cost_us:.2f}us intervals={active_intervals} ratio {ratio_before:.4f}->{maintenance_state.deletion_ratio():.4f}")
+
+        def maybe_trigger_rebuild(step_index: int, reason: str) -> None:
+            if not maintenance_policy.enable:
+                return
+            if not maintenance_policy.should_execute(maintenance_state, algo_name_lower, forced=False):
+                return
+            trigger_rebuild_event(step_index, reason, forced=False)
+
         totalStart = time.time()
-        for step, entry in enumerate(runbook):
+        for step, entry in enumerate(runbook_steps):
             start_time = time.time()
             match entry['operation']:
                 case 'initial':
@@ -838,6 +1128,7 @@ class CongestionRunner(BaseRunner):
                     end = entry['end']
                     ids = np.arange(start,end,dtype=np.uint32)
                     algo.initial_load(ds.get_data_in_range(start,end),ids)
+                    maintenance_state.record_initial_range(start, end)
                 case 'startHPC':
                     print(type(algo))
                     algo.startHPC()
@@ -1006,6 +1297,7 @@ class CongestionRunner(BaseRunner):
                     if peak>attrs['updateMemoryFootPrint']:
                         attrs['updateMemoryFootPrint'] = peak
                     tracemalloc.stop()
+                    maintenance_state.record_insert_range(start, end)
 
                     num_batch +=1
                     if(start+batch_step*batchSize<end and start+(batch_step+1)*batchSize>end):
@@ -1025,6 +1317,7 @@ class CongestionRunner(BaseRunner):
                     end = entry['end']
                     ids = np.arange(start, end, dtype=np.uint32)
                     algo.insert(ds.get_data_in_range(start, end), ids)
+                    maintenance_state.record_insert_range(start, end)
 
                     counts['insert'] +=1
                 case 'delete':
@@ -1033,6 +1326,8 @@ class CongestionRunner(BaseRunner):
                     end = entry['end']
                     print(f'delete {start}:{end}')
                     algo.delete(ids)
+                    maintenance_state.record_delete_range(start, end)
+                    maybe_trigger_rebuild(step + 1, f"delete threshold (step {step+1})")
 
                     counts['delete'] +=1
                 case 'batch_insert_delete':
@@ -1087,6 +1382,14 @@ class CongestionRunner(BaseRunner):
                         attrs["latencyInsert"][-1] += (time.time() - t0) * 1e6
                         print(f'delete {deletion_ids[0]}:{deletion_ids[-1]}')
 
+                        insert_min = int(np.min(insert_ids))
+                        insert_max = int(np.max(insert_ids)) + 1
+                        maintenance_state.record_insert_range(insert_min, insert_max)
+                        if deletion_ids.size > 0:
+                            delete_min = int(np.min(deletion_ids))
+                            delete_max = int(np.max(deletion_ids)) + 1
+                            maintenance_state.record_delete_range(delete_min, delete_max)
+
                         processedTimeStamps[i * batchSize:(i + 1) * batchSize] = (time.time() - start_time) * 1e6
 
                         # algo.waitPendingOperations()
@@ -1136,6 +1439,14 @@ class CongestionRunner(BaseRunner):
                         print(f'delete {deletion_ids[0]}:{deletion_ids[-1]}')
                         processedTimeStamps[batch_step * batchSize:end-start] = (time.time() - start_time) * 1e6
                         arrivalTimeStamps[batch_step * batchSize:end-start] = tExpectedArrival
+                        if insert_ids.size > 0:
+                            insert_min = int(np.min(insert_ids))
+                            insert_max = int(np.max(insert_ids)) + 1
+                            maintenance_state.record_insert_range(insert_min, insert_max)
+                        if deletion_ids.size > 0:
+                            delete_min = int(np.min(deletion_ids))
+                            delete_max = int(np.max(deletion_ids)) + 1
+                            maintenance_state.record_delete_range(delete_min, delete_max)
 
                         # algo.waitPendingOperations()
                         # continuous query phase
@@ -1163,8 +1474,8 @@ class CongestionRunner(BaseRunner):
                     if peak > attrs['updateMemoryFootPrint']:
                         attrs['updateMemoryFootPrint'] = peak
                     tracemalloc.stop()
-
                     num_batch += 1
+                    maybe_trigger_rebuild(step + 1, f"batch_insert_delete threshold (step {step+1})")
 
                 case 'stress_test':
                     config = StressTestConfig.from_entry(entry)
@@ -1185,6 +1496,20 @@ class CongestionRunner(BaseRunner):
                         attrs['stressTestReason'] = str(exc)
                         print(f"STRESS_SUMMARY RStar=,BStar=,DeltaHatUs= (Error: {str(exc)})")
                         raise
+                case 'maintenance_rebuild':
+                    force = bool(entry.get('force', False))
+                    intervals_override: List[Tuple[int, int]] = []
+                    if 'intervals' in entry and isinstance(entry['intervals'], list):
+                        for segment in entry['intervals']:
+                            if isinstance(segment, dict) and 'start' in segment and 'end' in segment:
+                                intervals_override.append((int(segment['start']), int(segment['end'])))
+                    elif 'start' in entry and 'end' in entry:
+                        intervals_override.append((int(entry['start']), int(entry['end'])))
+
+                    if not maintenance_policy.should_execute(maintenance_state, algo_name_lower, forced=force):
+                        print(f"Skipping maintenance rebuild at step {step+1} (policy gating, ratio={maintenance_state.deletion_ratio():.4f})")
+                        continue
+                    trigger_rebuild_event(step + 1, "manual_runbook", intervals=intervals_override if intervals_override else None, forced=force)
 
                 case 'replace':
                     tags_to_replace = np.arange(entry['tags_start'], entry['tags_end'], dtype=np.uint32)
@@ -1226,6 +1551,10 @@ class CongestionRunner(BaseRunner):
         attrs["search_times"]= search_times
         attrs["num_searches"]= num_searches
         attrs["private_queries"]=private_query
+        attrs['maintenanceBudgetUsed'] = maintenance_state.budget_spent_us
+        attrs['maintenanceDeletionRatioFinal'] = maintenance_state.deletion_ratio()
+        attrs['maintenanceLivePoints'] = maintenance_state.live_points
+        attrs['maintenanceDeletedPoints'] = maintenance_state.deleted_points
 
         # record each search
         for k, v in result_map.items():
