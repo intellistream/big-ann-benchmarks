@@ -1,24 +1,17 @@
 #!/bin/bash
-set -euo pipefail
 
-if [ $# -lt 2 ]; then
-  echo "Usage: $0 <dataset> <runbook_path> [--private_query]"
-  exit 1
-fi
+DATASETS=("sift")
+# RUNBOOKS=("fairness_static_10.yaml" "fairness_static_20.yaml" "fairness_static_50.yaml")
+RUNBOOKS=("fairness_static_10.yaml")
+RUNBOOK_ROOT="neurips23/runbooks/congestion/fairness"
 
-DATASET="$1"
-RUNBOOK="$2"
-PRIVATE_QUERY="${3:-}"
-
-if [ -z "${GT_CMDLINE_TOOL:-}" ]; then
-  echo "Please export GT_CMDLINE_TOOL to the ground-truth executable path (e.g., benchmark/gt/dist/distance_gt)."
-  exit 1
-fi
-
-python3 -m benchmark.congestion.compute_gt \
-  --dataset "${DATASET}" \
-  --runbook_file "${RUNBOOK}" \
-  --gt_cmdline_tool "${GT_CMDLINE_TOOL}" \
-  ${PRIVATE_QUERY:+--private_query}
-
-echo "Ground-truth generation finished for dataset=${DATASET}, runbook=${RUNBOOK}."
+for RUNBOOK in "${RUNBOOKS[@]}"; do
+  RUNBOOK_PATH="${RUNBOOK_ROOT}/${RUNBOOK}"
+  for DATASET in "${DATASETS[@]}"; do
+    python3 benchmark/congestion/compute_gt.py \
+      --dataset "${DATASET}" \
+      --runbook_file "${RUNBOOK_PATH}" \
+      --gt_cmdline_tool ~/DiskANN/build/apps/utils/compute_groundtruth \
+      "$@"
+  done
+done

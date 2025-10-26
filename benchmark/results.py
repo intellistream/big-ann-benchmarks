@@ -154,6 +154,32 @@ def add_results_to_h5py(f, search_type, results, count, suffix = ''):
         raise NotImplementedError()
 
 
+def _normalize_attr_for_storage(value):
+    import json
+    import numpy as np
+
+    def convert(obj):
+        if isinstance(obj, (np.generic,)):
+            return obj.item()
+        if isinstance(obj, (np.ndarray,)):
+            return convert(obj.tolist())
+        if isinstance(obj, (list, tuple, set)):
+            return [convert(o) for o in obj]
+        if isinstance(obj, dict):
+            return {k: convert(v) for k, v in obj.items()}
+        return obj
+
+    simple = convert(value)
+    if simple is None:
+        return ''
+    if isinstance(simple, (str, bytes, int, float, bool)):
+        return simple
+    try:
+        return json.dumps(simple)
+    except TypeError:
+        return str(simple)
+
+
 def store_results(dataset, count, definition, query_arguments,
         attrs, results, search_type, neurips23track=None, runbook_path=None, cc_config={}):
     
@@ -176,14 +202,26 @@ def store_results(dataset, count, definition, query_arguments,
         os.makedirs(head)
     f = h5py.File(name=fn, mode='w', libver='latest')
     import pandas as pd
-    df = pd.DataFrame([attrs])
+    safe_attrs = {k: _normalize_attr_for_storage(v) for k, v in attrs.items()}
+    df = pd.DataFrame([safe_attrs])
 
     # Write the DataFrame to a CSV file
     df.to_csv(fn_attr, index=False)
 
+    def _attr_value(value):
+        normalized = _normalize_attr_for_storage(value)
+        if isinstance(normalized, (dict, list, tuple, set)):
+            try:
+                return json.dumps(normalized, ensure_ascii=False)
+            except Exception:
+                return str(normalized)
+        return normalized
+
     for k, v in attrs.items():
-        # TODO: here is one potential bug
-        f.attrs[k] = v
+        try:
+            f.attrs[k] = _attr_value(v)
+        except TypeError:
+            f.attrs[k] = str(_attr_value(v))
     
     if neurips23track in ['streaming', 'congestion']:
         for i, step_results in enumerate(results):
@@ -215,15 +253,28 @@ def load_all_results(dataset=None, count=None, neurips23track="congestion", runb
                 continue
             full_path = os.path.join(root, fn)
             print(f"Found HDF5 file: {full_path}")
+            file_path = os.path.join(root, fn)
+            read_only = False
             try:
-                f = h5py.File(name=os.path.join(root, fn), mode='r+', libver='latest')
+                f = h5py.File(name=file_path, mode='r+', libver='latest', swmr=True)
+            except OSError as exc:
+                print(f"SKIP locked file for write: {full_path} ({exc})")
+                try:
+                    f = h5py.File(name=file_path, mode='r', libver='latest', swmr=True)
+                    read_only = True
+                except OSError as exc2:
+                    print(f"Was unable to read {full_path}: {exc2}")
+                    continue
+            try:
                 properties = dict(f.attrs)
                 properties["filename"] = fn
+                properties["_read_only"] = read_only
                 yield properties, f
+            finally:
                 f.close()
-            except:
-                print('Was unable to read', fn)
-                traceback.print_exc()
+
+
+
 
 
 def load_all_attrs(dataset=None, count=None, neurips23track="concurrent", runbook_path=None):

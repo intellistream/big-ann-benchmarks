@@ -130,6 +130,12 @@ if __name__ == "__main__":
                                 ]
             if track == 'congestion':
                 runbook_paths = []
+                if args.output == "fairness":
+                    runbook_paths = [
+                        'neurips23/runbooks/congestion/fairness/fairness_static_10.yaml',
+                        'neurips23/runbooks/congestion/fairness/fairness_static_20.yaml',
+                        'neurips23/runbooks/congestion/fairness/fairness_static_50.yaml',
+                    ]
                 if args.output == "gen":
                     runbook_paths = ['neurips23/runbooks/congestion/general_experiment/general_experiment.yaml'
                                     ]

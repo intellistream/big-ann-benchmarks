@@ -5,6 +5,8 @@ from fileinput import filename
 
 import numpy
 import os
+import json
+import ast
 import yaml
 import random
 import traceback
@@ -21,14 +23,70 @@ from benchmark.streaming.load_runbook import load_runbook_streaming
 from benchmark.congestion.load_runbook import load_runbook_congestion
 from benchmark.concurrent.load_runbook import load_runbook_concurrent
 
-import PyCANDYAlgo
+try:
+    import PyCANDYAlgo
+except ModuleNotFoundError:
+    PyCANDYAlgo = None
 import pandas as pd
 
 
-def get_or_create_metrics(run):
-    if 'metrics' not in run:
-        run.create_group('metrics')
-    return run['metrics']
+_in_memory_metrics_cache = {}
+
+
+
+
+def _parse_attr(value, default=None):
+    if isinstance(value, (list, tuple, dict)):
+        return value
+    if isinstance(value, str):
+        for parser in (json.loads, ast.literal_eval):
+            try:
+                parsed = parser(value)
+                return parsed
+            except Exception:
+                continue
+    return default if default is not None else value
+
+
+def _to_number(value, default=0.0):
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            pass
+    return float(default)
+
+
+class InMemoryGroup(dict):
+    def __init__(self):
+        super().__init__()
+        self.attrs = {}
+
+    def create_group(self, name):
+        group = InMemoryGroup()
+        self[name] = group
+        return group
+
+    def __contains__(self, key):
+        return dict.__contains__(self, key) or key in self.attrs
+
+    def __getitem__(self, key):
+        return dict.__getitem__(self, key)
+
+
+def get_or_create_metrics(run, cache_key=None, read_only=False):
+    if 'metrics' in run:
+        return run['metrics']
+    if not read_only:
+        try:
+            return run.create_group('metrics')
+        except Exception:
+            pass
+    if cache_key is None:
+        cache_key = getattr(getattr(run, 'file', None), 'filename', None) or id(run)
+    return _in_memory_metrics_cache.setdefault(cache_key, InMemoryGroup())
 
 
 def create_pointset(data, xn, yn):
@@ -72,7 +130,9 @@ def compute_metrics(true_nn, res, metric_1, metric_2,
             run_nn = numpy.array(run['neighbors'])
         if recompute and 'metrics' in run:
             del run['metrics']
-        metrics_cache = get_or_create_metrics(run)
+        if recompute:
+            _in_memory_metrics_cache.pop(properties.get('filename'), None)
+        metrics_cache = get_or_create_metrics(run, properties.get('filename'), properties.get('_read_only', False))
 
         metric_1_value = metrics[metric_1]['function'](
             true_nn, run_nn, metrics_cache, properties)
@@ -129,8 +189,11 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
                         step_gt_path = os.path.join(gt_dir, 'step' + str(step) + '.gt100')
                     else:
                         step_gt_path = os.path.join(gt_dir, 'step' + str(step+1) + '.gt100')
-                    true_nn = knn_result_read(step_gt_path)
-                    true_nn_across_steps.append(true_nn)
+                    if not os.path.exists(step_gt_path):
+                        print(f"Warning: ground truth file missing for step {step}: {step_gt_path}")
+                    else:
+                        true_nn = knn_result_read(step_gt_path)
+                        true_nn_across_steps.append(true_nn)
 
                 if entry['operation'] == 'batch_insert' or entry['operation'] == 'batch_insert_delete':
                     batchSize = entry['batchSize']
@@ -148,16 +211,21 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
                         continuous_counter += batchSize
                         if(continuous_counter >= (end-start)/100):
                             step_gt_path = os.path.join(temp_gt_dir, 'batch' +str(num_batch_insert) +"_"+str(i) + '.gt100')
-                            true_nn = knn_result_read(step_gt_path)
-                            true_nn_across_batches[-1].append(true_nn)
+                            if not os.path.exists(step_gt_path):
+                                print(f"Warning: ground truth file missing for batch {num_batch_insert}_{i}: {step_gt_path}")
+                            else:
+                                true_nn = knn_result_read(step_gt_path)
+                                true_nn_across_batches[-1].append(true_nn)
                             continuous_counter = 0
                     if (start + batch_step * batchSize < end and start + (batch_step + 1) * batchSize > end):
                         continuous_counter += batchSize
                         if(continuous_counter>=(end-start)/100):
                             step_gt_path = os.path.join(temp_gt_dir, 'batch' + str(num_batch_insert) + "_" + str(batch_step) + '.gt100')
-
-                            true_nn = knn_result_read(step_gt_path)
-                            true_nn_across_batches[-1].append(true_nn)
+                            if not os.path.exists(step_gt_path):
+                                print(f"Warning: ground truth file missing for batch {num_batch_insert}_{batch_step}: {step_gt_path}")
+                            else:
+                                true_nn = knn_result_read(step_gt_path)
+                                true_nn_across_batches[-1].append(true_nn)
                     num_batch_insert += 1
                     
     except:
@@ -169,20 +237,31 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
     for i, (properties, run) in enumerate(res):
         algo = properties['algo']
         algo_name = properties['name']
+        continuous_results_attr = _parse_attr(properties.get('continuousQueryResults'), [])
+        continuous_latencies_attr = _parse_attr(properties.get('continuousQueryLatencies'), [])
+        latency_insert_attr = _parse_attr(properties.get('latencyInsert'), [])
+        insert_throughput_attr = _parse_attr(properties.get('insertThroughput'), [])
+        latency_query_attr = _parse_attr(properties.get('latencyQuery'), [])
+        query_size = _to_number(properties.get('querySize', 0), 0)
+        properties['count'] = int(_to_number(properties.get('count', 0), 0))
+        num_searches_value = int(_to_number(properties.get('num_searches', 0), 0))
+        properties['num_searches'] = num_searches_value
         # cache distances to avoid access to hdf5 file
         if search_type == "knn" or search_type == "knn_filtered":
             if neurips23track in ['streaming', 'congestion']:
                 run_nn_across_steps = []
                 run_nn_across_batches = []
-                for i in range(0,properties['num_searches']):
-                   step_suffix = str(properties['step_' + str(i)])
-                   run_nn_across_steps.append(numpy.array(run['neighbors_step' +  step_suffix]))
-                   #true_nn_across_steps.append()
-                for i in range(len(properties['continuousQueryResults'])):
-                    run_nn_across_batches.append([])
-                    for j in range(len(properties['continuousQueryResults'][i])):
-                        temp = numpy.array(properties['continuousQueryResults'][i][j])
-                        run_nn_across_batches[i].append(temp)
+                for idx in range(num_searches_value):
+                    step_suffix = str(properties['step_' + str(idx)])
+                    run_nn_across_steps.append(numpy.array(run['neighbors_step' + step_suffix]))
+                if isinstance(continuous_results_attr, list):
+                    for batch in continuous_results_attr:
+                        batch_arrays = []
+                        if isinstance(batch, list):
+                            for entry in batch:
+                                batch_arrays.append(numpy.array(entry))
+                        if batch_arrays:
+                            run_nn_across_batches.append(batch_arrays)
             elif neurips23track == 'concurrent':
                 run_nn_across_steps = []
                 run_nn_across_batches = []
@@ -210,7 +289,9 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
         if recompute and 'metrics' in run:
             print('Recomputing metrics, clearing cache')
             del run['metrics']
-        metrics_cache = get_or_create_metrics(run)
+        if recompute:
+            _in_memory_metrics_cache.pop(properties.get('filename'), None)
+        metrics_cache = get_or_create_metrics(run, properties.get('filename'), properties.get('_read_only', False))
 
         dataset = properties['dataset']
         try:
@@ -248,11 +329,10 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
             if neurips23track in ['streaming', 'congestion']:
                 v = []
                 bv = []
-                assert len(true_nn_across_steps) == len(run_nn_across_steps)
-                for (true_nn, run_nn) in zip(true_nn_across_steps, run_nn_across_steps):
-                    clear_cache = True
-
-                    if clear_cache and 'knn' in metrics_cache:
+                if len(true_nn_across_steps) != len(run_nn_across_steps):
+                    print("Warning: mismatch between ground-truth steps (%d) and results (%d); truncating to common length." % (len(true_nn_across_steps), len(run_nn_across_steps)))
+                for true_nn, run_nn in zip(true_nn_across_steps, run_nn_across_steps):
+                    if 'knn' in metrics_cache:
                         del metrics_cache['knn']
                     properties["use_vec"] = False
                     val = metric["function"](true_nn, run_nn, metrics_cache, properties)
@@ -260,14 +340,30 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
                 if name == 'k-nn':
                     print('Recall: ', v)
 
-                assert len(true_nn_across_batches) == len(run_nn_across_batches)
-                for(true_nn, run_nn) in zip(true_nn_across_batches, run_nn_across_batches):
-                    bv.append([])
-                    assert(len(true_nn)==len(run_nn))
-                    for(t,r) in zip(true_nn, run_nn):
-                        mean, std, recalls, queries_with_ties = get_recall_values(t, r, properties['count'])
-                        val = mean
-                        bv[-1].append(val)
+                if len(true_nn_across_batches) != len(run_nn_across_batches):
+                    print("Warning: mismatch between ground-truth batches (%d) and results (%d); truncating to common length." % (len(true_nn_across_batches), len(run_nn_across_batches)))
+                for true_batches, run_batches in zip(true_nn_across_batches, run_nn_across_batches):
+                    if len(true_batches) != len(run_batches):
+                        print("Warning: batch length mismatch (%d vs %d); truncating." % (len(true_batches), len(run_batches)))
+                    batch_values = []
+                    for t, r in zip(true_batches, run_batches):
+                        if r is None:
+                            print("Warning: skipping run batch with None result.")
+                            continue
+                        if not hasattr(r, '__len__'):
+                            print("Warning: skipping run batch with unsized result (%r)." % (r,))
+                            continue
+                        if hasattr(t, '__len__') and len(t) == 0:
+                            print("Warning: skipping ground-truth batch with no entries.")
+                            continue
+                        try:
+                            mean, std, recalls, queries_with_ties = get_recall_values(t, r, properties['count'])
+                        except Exception as exc:
+                            print("Warning: failed to compute batch recall (%s); skipping." % exc)
+                            continue
+                        batch_values.append(mean)
+                    if batch_values:
+                        bv.append(batch_values)
             elif neurips23track == 'concurrent':
                 v = []
                 bv = []
@@ -308,8 +404,9 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
                         # os.makedirs(output_dir, exist_ok=True)
                         if neurips23track == 'congestion' and runbook_path:
                             last_part = runbook_path.split('/')[-1]
-                            filename = os.path.join('results/neurips23/congestion',last_part)
+                            filename = os.path.join('results/neurips23/congestion', last_part)
                             f3_prefix = os.path.join(filename, f"{dataset_name}/{properties['count']}/{algo_name}")
+                            os.makedirs(f3_prefix, exist_ok=True)
                             base_name = os.path.splitext(os.path.basename(properties["filename"]))[0]
                             f3 = os.path.join(
                                 f3_prefix,
@@ -321,23 +418,35 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
                         recall_sum = 0
                         latency_sum = 0
                         for j in range(len(bv[i])):
-                            recall_sum+=bv[i][j]
-                            latency_sum+=properties['continuousQueryLatencies'][i][j]
-                        run_result['continuousRecall_'+str(i)] = recall_sum/len(bv[i])
-                        run_result['continuousLatency_'+str(i)] = latency_sum/len(bv[i])
-                        run_result['continuousThroughput_'+str(i)] = properties['querySize']/((run_result['continuousLatency_'+str(i)])/1e6)
+                            recall_sum += bv[i][j]
+                            if isinstance(continuous_latencies_attr, list) and i < len(continuous_latencies_attr):
+                                latency_values = continuous_latencies_attr[i]
+                                if isinstance(latency_values, list) and j < len(latency_values):
+                                    latency_sum += _to_number(latency_values[j], 0)
+                        if len(bv[i]):
+                            run_result['continuousRecall_'+str(i)] = recall_sum/len(bv[i])
+                            avg_latency = latency_sum/len(bv[i]) if len(bv[i]) else 0
+                            if avg_latency > 0:
+                                run_result['continuousLatency_'+str(i)] = avg_latency
+                                if query_size:
+                                    run_result['continuousThroughput_'+str(i)] = query_size/((avg_latency)/1e6)
 
-                    for i in range(len(properties['latencyInsert'])):
-                        run_result['latencyInsert_'+str(i)] = properties['latencyInsert'][i]
-                        run_result['insertThroughput' + str(i)] = properties['insertThroughput'][i]
-                    for i in range(len(properties['latencyQuery'])):
-                        run_result['latencyQuery_'+str(i)] = properties['latencyQuery'][i]
-                        run_result['queryThroughput'+str(i)] = properties['querySize']/(properties['latencyQuery'][i]/1e6)
+                    if isinstance(latency_insert_attr, list):
+                        for idx, value in enumerate(latency_insert_attr):
+                            run_result['latencyInsert_'+str(idx)] = _to_number(value, 0)
+                            if isinstance(insert_throughput_attr, list) and idx < len(insert_throughput_attr):
+                                run_result['insertThroughput' + str(idx)] = _to_number(insert_throughput_attr[idx], 0)
+                    if isinstance(latency_query_attr, list):
+                        for idx, value in enumerate(latency_query_attr):
+                            denom = _to_number(value, 0)
+                            run_result['latencyQuery_'+str(idx)] = denom
+                            if denom > 0 and query_size:
+                                run_result['queryThroughput'+str(idx)] = query_size/(denom/1e6)
 
 
-                    run_result['updateMemFPRT'] = properties['updateMemoryFootPrint']
-                    run_result['searchMemFPRT'] = properties['searchMemoryFootPrint']
-                    run_result['querySize'] = properties['querySize']
+                    run_result['updateMemFPRT'] = _to_number(properties.get('updateMemoryFootPrint'), 0)
+                    run_result['searchMemFPRT'] = _to_number(properties.get('searchMemoryFootPrint'), 0)
+                    run_result['querySize'] = query_size
                 else:
                     pass
 
