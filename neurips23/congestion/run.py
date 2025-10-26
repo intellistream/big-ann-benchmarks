@@ -1,3 +1,4 @@
+import math
 import numpy as np
 import time
 import yaml
@@ -7,6 +8,8 @@ from benchmark.datasets import DATASETS
 from benchmark.results import get_result_filename
 import tracemalloc
 import random
+from dataclasses import dataclass
+from typing import Dict, List, Optional, Tuple
 
 def generateTimestamps(rows, eventRate=4000):
     """
@@ -84,6 +87,934 @@ def store_timestamps_to_csv(filename, ids, eventTimeStamps, arrivalTimeStamps, p
     print(f"Timestamps saved to {filename}")
 
 
+@dataclass
+class StressTestConfig:
+    start: Optional[int] = None
+    end: Optional[int] = None
+    warmup_batch: Optional[int] = None
+    warmup_events: Optional[int] = None
+    ramp_initial_batch: Optional[int] = None
+    ramp_scale: Optional[float] = None
+    ramp_events: Optional[int] = None
+    search_events: Optional[int] = None
+    search_tol_pct: Optional[float] = None
+    steady_events: Optional[int] = None
+    steady_eps_pct: Optional[float] = None
+    steady_backoff_pct: Optional[float] = None
+    grace_events: Optional[int] = None
+    deadline_us: Optional[float] = None
+    query_ratio: Optional[float] = None
+    pending_queue_tolerance: Optional[int] = None
+    steady_failure_tolerance: Optional[int] = None
+    adaptive_pending_multiplier: Optional[float] = None
+    adaptive_drop_sigma: Optional[float] = None
+    adaptive_drop_rate_pct: Optional[float] = None
+    adaptive_drop_floor: Optional[int] = None
+    adaptive_ingest_multiplier: Optional[float] = None
+    auto_tune: bool = True
+
+    @classmethod
+    def from_entry(cls, entry: dict) -> "StressTestConfig":
+        def _get_int(key: str) -> Optional[int]:
+            value = entry.get(key)
+            if value is None or value == "":
+                return None
+            try:
+                return int(value)
+            except (TypeError, ValueError):
+                return None
+
+        def _get_float(key: str) -> Optional[float]:
+            value = entry.get(key)
+            if value is None or value == "":
+                return None
+            try:
+                return float(value)
+            except (TypeError, ValueError):
+                return None
+
+        def _get_bool(key: str, default: bool) -> bool:
+            value = entry.get(key, default)
+            if isinstance(value, str):
+                lowered = value.strip().lower()
+                if lowered in {"false", "0", "no", "off"}:
+                    return False
+                if lowered in {"true", "1", "yes", "on"}:
+                    return True
+            return bool(value)
+
+        return cls(
+            start=_get_int('start'),
+            end=_get_int('end'),
+            warmup_batch=_get_int('warmup_batch'),
+            warmup_events=_get_int('warmup_events'),
+            ramp_initial_batch=_get_int('ramp_initial_batch'),
+            ramp_scale=_get_float('ramp_scale'),
+            ramp_events=_get_int('ramp_events'),
+            search_events=_get_int('search_events'),
+            search_tol_pct=_get_float('search_tol_pct'),
+            steady_events=_get_int('steady_events'),
+            steady_eps_pct=_get_float('steady_eps_pct'),
+            steady_backoff_pct=_get_float('steady_backoff_pct'),
+            grace_events=_get_int('grace_events'),
+            deadline_us=_get_float('deadline_us'),
+            query_ratio=_get_float('query_ratio'),
+            pending_queue_tolerance=_get_int('pending_queue_tolerance'),
+            steady_failure_tolerance=_get_int('steady_failure_tolerance'),
+            adaptive_pending_multiplier=_get_float('adaptive_pending_multiplier'),
+            adaptive_drop_sigma=_get_float('adaptive_drop_sigma'),
+            adaptive_drop_rate_pct=_get_float('adaptive_drop_rate_pct'),
+            adaptive_drop_floor=_get_int('adaptive_drop_floor'),
+            adaptive_ingest_multiplier=_get_float('adaptive_ingest_multiplier'),
+            auto_tune=_get_bool('auto_tune', True),
+        )
+
+    def has_deadline(self) -> bool:
+        return self.deadline_us > 0
+
+    def finalize(self, dataset) -> None:
+        dataset_size = getattr(dataset, 'nb', None)
+
+        if self.start is None:
+            self.start = 0
+        if self.end is None:
+            self.end = dataset_size if dataset_size is not None else self.start
+        if dataset_size is not None and self.end is not None and self.end > dataset_size:
+            self.end = dataset_size
+        if self.end is None or self.end <= self.start:
+            fallback = dataset_size if dataset_size is not None else (self.start + 1)
+            if fallback is None or fallback <= self.start:
+                fallback = self.start + max(1, self.warmup_batch or 1)
+            self.end = fallback
+
+        data_range = max(self.end - self.start, 1)
+        base_batch = max(32, data_range // 256)
+        base_batch = min(base_batch, min(data_range, 1024))
+        if base_batch < 1:
+            base_batch = 1
+
+        if self.warmup_batch is None or self.warmup_batch <= 0 or self.auto_tune:
+            self.warmup_batch = max(4, min(base_batch // 2, data_range))
+        if self.warmup_events is None or self.warmup_events <= 0 or self.auto_tune:
+            self.warmup_events = 3
+
+        if self.ramp_initial_batch is None or self.ramp_initial_batch <= 0 or self.auto_tune:
+            ramp_seed = max(self.warmup_batch * 2, base_batch)
+            self.ramp_initial_batch = min(max(ramp_seed, 1), data_range)
+        else:
+            self.ramp_initial_batch = min(max(self.ramp_initial_batch, 1), data_range)
+
+        if self.ramp_scale is None or self.ramp_scale <= 1.0 or self.auto_tune:
+            self.ramp_scale = 1.25
+
+        if self.ramp_events is None or self.ramp_events <= 0 or self.auto_tune:
+            horizon = data_range // max(self.ramp_initial_batch, 1)
+            horizon = max(horizon, 8)
+            self.ramp_events = int(max(8, min(25, horizon)))
+        else:
+            self.ramp_events = max(1, self.ramp_events)
+
+        if self.search_events is None or self.search_events <= 0 or self.auto_tune:
+            self.search_events = int(max(6, min(15, self.ramp_events // 2 + 3)))
+        else:
+            self.search_events = max(1, self.search_events)
+
+        if self.search_tol_pct is None or self.search_tol_pct <= 0 or self.auto_tune:
+            self.search_tol_pct = 15.0
+
+        if self.steady_events is None or self.steady_events <= 0 or self.auto_tune:
+            self.steady_events = int(max(12, min(40, self.ramp_events * 2)))
+        else:
+            self.steady_events = max(1, self.steady_events)
+
+        if self.steady_eps_pct is None or self.steady_eps_pct <= 0 or self.auto_tune:
+            self.steady_eps_pct = 120.0
+
+        if self.steady_backoff_pct is None or self.steady_backoff_pct <= 0 or self.steady_backoff_pct >= 1 or self.auto_tune:
+            self.steady_backoff_pct = 0.25
+
+        if self.grace_events is None or self.grace_events < 0 or self.auto_tune:
+            self.grace_events = int(max(5, min(20, self.steady_events // 2)))
+
+        if self.deadline_us is None:
+            self.deadline_us = 0.0
+
+        if self.query_ratio is None:
+            self.query_ratio = 0.0
+
+        if self.pending_queue_tolerance is None or self.pending_queue_tolerance < 0 or self.auto_tune:
+            self.pending_queue_tolerance = max(1, self.warmup_batch // 2)
+
+        if self.steady_failure_tolerance is None or self.steady_failure_tolerance <= 0 or self.auto_tune:
+            self.steady_failure_tolerance = int(max(3, min(12, self.steady_events // 3)))
+
+        if self.adaptive_pending_multiplier is None or self.auto_tune:
+            self.adaptive_pending_multiplier = 3.0
+
+        if self.adaptive_drop_sigma is None or self.auto_tune:
+            self.adaptive_drop_sigma = 3.0
+
+        if self.adaptive_drop_rate_pct is None or self.auto_tune:
+            self.adaptive_drop_rate_pct = 5.0
+
+        if self.adaptive_drop_floor is None or self.auto_tune:
+            self.adaptive_drop_floor = max(5, self.warmup_batch // 2)
+
+        if self.adaptive_ingest_multiplier is None or self.auto_tune:
+            self.adaptive_ingest_multiplier = 2.0
+
+        self.warmup_batch = int(max(1, min(self.warmup_batch, data_range)))
+        self.warmup_events = int(max(1, self.warmup_events))
+        self.ramp_initial_batch = int(max(1, min(self.ramp_initial_batch, data_range)))
+        self.ramp_events = int(max(1, self.ramp_events))
+        self.search_events = int(max(1, self.search_events))
+        self.search_tol_pct = float(max(1.0, self.search_tol_pct))
+        self.steady_events = int(max(1, self.steady_events))
+        self.steady_eps_pct = float(max(1.0, self.steady_eps_pct))
+        self.steady_backoff_pct = float(min(max(self.steady_backoff_pct, 0.05), 0.8))
+        self.grace_events = int(max(0, self.grace_events))
+        self.deadline_us = float(max(0.0, self.deadline_us))
+        self.query_ratio = float(max(0.0, self.query_ratio))
+        self.pending_queue_tolerance = int(max(0, self.pending_queue_tolerance))
+        self.steady_failure_tolerance = int(max(1, self.steady_failure_tolerance))
+        self.adaptive_pending_multiplier = float(max(1.0, self.adaptive_pending_multiplier))
+        self.adaptive_drop_sigma = float(max(0.5, self.adaptive_drop_sigma))
+        self.adaptive_drop_rate_pct = float(max(0.1, self.adaptive_drop_rate_pct))
+        self.adaptive_drop_floor = int(max(0, self.adaptive_drop_floor))
+        self.adaptive_ingest_multiplier = float(max(1.0, self.adaptive_ingest_multiplier))
+
+
+def _safe_float(value) -> Optional[float]:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _safe_int(value) -> Optional[int]:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _normalise_name_list(value) -> Optional[List[str]]:
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return [value.strip().lower()]
+    try:
+        return [str(v).strip().lower() for v in value if v is not None]
+    except TypeError:
+        return None
+
+
+@dataclass
+class MaintenancePolicy:
+    enable: bool = False
+    deletion_ratio_trigger: Optional[float] = None
+    budget_us: Optional[float] = None
+    max_rebuilds: Optional[int] = None
+    exclude_algorithms: Optional[List[str]] = None
+
+    @classmethod
+    def from_dict(cls, data: Optional[Dict[str, object]]) -> "MaintenancePolicy":
+        if not data:
+            return cls(enable=False)
+
+        enable = bool(data.get('enable', True))
+        deletion_ratio_trigger = _safe_float(data.get('deletion_ratio_trigger'))
+        if deletion_ratio_trigger is not None and deletion_ratio_trigger < 0:
+            deletion_ratio_trigger = 0.0
+        budget_us = _safe_float(data.get('budget_us'))
+        if budget_us is not None and budget_us < 0:
+            budget_us = 0.0
+        max_rebuilds = _safe_int(data.get('max_rebuilds'))
+        if max_rebuilds is not None and max_rebuilds < 0:
+            max_rebuilds = 0
+
+        exclude_algorithms = _normalise_name_list(data.get('exclude_algorithms'))
+
+        return cls(
+            enable=enable,
+            deletion_ratio_trigger=deletion_ratio_trigger,
+            budget_us=budget_us,
+            max_rebuilds=max_rebuilds,
+            exclude_algorithms=exclude_algorithms,
+        )
+
+    def allows_algo(self, algo_name: str) -> bool:
+        algo_name = algo_name.lower()
+        if self.exclude_algorithms and algo_name in self.exclude_algorithms:
+            return False
+        return True
+
+    def should_execute(self, state: "MaintenanceState", algo_name: str, forced: bool = False) -> bool:
+        if not forced:
+            if not self.enable:
+                return False
+            if not self.allows_algo(algo_name):
+                return False
+            if self.max_rebuilds is not None and state.rebuild_count >= self.max_rebuilds:
+                return False
+            if self.budget_us is not None and state.budget_spent_us >= self.budget_us:
+                return False
+            if self.deletion_ratio_trigger is not None:
+                return state.deletion_ratio() >= self.deletion_ratio_trigger
+            return False
+        # forced rebuild bypasses enable/ratio checks but still honours budget / allow-list
+        if not self.allows_algo(algo_name):
+            return False
+        if self.budget_us is not None and state.budget_spent_us >= self.budget_us:
+            return False
+        if self.max_rebuilds is not None and state.rebuild_count >= self.max_rebuilds:
+            return False
+        return True
+
+    def register_cost(self, state: "MaintenanceState", cost_us: float) -> None:
+        state.budget_spent_us += max(cost_us, 0.0)
+
+
+@dataclass
+class MaintenanceState:
+    live_points: int = 0
+    deleted_points: int = 0
+    rebuild_count: int = 0
+    budget_spent_us: float = 0.0
+    live_intervals: List[Tuple[int, int]] = None
+
+    current_min_id: Optional[int] = None
+    current_max_id: Optional[int] = None
+
+    def __post_init__(self):
+        if self.live_intervals is None:
+            self.live_intervals = []
+
+    def deletion_ratio(self) -> float:
+        denominator = self.live_points if self.live_points > 0 else 0
+        if denominator <= 0:
+            return 0.0
+        return max(self.deleted_points, 0) / float(denominator)
+
+    def _recalculate(self) -> None:
+        self.live_points = sum(end - start for start, end in self.live_intervals)
+        if self.live_intervals:
+            self.current_min_id = self.live_intervals[0][0]
+            self.current_max_id = self.live_intervals[-1][1]
+        else:
+            self.current_min_id = None
+            self.current_max_id = None
+
+    def _add_interval(self, start: int, end: int) -> None:
+        if start >= end:
+            return
+        merged: List[Tuple[int, int]] = []
+        inserted = False
+        for cur_start, cur_end in self.live_intervals:
+            if cur_end < start:
+                merged.append((cur_start, cur_end))
+            elif end < cur_start:
+                if not inserted:
+                    merged.append((start, end))
+                    inserted = True
+                merged.append((cur_start, cur_end))
+            else:
+                start = min(start, cur_start)
+                end = max(end, cur_end)
+        if not inserted:
+            merged.append((start, end))
+        merged.sort()
+        self.live_intervals = merged
+        self._recalculate()
+
+    def _remove_interval(self, start: int, end: int) -> int:
+        if start >= end or not self.live_intervals:
+            return 0
+        removed = 0
+        updated: List[Tuple[int, int]] = []
+        for cur_start, cur_end in self.live_intervals:
+            if cur_end <= start or cur_start >= end:
+                updated.append((cur_start, cur_end))
+                continue
+            # overlap
+            overlap_start = max(cur_start, start)
+            overlap_end = min(cur_end, end)
+            removed += max(0, overlap_end - overlap_start)
+            if cur_start < start:
+                updated.append((cur_start, start))
+            if cur_end > end:
+                updated.append((end, cur_end))
+        updated = [(s, e) for s, e in updated if e > s]
+        updated.sort()
+        self.live_intervals = updated
+        self._recalculate()
+        return removed
+
+    def record_initial_range(self, start: int, end: int) -> None:
+        self.live_intervals = []
+        self.deleted_points = 0
+        self._add_interval(start, end)
+
+    def record_insert_range(self, start: int, end: int) -> None:
+        count = max(end - start, 0)
+        if count <= 0:
+            return
+        self._add_interval(start, end)
+
+    def record_delete_range(self, start: int, end: int) -> None:
+        removed = self._remove_interval(start, end)
+        if removed > 0:
+            self.deleted_points += removed
+
+    def record_rebuild(self, intervals: List[Tuple[int, int]], cost_us: float) -> None:
+        self.live_intervals = []
+        for start, end in intervals:
+            self._add_interval(start, end)
+        self.deleted_points = 0
+        self.rebuild_count += 1
+        self.budget_spent_us += max(cost_us, 0.0)
+
+    def get_intervals(self) -> List[Tuple[int, int]]:
+        return list(self.live_intervals)
+
+
+def perform_controlled_rebuild(algo, ds, intervals: List[Tuple[int, int]]) -> float:
+    """
+    Reset algorithm state and replay data in the given range.
+    Returns maintenance latency in microseconds.
+    """
+    rebuild_start = time.time()
+    was_running = getattr(algo, "_hpc_active", False)
+
+    valid_intervals = [(s, e) for s, e in intervals if s < e]
+    if not valid_intervals:
+        return 0.0
+
+    try:
+        if hasattr(algo, 'waitPendingOperations'):
+            try:
+                algo.waitPendingOperations()
+            except Exception:
+                pass
+
+        if was_running and hasattr(algo, 'endHPC'):
+            algo.endHPC()
+
+        if not hasattr(algo, 'reset_index'):
+            raise RuntimeError("Algorithm does not expose reset_index for maintenance rebuild.")
+        algo.reset_index()
+
+        if was_running and hasattr(algo, 'startHPC'):
+            algo.startHPC()
+
+        for interval_start, interval_end in valid_intervals:
+            ids = np.arange(interval_start, interval_end, dtype=np.uint32)
+            if ids.size == 0:
+                continue
+            data = ds.get_data_in_range(interval_start, interval_end)
+            if data.shape[0] != ids.shape[0]:
+                raise RuntimeError("Mismatch between rebuild ids and dataset slice.")
+            algo.initial_load(data, ids)
+    finally:
+        if was_running and hasattr(algo, '_hpc_active') and not algo._hpc_active and hasattr(algo, 'startHPC'):
+            # Ensure threads are running for subsequent steps.
+            algo.startHPC()
+
+    return (time.time() - rebuild_start) * 1e6
+
+
+@dataclass
+class StressTestWindowResult:
+    batch_size: int
+    drop_delta: int
+    pending_len: int
+    ingest_latency_us: float
+    query_latencies_us: List[float]
+    window_duration_us: float
+    interval_us: Optional[float]
+    congested: bool
+    pending_violation: bool
+    drop_violation: bool
+    ingestion_violation: bool
+
+
+class StressTestController:
+    def __init__(self, algo, ds, queries, count, config: StressTestConfig, attrs: dict):
+        self.algo = algo
+        self.ds = ds
+        self.queries = queries
+        self.count = count
+        self.config = config
+        self.config.finalize(self.ds)
+        self.attrs = attrs
+
+        self.cursor = self.config.start
+        self.query_carryover = 0.0
+        self.prev_window_start: Optional[float] = None
+        self.window_intervals: List[float] = []
+        self.pending_consecutive = 0
+        self.events_run = 0
+        self.total_queries_run = 0
+        self.best_metrics = None
+        self.delta_hat_us: Optional[float] = None
+        self.dynamic_pending_tolerance: Optional[int] = None
+        self.dynamic_drop_tolerance: Optional[float] = None
+        self.adaptive_ingest_deadline_us: Optional[float] = None
+
+    def run(self) -> dict:
+        if not hasattr(self.algo, 'get_drop_count_delta') or not hasattr(self.algo, 'get_pending_queue_len'):
+            raise RuntimeError("Stress test requires congestion-aware algorithm interface exposing drop and pending metrics.")
+
+        # Reset drop counter baseline
+        try:
+            self.algo.get_drop_count_delta()
+        except Exception:
+            pass
+
+        # Warmup phase
+        if self.config.warmup_events > 0 and self.config.warmup_batch > 0:
+            self._evaluate_batch(self.config.warmup_batch, self.config.warmup_events, collect_metrics=False)
+            try:
+                self.algo.get_drop_count_delta()
+            except Exception:
+                pass
+            self.pending_consecutive = 0
+
+        # Exponential ramp with intelligent boundary checking
+        last_good = None
+        first_bad = None
+        batch = max(self.config.ramp_initial_batch, 1)
+        ramp_iterations = 0
+        while True:
+            ramp_iterations += 1
+            
+            available_data = self.config.end - self.cursor
+            if available_data <= 0:
+                print(f"Warning: No more data available for ramping (cursor={self.cursor}, end={self.config.end})")
+                break
+            
+            if batch > available_data:
+                print(f"Warning: Batch size {batch} exceeds available data {available_data}. "
+                      f"Adjusting to {available_data} for final ramp iteration")
+                batch = available_data
+            
+            congested, windows = self._evaluate_batch(batch, self.config.ramp_events, collect_metrics=False)
+            print(f"RAMP DEBUG: batch={batch}, congested={congested}, cursor={self.cursor}")
+            if not congested:
+                last_good = batch
+                self.best_metrics = self._summarize_windows(windows)
+                next_batch = int(max(batch * self.config.ramp_scale, batch + 1))
+                if next_batch <= batch:
+                    next_batch = batch + 1
+                
+                batch = next_batch
+            else:
+                first_bad = batch
+                if last_good is None:
+                    last_good = max(int(batch / self.config.ramp_scale), 1)
+                break
+
+            if self.cursor + batch > self.config.end:
+                print(f"Info: Current batch {batch} would exceed data range. Stopping ramp phase")
+                break
+
+        if last_good is None:
+            return {'stressTestStatus': 'failed', 'stressTestReason': 'No stable batch size observed during ramp.'}
+
+        if first_bad is None:
+            # Could not find congestion boundary; treat last good as B* candidate.
+            b_star_candidate = last_good
+        else:
+            b_star_candidate = self._binary_search(last_good, first_bad)
+
+        if b_star_candidate is None or b_star_candidate <= 0:
+            return {'stressTestStatus': 'failed', 'stressTestReason': 'Binary search failed to converge on B*.'}
+
+        self._prepare_steady_thresholds(b_star_candidate)
+        steady_summary, final_batch = self._run_steady_phase(b_star_candidate)
+
+        if steady_summary is None:
+            return {
+                'stressTestStatus': 'failed',
+                'stressTestBStar': max(b_star_candidate, 0),
+                'stressTestReason': 'Steady-state validation failed.'
+            }
+
+        delta_hat_us = steady_summary.get('interval_mean_us') or self.delta_hat_us
+        if delta_hat_us is None or delta_hat_us <= 0:
+            delta_hat_us = steady_summary.get('window_duration_mean_us')
+        r_star = None
+        if delta_hat_us and delta_hat_us > 0:
+            r_star = final_batch / (delta_hat_us / 1e6)
+
+        result = {
+            'stressTestStatus': 'success',
+            'stressTestBStar': final_batch,
+            'stressTestRStar': r_star if r_star is not None else 0.0,
+            'stressTestDeadlineUs': self.config.deadline_us,
+            'stressTestDeltaHatUs': delta_hat_us if delta_hat_us else 0.0,
+            'stressTestIngestP99Us': steady_summary.get('ingest_p99_us', 0.0),
+            'stressTestIngestStdPct': steady_summary.get('ingest_std_pct', 0.0),
+            'stressTestQueryP95Us': steady_summary.get('query_p95_us', 0.0),
+            'stressTestQueryP99Us': steady_summary.get('query_p99_us', 0.0),
+            'stressTestQueriesPerWindow': steady_summary.get('queries_per_window', 0.0),
+            'stressTestWindowsObserved': steady_summary.get('window_count', 0),
+            'stressTestEventsTotal': self.events_run,
+            'stressTestTotalQueries': self.total_queries_run,
+        }
+
+        return result
+
+    def _binary_search(self, last_good: int, first_bad: int) -> Optional[int]:
+        low = max(last_good, 1)
+        high = max(first_bad, low + 1)
+        best_batch = low
+        tolerance_pct = self.config.search_tol_pct / 100.0
+        
+        available_data = self.config.end - self.cursor
+        if available_data <= 0:
+            print(f"Warning: No more data available for binary search (cursor={self.cursor}, end={self.config.end})")
+            return best_batch
+        
+        if high > available_data:
+            print(f"Info: Binary search high bound {high} exceeds available data {available_data}. "
+                  f"Adjusting to {available_data}")
+            high = available_data
+            if low > high:
+                low = high
+
+        while high - low > 1:
+            mid = (low + high) // 2
+            
+            if mid > available_data:
+                mid = available_data
+                if mid <= low:
+                    break
+            
+            congested, windows = self._evaluate_batch(mid, self.config.search_events, collect_metrics=False)
+            if not congested:
+                low = mid
+                best_batch = mid
+                self.best_metrics = self._summarize_windows(windows)
+            else:
+                high = mid
+
+            if low > 0 and high > 0 and ((high - low) / low) <= tolerance_pct:
+                break
+
+        return best_batch
+
+    def _reset_violation_counters(self):
+        self.pending_consecutive = 0
+        try:
+            self.algo.get_drop_count_delta()
+        except Exception:
+            pass
+
+    def _prepare_steady_thresholds(self, batch_candidate: int):
+        metrics = self.best_metrics or {}
+
+        pending_mean = float(metrics.get('pending_mean', 0.0) or 0.0)
+        pending_std = float(metrics.get('pending_std', 0.0) or 0.0)
+        pending_limit = pending_mean + self.config.adaptive_pending_multiplier * pending_std
+        if pending_limit < pending_mean:
+            pending_limit = pending_mean
+        calc_pending = 0
+        if pending_limit > 0 and math.isfinite(pending_limit):
+            calc_pending = int(math.ceil(pending_limit))
+        self.dynamic_pending_tolerance = max(self.config.pending_queue_tolerance, calc_pending)
+
+        drop_mean = float(metrics.get('drop_mean', 0.0) or 0.0)
+        drop_std = float(metrics.get('drop_std', 0.0) or 0.0)
+        drop_limit = drop_mean + self.config.adaptive_drop_sigma * drop_std
+        drop_rate_limit = batch_candidate * (self.config.adaptive_drop_rate_pct / 100.0)
+        drop_limit = max(drop_limit, drop_rate_limit)
+        if drop_limit < 0 or not math.isfinite(drop_limit):
+            drop_limit = drop_rate_limit
+        self.dynamic_drop_tolerance = max(drop_limit, float(self.config.adaptive_drop_floor))
+
+        ingest_mean = float(metrics.get('ingest_mean_us', 0.0) or 0.0)
+        ingest_std = float(metrics.get('ingest_std_us', 0.0) or 0.0)
+        ingest_limit = ingest_mean + self.config.adaptive_ingest_multiplier * ingest_std
+        if ingest_limit <= 0 or not math.isfinite(ingest_limit):
+            ingest_limit = metrics.get('ingest_p99_us', ingest_mean)
+        window_duration = float(metrics.get('window_duration_mean_us', 0.0) or 0.0)
+        baseline_deadline = self.config.deadline_us if self.config.has_deadline() else 0.0
+        self.adaptive_ingest_deadline_us = max(
+            baseline_deadline,
+            ingest_limit,
+            window_duration if window_duration > 0 else ingest_limit
+        )
+
+        self._reset_violation_counters()
+
+    def _run_steady_phase(self, initial_batch: int):
+        batch = max(initial_batch, 1)
+        backoff = min(max(self.config.steady_backoff_pct, 0.01), 0.5)
+        failure_budget = max(self.config.steady_failure_tolerance, 1)
+        consecutive_failures = 0
+
+        while batch > 0:
+            available_data = self.config.end - self.cursor
+            if available_data <= 0:
+                print(f"Warning: No more data available for steady phase (cursor={self.cursor}, end={self.config.end})")
+                break
+            
+            if batch > available_data:
+                print(f"Info: Steady phase batch size {batch} exceeds available data {available_data}. "
+                      f"Adjusting to {available_data}")
+                batch = available_data
+            
+            if batch < 1:
+                print(f"Warning: Adjusted batch size too small: {batch}. Ending steady phase")
+                break
+            
+            congested, windows = self._evaluate_batch(batch, self.config.steady_events, collect_metrics=True)
+            summary = self._summarize_windows(windows)
+
+            print(f"DEBUG: batch={batch}, congested={congested}, ingest_std_pct={summary.get('ingest_std_pct', 0.0):.2f}, steady_eps_pct={self.config.steady_eps_pct}")
+
+            if not congested and summary.get('ingest_std_pct', 0.0) <= self.config.steady_eps_pct:
+                consecutive_failures = 0
+                return summary, batch
+
+            consecutive_failures += 1
+            if consecutive_failures < failure_budget and not congested:
+                print(f"INFO: Steady-state metrics slightly exceeded eps_pct; retrying batch {batch} ({consecutive_failures}/{failure_budget})")
+                continue
+
+            consecutive_failures = 0
+            next_batch = int(batch * (1.0 - backoff))
+            if next_batch == batch:
+                next_batch = batch - 1
+            batch = max(next_batch, 0)
+
+        return None, None
+
+    def _evaluate_batch(self, batch_size: int, events: int, collect_metrics: bool) -> Tuple[bool, List[StressTestWindowResult]]:
+        results: List[StressTestWindowResult] = []
+        congested = False
+
+        for _ in range(events):
+            available_data = self.config.end - self.cursor
+            if available_data <= 0:
+                break
+
+            effective_batch = batch_size if batch_size <= available_data else available_data
+
+            window_result = self._run_event_window(effective_batch, collect_metrics)
+            results.append(window_result)
+            if window_result.congested:
+                congested = True
+                break
+
+            if self.cursor >= self.config.end:
+                break
+
+        return congested, results
+
+    def _run_event_window(self, batch_size: int, collect_metrics: bool) -> StressTestWindowResult:
+        available_data = self.config.end - self.cursor
+        if available_data <= 0:
+            return StressTestWindowResult(
+                batch_size=0,
+                drop_delta=0,
+                pending_len=0,
+                ingest_latency_us=0.0,
+                query_latencies_us=[],
+                window_duration_us=0.0,
+                interval_us=None,
+                congested=False,
+                pending_violation=False,
+                drop_violation=False,
+                ingestion_violation=False,
+            )
+        
+        if batch_size > available_data:
+            print(f"Warning: Requested batch size {batch_size} exceeds available data {available_data}. "
+                  f"Adjusting batch size to {available_data} (cursor={self.cursor}, end={self.config.end})")
+            batch_size = available_data
+        
+        if batch_size < 1:
+            return StressTestWindowResult(
+                batch_size=0,
+                drop_delta=0,
+                pending_len=0,
+                ingest_latency_us=0.0,
+                query_latencies_us=[],
+                window_duration_us=0.0,
+                interval_us=None,
+                congested=False,
+                pending_violation=False,
+                drop_violation=False,
+                ingestion_violation=False,
+            )
+
+        window_start = time.time()
+        interval_us = None
+        if self.prev_window_start is not None:
+            interval_us = (window_start - self.prev_window_start) * 1e6
+            self.window_intervals.append(interval_us)
+            self.delta_hat_us = float(np.mean(self.window_intervals))
+        self.prev_window_start = window_start
+
+        ids = np.arange(self.cursor, self.cursor + batch_size, dtype=np.uint32)
+        data = self.ds.get_data_in_range(self.cursor, self.cursor + batch_size)
+
+        insert_start = time.time()
+        self.algo.insert(data, ids)
+        ingest_latency_us = (time.time() - insert_start) * 1e6
+        self.cursor += batch_size
+
+        total_queries_float = self.query_carryover + batch_size * self.config.query_ratio
+        queries_this_window = int(total_queries_float)
+        self.query_carryover = total_queries_float - queries_this_window
+
+        query_latencies: List[float] = []
+        for _ in range(queries_this_window):
+            query_start = time.time()
+            self.algo.query(self.queries, self.count)
+            query_latency_us = (time.time() - query_start) * 1e6
+            query_latencies.append(query_latency_us)
+            try:
+                self.algo.get_results()
+            except AttributeError:
+                pass
+            self.total_queries_run += 1
+
+        window_end = time.time()
+        window_duration_us = (window_end - window_start) * 1e6
+
+        drop_delta = self.algo.get_drop_count_delta()
+        pending_len = self.algo.get_pending_queue_len()
+
+        pending_tolerance = self.dynamic_pending_tolerance
+        if pending_tolerance is None:
+            pending_tolerance = max(self.config.pending_queue_tolerance, 0)
+
+        pending_exceeded = pending_len > pending_tolerance
+        if pending_exceeded:
+            self.pending_consecutive += 1
+        else:
+            self.pending_consecutive = 0
+
+        baseline_deadline = self.config.deadline_us if self.config.has_deadline() else 0.0
+        adaptive_deadline = self.adaptive_ingest_deadline_us or 0.0
+        inferred_deadline = self.delta_hat_us or 0.0
+        deadline_us = max(baseline_deadline, adaptive_deadline, inferred_deadline, window_duration_us)
+        if deadline_us <= 0:
+            deadline_us = window_duration_us
+
+        drop_threshold = max(batch_size * 0.5, 5.0)
+        if self.dynamic_drop_tolerance is not None:
+            drop_threshold = max(drop_threshold, self.dynamic_drop_tolerance)
+
+        ingest_p99_us = ingest_latency_us  # single sample surrogate
+
+        pending_violation = pending_exceeded and (self.pending_consecutive >= self.config.grace_events)
+        drop_violation = drop_delta > drop_threshold
+        ingestion_violation = ingest_p99_us > deadline_us
+
+        congested = pending_violation or drop_violation or ingestion_violation
+
+        self.events_run += 1
+
+        return StressTestWindowResult(
+            batch_size=batch_size,
+            drop_delta=drop_delta,
+            pending_len=pending_len,
+            ingest_latency_us=ingest_latency_us,
+            query_latencies_us=query_latencies if collect_metrics else [],
+            window_duration_us=window_duration_us,
+            interval_us=interval_us,
+            congested=congested,
+            pending_violation=pending_violation,
+            drop_violation=drop_violation,
+            ingestion_violation=ingestion_violation,
+        )
+
+    def _summarize_windows(self, windows: List[StressTestWindowResult]) -> dict:
+        if not windows:
+            return {
+                'window_count': 0,
+                'ingest_p99_us': 0.0,
+                'ingest_std_pct': 0.0,
+                'query_p95_us': 0.0,
+                'query_p99_us': 0.0,
+                'queries_per_window': 0.0,
+                'window_duration_mean_us': 0.0,
+                'interval_mean_us': self.delta_hat_us or 0.0,
+            }
+
+        ingest_samples = np.array([w.ingest_latency_us for w in windows], dtype=float)
+        query_samples = np.array([lat for w in windows for lat in w.query_latencies_us], dtype=float)
+        window_durations = np.array([w.window_duration_us for w in windows], dtype=float)
+        interval_samples = np.array([w.interval_us for w in windows if w.interval_us is not None], dtype=float)
+        drop_samples = np.array([w.drop_delta for w in windows], dtype=float)
+        pending_samples = np.array([w.pending_len for w in windows], dtype=float)
+
+        ingest_p99_us = float(np.percentile(ingest_samples, 99)) if ingest_samples.size else 0.0
+        ingest_mean = float(np.mean(ingest_samples)) if ingest_samples.size else 0.0
+        ingest_std = float(np.std(ingest_samples)) if ingest_samples.size > 1 else 0.0
+        ingest_std_pct = 0.0
+        if ingest_mean > 0 and ingest_samples.size > 1:
+            ingest_std_pct = float((ingest_std / ingest_mean) * 100.0)
+
+        query_p95_us = float(np.percentile(query_samples, 95)) if query_samples.size else 0.0
+        query_p99_us = float(np.percentile(query_samples, 99)) if query_samples.size else 0.0
+
+        interval_mean_us = float(np.mean(interval_samples)) if interval_samples.size else (self.delta_hat_us or 0.0)
+        window_duration_mean_us = float(np.mean(window_durations)) if window_durations.size else 0.0
+
+        drop_mean = float(np.mean(drop_samples)) if drop_samples.size else 0.0
+        drop_std = float(np.std(drop_samples)) if drop_samples.size > 1 else 0.0
+        drop_max = float(np.max(drop_samples)) if drop_samples.size else 0.0
+
+        pending_mean = float(np.mean(pending_samples)) if pending_samples.size else 0.0
+        pending_std = float(np.std(pending_samples)) if pending_samples.size > 1 else 0.0
+        pending_p95 = float(np.percentile(pending_samples, 95)) if pending_samples.size else 0.0
+
+        violation_count = len(windows)
+        pending_violation_rate = 0.0
+        drop_violation_rate = 0.0
+        ingestion_violation_rate = 0.0
+        if violation_count > 0:
+            pending_violation_rate = sum(1 for w in windows if w.pending_violation) / violation_count
+            drop_violation_rate = sum(1 for w in windows if w.drop_violation) / violation_count
+            ingestion_violation_rate = sum(1 for w in windows if w.ingestion_violation) / violation_count
+
+        queries_per_window = 0.0
+        if windows:
+            queries_per_window = sum(len(w.query_latencies_us) for w in windows) / len(windows)
+
+        summary = {
+            'window_count': len(windows),
+            'ingest_p99_us': ingest_p99_us,
+            'ingest_std_pct': ingest_std_pct,
+            'ingest_mean_us': ingest_mean,
+            'ingest_std_us': ingest_std,
+            'query_p95_us': query_p95_us,
+            'query_p99_us': query_p99_us,
+            'queries_per_window': queries_per_window,
+            'window_duration_mean_us': window_duration_mean_us,
+            'interval_mean_us': interval_mean_us,
+            'pending_mean': pending_mean,
+            'pending_std': pending_std,
+            'pending_p95': pending_p95,
+            'drop_mean': drop_mean,
+            'drop_std': drop_std,
+            'drop_max': drop_max,
+            'pending_violation_rate': pending_violation_rate,
+            'drop_violation_rate': drop_violation_rate,
+            'ingestion_violation_rate': ingestion_violation_rate,
+        }
+
+        if interval_samples.size:
+            self.delta_hat_us = interval_mean_us
+
+        return summary
+
+
 class CongestionRunner(BaseRunner):
     def build(algo, dataset, max_pts):
         '''
@@ -109,12 +1040,19 @@ class CongestionRunner(BaseRunner):
         print(fr"Got {Q.shape[0]} queries")  
 
         # Load Runbook
+        runbook_steps = list(runbook)
+        policy_dict = getattr(runbook, 'maintenance_policy', {})
+        maintenance_policy = MaintenancePolicy.from_dict(policy_dict)
+        maintenance_state = MaintenanceState()
+        algo_name = getattr(algo, 'name', str(algo))
+        algo_name_lower = algo_name.lower()
+
         result_map = {}
         num_searches = 0
         num_batch = 0
-        counts = {'initial':0,'batch_insert':0,'insert':0,'delete':0,'search':0}
+        counts = {'initial':0,'batch_insert':0,'insert':0,'delete':0,'search':0,'stress_test':0,'maintenance_rebuild':0}
         attrs = {
-            "name": str(algo),
+            "name": algo_name,
             "pendingWrite":0,
             "totalTime":0,
             "continuousQueryLatencies":[],
@@ -130,6 +1068,15 @@ class CongestionRunner(BaseRunner):
             'batchThroughput':[],
             'batchinsertThroughtput':[]
         }
+        attrs.update({
+            'maintenanceLatency': 0.0,
+            'maintenanceRebuilds': 0,
+            'maintenanceBudgetUs': maintenance_policy.budget_us or 0.0,
+            'maintenanceBudgetUsed': 0.0,
+            'maintenancePolicyEnabled': bool(maintenance_policy.enable and maintenance_policy.allows_algo(algo_name_lower)),
+            'maintenanceDeletionRatioTrigger': maintenance_policy.deletion_ratio_trigger or 0.0,
+            'maintenanceEvents': [],
+        })
 
         randomDrop = False
         randomContamination = False
@@ -137,8 +1084,43 @@ class CongestionRunner(BaseRunner):
         randomContaminationProb = 0.0
         randomDropProb = 0.0
 
+        def trigger_rebuild_event(step_index: int, reason: str, intervals: Optional[List[Tuple[int, int]]] = None, forced: bool = False):
+            nonlocal counts
+            active_intervals = intervals if intervals else maintenance_state.get_intervals()
+            if not active_intervals:
+                print(f"Maintenance rebuild skipped at step {step_index} ({reason}): no live intervals.")
+                return
+            ratio_before = maintenance_state.deletion_ratio()
+            try:
+                cost_us = perform_controlled_rebuild(algo, ds, active_intervals)
+            except Exception as exc:
+                attrs.setdefault('maintenanceErrors', []).append(str(exc))
+                raise
+            maintenance_state.record_rebuild(active_intervals, cost_us)
+            attrs['maintenanceLatency'] += cost_us
+            attrs['maintenanceRebuilds'] += 1
+            attrs['maintenanceBudgetUsed'] = maintenance_state.budget_spent_us
+            attrs['maintenanceEvents'].append({
+                "step": step_index,
+                "reason": reason,
+                "cost_us": cost_us,
+                "intervals": active_intervals,
+                "forced": forced,
+                "deletion_ratio_before": ratio_before,
+                "deletion_ratio_after": maintenance_state.deletion_ratio(),
+            })
+            counts['maintenance_rebuild'] += 1
+            print(f"MAINTENANCE rebuild executed at step {step_index} ({reason}) cost={cost_us:.2f}us intervals={active_intervals} ratio {ratio_before:.4f}->{maintenance_state.deletion_ratio():.4f}")
+
+        def maybe_trigger_rebuild(step_index: int, reason: str) -> None:
+            if not maintenance_policy.enable:
+                return
+            if not maintenance_policy.should_execute(maintenance_state, algo_name_lower, forced=False):
+                return
+            trigger_rebuild_event(step_index, reason, forced=False)
+
         totalStart = time.time()
-        for step, entry in enumerate(runbook):
+        for step, entry in enumerate(runbook_steps):
             start_time = time.time()
             match entry['operation']:
                 case 'initial':
@@ -146,6 +1128,7 @@ class CongestionRunner(BaseRunner):
                     end = entry['end']
                     ids = np.arange(start,end,dtype=np.uint32)
                     algo.initial_load(ds.get_data_in_range(start,end),ids)
+                    maintenance_state.record_initial_range(start, end)
                 case 'startHPC':
                     print(type(algo))
                     algo.startHPC()
@@ -259,16 +1242,6 @@ class CongestionRunner(BaseRunner):
                             inserted_total = 0
 
                     # process the rest
-                    if(start+batch_step*batchSize<end and start+(batch_step+1)*batchSize>end):
-
-                        tNow = (time.time()-start_time)*1e6
-                        tExpectedArrival = eventTimeStamps[end-start-1]
-                        while tNow<tExpectedArrival:
-                            # busy waiting for a batch to arrive
-                            tNow = (time.time()-start_time)*1e6
-
-                        data = ds.get_data_in_range(start+batch_step*batchSize,end)
-                        insert_ids = ids[batch_step*batchSize:]
                         if(randomContamination):
                             if(random.random()<randomContaminationProb):
                                 print(f"RANDOM CONTAMINATING DATA {ids[0]}:{ids[-1]}")
@@ -324,14 +1297,27 @@ class CongestionRunner(BaseRunner):
                     if peak>attrs['updateMemoryFootPrint']:
                         attrs['updateMemoryFootPrint'] = peak
                     tracemalloc.stop()
+                    maintenance_state.record_insert_range(start, end)
 
                     num_batch +=1
+                    if(start+batch_step*batchSize<end and start+(batch_step+1)*batchSize>end):
+
+                        tNow = (time.time()-start_time)*1e6
+                        tExpectedArrival = eventTimeStamps[end-start-1]
+                        while tNow<tExpectedArrival:
+                            # busy waiting for a batch to arrive
+                            tNow = (time.time()-start_time)*1e6
+
+                        data = ds.get_data_in_range(start+batch_step*batchSize,end)
+                        insert_ids = ids[batch_step*batchSize:]
+               
 
                 case 'insert':
                     start = entry['start']
                     end = entry['end']
                     ids = np.arange(start, end, dtype=np.uint32)
                     algo.insert(ds.get_data_in_range(start, end), ids)
+                    maintenance_state.record_insert_range(start, end)
 
                     counts['insert'] +=1
                 case 'delete':
@@ -340,6 +1326,8 @@ class CongestionRunner(BaseRunner):
                     end = entry['end']
                     print(f'delete {start}:{end}')
                     algo.delete(ids)
+                    maintenance_state.record_delete_range(start, end)
+                    maybe_trigger_rebuild(step + 1, f"delete threshold (step {step+1})")
 
                     counts['delete'] +=1
                 case 'batch_insert_delete':
@@ -394,6 +1382,14 @@ class CongestionRunner(BaseRunner):
                         attrs["latencyInsert"][-1] += (time.time() - t0) * 1e6
                         print(f'delete {deletion_ids[0]}:{deletion_ids[-1]}')
 
+                        insert_min = int(np.min(insert_ids))
+                        insert_max = int(np.max(insert_ids)) + 1
+                        maintenance_state.record_insert_range(insert_min, insert_max)
+                        if deletion_ids.size > 0:
+                            delete_min = int(np.min(deletion_ids))
+                            delete_max = int(np.max(deletion_ids)) + 1
+                            maintenance_state.record_delete_range(delete_min, delete_max)
+
                         processedTimeStamps[i * batchSize:(i + 1) * batchSize] = (time.time() - start_time) * 1e6
 
                         # algo.waitPendingOperations()
@@ -443,6 +1439,14 @@ class CongestionRunner(BaseRunner):
                         print(f'delete {deletion_ids[0]}:{deletion_ids[-1]}')
                         processedTimeStamps[batch_step * batchSize:end-start] = (time.time() - start_time) * 1e6
                         arrivalTimeStamps[batch_step * batchSize:end-start] = tExpectedArrival
+                        if insert_ids.size > 0:
+                            insert_min = int(np.min(insert_ids))
+                            insert_max = int(np.max(insert_ids)) + 1
+                            maintenance_state.record_insert_range(insert_min, insert_max)
+                        if deletion_ids.size > 0:
+                            delete_min = int(np.min(deletion_ids))
+                            delete_max = int(np.max(deletion_ids)) + 1
+                            maintenance_state.record_delete_range(delete_min, delete_max)
 
                         # algo.waitPendingOperations()
                         # continuous query phase
@@ -470,8 +1474,42 @@ class CongestionRunner(BaseRunner):
                     if peak > attrs['updateMemoryFootPrint']:
                         attrs['updateMemoryFootPrint'] = peak
                     tracemalloc.stop()
-
                     num_batch += 1
+                    maybe_trigger_rebuild(step + 1, f"batch_insert_delete threshold (step {step+1})")
+
+                case 'stress_test':
+                    config = StressTestConfig.from_entry(entry)
+                    try:
+                        controller = StressTestController(algo, ds, Q, count, config, attrs)
+                        result = controller.run()
+                        attrs.update(result)
+                        counts['stress_test'] += 1
+                        
+                        # Print STRESS_SUMMARY for script parsing
+                        if result.get('stressTestStatus') == 'success':
+                            print(f"STRESS_SUMMARY RStar={result.get('stressTestRStar', 0):.6f},BStar={result.get('stressTestBStar', 0)},DeltaHatUs={result.get('stressTestDeltaHatUs', 0):.6f}")
+                        else:
+                            reason = result.get('stressTestReason', 'unknown')
+                            print(f"STRESS_SUMMARY RStar=,BStar=,DeltaHatUs= (Status: {result.get('stressTestStatus', 'unknown')}, Reason: {reason})")
+                    except Exception as exc:
+                        attrs['stressTestStatus'] = 'failed'
+                        attrs['stressTestReason'] = str(exc)
+                        print(f"STRESS_SUMMARY RStar=,BStar=,DeltaHatUs= (Error: {str(exc)})")
+                        raise
+                case 'maintenance_rebuild':
+                    force = bool(entry.get('force', False))
+                    intervals_override: List[Tuple[int, int]] = []
+                    if 'intervals' in entry and isinstance(entry['intervals'], list):
+                        for segment in entry['intervals']:
+                            if isinstance(segment, dict) and 'start' in segment and 'end' in segment:
+                                intervals_override.append((int(segment['start']), int(segment['end'])))
+                    elif 'start' in entry and 'end' in entry:
+                        intervals_override.append((int(entry['start']), int(entry['end'])))
+
+                    if not maintenance_policy.should_execute(maintenance_state, algo_name_lower, forced=force):
+                        print(f"Skipping maintenance rebuild at step {step+1} (policy gating, ratio={maintenance_state.deletion_ratio():.4f})")
+                        continue
+                    trigger_rebuild_event(step + 1, "manual_runbook", intervals=intervals_override if intervals_override else None, forced=force)
 
                 case 'replace':
                     tags_to_replace = np.arange(entry['tags_start'], entry['tags_end'], dtype=np.uint32)
@@ -513,6 +1551,10 @@ class CongestionRunner(BaseRunner):
         attrs["search_times"]= search_times
         attrs["num_searches"]= num_searches
         attrs["private_queries"]=private_query
+        attrs['maintenanceBudgetUsed'] = maintenance_state.budget_spent_us
+        attrs['maintenanceDeletionRatioFinal'] = maintenance_state.deletion_ratio()
+        attrs['maintenanceLivePoints'] = maintenance_state.live_points
+        attrs['maintenanceDeletedPoints'] = maintenance_state.deleted_points
 
         # record each search
         for k, v in result_map.items():
@@ -521,5 +1563,3 @@ class CongestionRunner(BaseRunner):
         for k in additional:
             attrs[k] = additional[k]
         return (attrs, all_results)
-
-

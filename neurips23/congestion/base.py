@@ -1,6 +1,47 @@
 from threading import Thread,Lock
-from typing import Optional,List
-from PyCANDYAlgo.utils import *
+from typing import Optional,List,Tuple
+
+try:
+    from PyCANDYAlgo.utils import *  # type: ignore
+except ModuleNotFoundError:
+    import collections
+
+    class NumpyIdxPair:
+        def __init__(self, vectors, idx):
+            self.vectors = vectors
+            self.idx = idx
+
+    class _BaseQueue:
+        def __init__(self, cap: int = 10):
+            self._dq = collections.deque()
+            self._cap = int(cap)
+
+        def capacity(self) -> int:
+            return self._cap
+
+        def size(self) -> int:
+            return len(self._dq)
+
+        def empty(self) -> bool:
+            return not self._dq
+
+        def front(self):
+            return self._dq[0]
+
+        def pop(self):
+            self._dq.popleft()
+
+        def push(self, item):
+            self._dq.append(item)
+
+    class NumpyIdxQueue(_BaseQueue):
+        pass
+
+    class IdxQueue(_BaseQueue):
+        pass
+
+    def bind_to_core(core_id: int):  # no-op 后备
+        return
 
 from benchmark.algorithms.base import BaseANN
 
@@ -57,6 +98,12 @@ class CongestionDropWorker(AbstractThread):
         self.randomContaminationProb = 0.0
 
         self.outOfOrder = False
+        self.drop_count_total = 0
+        self.insert_queue_capacity = self.insert_queue.capacity()
+        self.initial_load_queue_capacity = self.initial_load_queue.capacity()
+        self.delete_queue_capacity = self.delete_queue.capacity()
+        self.query_queue_capacity = self.query_queue.capacity()
+        self.cmd_queue_capacity = self.cmd_queue.capacity()
 
     def setup(self, dtype, max_pts, ndim):
         self.vec_dim=ndim
@@ -135,6 +182,17 @@ class CongestionDropWorker(AbstractThread):
         self.m_mut.release()
         return True
 
+    def reset_state(self, dtype, max_pts, ndim):
+        self.insert_queue = NumpyIdxQueue(self.insert_queue_capacity)
+        self.initial_load_queue = NumpyIdxQueue(self.initial_load_queue_capacity)
+        self.delete_queue = NumpyIdxQueue(self.delete_queue_capacity)
+        self.query_queue = NumpyIdxQueue(self.query_queue_capacity)
+        self.cmd_queue = IdxQueue(self.cmd_queue_capacity)
+        self.ingested_vectors = 0
+        self.drop_count_total = 0
+        self.vec_dim = ndim
+        self.my_index_algo.setup(dtype, max_pts, ndim)
+
     def initial_load(self,X,ids):
         """
         here index should be loaded several rows at a time before streaming
@@ -146,38 +204,47 @@ class CongestionDropWorker(AbstractThread):
             self.my_index_algo.insert(X,ids)
             print("Lock to be released by initial_load")
             self.m_mut.release()
-            return
+        return
 
 
     def insert(self,X,id):
 
+        def _record_drop(ids):
+            try:
+                dropped = len(ids)
+            except TypeError:
+                dropped = 1
+            self.drop_count_total += dropped
 
-        if(not self.randomDrop):
-            if(self.insert_queue.empty() or (not self.congestion_drop)):
-                    self.insert_queue.push(NumpyIdxPair(X,id))
-                    return
-            else:
-                print(f"DROPPING DATA {id[0]}:{id[-1]}")
+
+        queue_full = self.insert_queue.size() >= self.insert_queue_capacity
+
+        if not self.randomDrop:
+            if self.congestion_drop and queue_full:
+                _record_drop(id)
+                print(f"DROPPING DATA {id[0]}:{id[-1]} (queue full)")
                 return
-        else:
-            rand_drop =random.random()
-            if(rand_drop<self.randomDropProb):
-                print(f"RANDOM DROPPING DATA {id[0]}:{id[-1]}")
-                return
-            if(self.insert_queue.empty() or (not self.congestion_drop)):
-                self.insert_queue.push(NumpyIdxPair(X,id))
-                return
-            else:
-                print(f"DROPPING DATA {id[0]}:{id[-1]}")
-                return
+            self.insert_queue.push(NumpyIdxPair(X, id))
+            return
+
+        rand_drop = random.random()
+        if rand_drop < self.randomDropProb:
+            _record_drop(id)
+            print(f"RANDOM DROPPING DATA {id[0]}:{id[-1]}")
+            return
+        if self.congestion_drop and queue_full:
+            _record_drop(id)
+            print(f"DROPPING DATA {id[0]}:{id[-1]} (queue full)")
+            return
+        self.insert_queue.push(NumpyIdxPair(X, id))
         return
 
     def delete(self, id):
-        if(self.delete_queue.empty() or (not self.congestion_drop)):
-            self.delete_queue.push(NumpyIdxPair(np.array([0.0]),id))
-        else:
-            #TODO: Fix this
-            print("Failed to process deletion!")
+        queue_full = self.delete_queue.size() >= self.delete_queue_capacity
+        if self.congestion_drop and queue_full:
+            print("Failed to process deletion! (queue full)")
+            return
+        self.delete_queue.push(NumpyIdxPair(np.array([0.0]), id))
         return
 
     def query(self, X, k):
@@ -215,7 +282,11 @@ class BaseCongestionDropANN(BaseANN):
         self.single_worker_opt = single_worker_opt
         self.clear_pending_operations = clear_pending_operations
         self.workers=[]
+        self.workerMap = []
         self.verbose = False
+        self._drop_snapshot = 0
+        self._last_setup_params: Optional[Tuple[str, int, int]] = None
+        self._hpc_active = False
 
         for i in range(parallel_workers):
             self.workers.append(CongestionDropWorker(my_index_algo=my_index_algos[i]))
@@ -225,18 +296,25 @@ class BaseCongestionDropANN(BaseANN):
             worker = self.workers[i]
             worker.setup(dtype, max_pts, ndims)
             worker.my_id=i
+        self._last_setup_params = (dtype, max_pts, ndims)
         return
 
     def startHPC(self):
+        if self._hpc_active:
+            return
         for i in range(self.parallel_workers):
             self.workers[i].startHPC()
+        self._hpc_active = True
         return
 
     def endHPC(self):
+        if not self._hpc_active:
+            return
         for i in range(self.parallel_workers):
             self.workers[i].endHPC()
         for i in range(self.parallel_workers):
             self.workers[i].join_thread()
+        self._hpc_active = False
         return
 
     def waitPendingOperations(self):
@@ -344,6 +422,19 @@ class BaseCongestionDropANN(BaseANN):
         self.delete(X,ids)
         self.insert(X,ids)
 
+    def reset_index(self):
+        if self._last_setup_params is None:
+            raise RuntimeError("Cannot reset index before setup.")
+        dtype, max_pts, ndims = self._last_setup_params
+        for worker in self.workers:
+            worker.reset_state(dtype, max_pts, ndims)
+        for i, worker in enumerate(self.workers):
+            worker.my_id = i
+        self.insert_idx = 0
+        self.workerMap = []
+        self._drop_snapshot = 0
+        self._hpc_active = False
+
 
     def enableScenario(self, randomContamination=False, randomContaminationProb=0.0, randomDrop=False,
                        randomDropProb=0.0, outOfOrder=False):
@@ -351,5 +442,17 @@ class BaseCongestionDropANN(BaseANN):
             print(f'ANN contamination{randomContaminationProb}')
             self.workers[i].enableScenario(randomContamination, randomContaminationProb, randomDrop, randomDropProb, outOfOrder)
 
+    def get_drop_count_delta(self):
+        total = 0
+        for worker in self.workers:
+            total += worker.drop_count_total
+        delta = total - self._drop_snapshot
+        self._drop_snapshot = total
+        return delta
 
-
+    def get_pending_queue_len(self):
+        pending = 0
+        for worker in self.workers:
+            pending += worker.insert_queue.size()
+            pending += worker.delete_queue.size()
+        return pending

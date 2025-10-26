@@ -27,6 +27,7 @@ class faiss_IVFPQ(BaseStreamingANN):
 
         self.index = index
         self.ntotal = 0
+        self.trained = False
 
     def insert(self, X,ids):
         mask = self.my_inverse_index[ids]==-1
