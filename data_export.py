@@ -12,6 +12,9 @@ from benchmark.datasets import DATASETS
 from benchmark.plotting.utils import compute_metrics_all_runs, compute_cc_metrics_all_runs
 from benchmark.results import load_all_results, load_all_attrs
 
+FAIRNESS_RUNBOOKS = ['neurips23/runbooks/congestion/fairness/fairness_static_10.yaml']
+FAIRNESS_DATASETS = {'sift'}
+
 
 def cleaned_run_metric(run_metrics):
     cleaned = []
@@ -108,6 +111,8 @@ if __name__ == "__main__":
     is_first = True
     for track in tracks:
         for dataset_name in datasets:
+            if track == 'congestion' and args.output == 'fairness' and dataset_name not in FAIRNESS_DATASETS:
+                continue
             if track=="concurrent" and dataset_name not in concurrent_dataset_name:
                 continue
             print(f"Looking at track:{track}, dataset:{dataset_name}")
@@ -131,11 +136,7 @@ if __name__ == "__main__":
             if track == 'congestion':
                 runbook_paths = []
                 if args.output == "fairness":
-                    runbook_paths = [
-                        'neurips23/runbooks/congestion/fairness/fairness_static_10.yaml',
-                        'neurips23/runbooks/congestion/fairness/fairness_static_20.yaml',
-                        'neurips23/runbooks/congestion/fairness/fairness_static_50.yaml',
-                    ]
+                    runbook_paths = FAIRNESS_RUNBOOKS
                 if args.output == "gen":
                     runbook_paths = ['neurips23/runbooks/congestion/general_experiment/general_experiment.yaml'
                                     ]
