@@ -631,14 +631,21 @@ class StressTestController:
             return {'stressTestStatus': 'failed', 'stressTestReason': 'Binary search failed to converge on B*.'}
 
         self._prepare_steady_thresholds(b_star_candidate)
+        steady_fallback_reason = None
         steady_summary, final_batch = self._run_steady_phase(b_star_candidate)
 
         if steady_summary is None:
-            return {
-                'stressTestStatus': 'failed',
-                'stressTestBStar': max(b_star_candidate, 0),
-                'stressTestReason': 'Steady-state validation failed.'
-            }
+            if self.cursor >= self.config.end and self.best_metrics:
+                steady_summary = dict(self.best_metrics)
+                if final_batch is None or final_batch <= 0:
+                    final_batch = b_star_candidate
+                steady_fallback_reason = 'steady_phase_exhausted_dataset'
+            else:
+                return {
+                    'stressTestStatus': 'failed',
+                    'stressTestBStar': max(b_star_candidate, 0),
+                    'stressTestReason': 'Steady-state validation failed.'
+                }
 
         delta_hat_us = steady_summary.get('interval_mean_us') or self.delta_hat_us
         if delta_hat_us is None or delta_hat_us <= 0:
@@ -662,6 +669,9 @@ class StressTestController:
             'stressTestEventsTotal': self.events_run,
             'stressTestTotalQueries': self.total_queries_run,
         }
+
+        if steady_fallback_reason:
+            result['stressTestFallbackReason'] = steady_fallback_reason
 
         return result
 
