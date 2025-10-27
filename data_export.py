@@ -1,12 +1,14 @@
-import pandas as pd
-import sys
+import argparse
+import csv
+import json
+import math
 import os
+import sys
+
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
-import argparse
-import math
-import csv
+import pandas as pd
 
 from benchmark.datasets import DATASETS
 from benchmark.plotting.utils import compute_metrics_all_runs, compute_cc_metrics_all_runs
@@ -50,6 +52,136 @@ def cleaned_run_metric(run_metrics):
                 print("Warning: 'search_times' not available.")
         cleaned.append(run_metric)
     return cleaned
+
+
+def format_fairness_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+    """Make the fairness export easier to read by renaming and reordering columns."""
+    rename_map = {}
+    # Rename step-wise recall metrics.
+    for idx in range(10):
+        rename_map[f'knn_{idx}'] = f'stepRecall_{idx + 1}'
+        rename_map[f'continuousRecall_{idx}'] = f'continuousRecall_window_{idx + 1}'
+        rename_map[f'continuousLatency_{idx}'] = f'continuousLatency_window_{idx + 1}'
+        rename_map[f'continuousThroughput_{idx}'] = f'continuousThroughput_window_{idx + 1}'
+        rename_map[f'latencyInsert_{idx}'] = f'insertLatency_stage_{idx + 1}'
+        rename_map[f'insertThroughput{idx}'] = f'insertThroughput_stage_{idx + 1}'
+        rename_map[f'latencyQuery_{idx}'] = f'queryLatency_stage_{idx + 1}'
+        rename_map[f'queryThroughput{idx}'] = f'queryThroughput_stage_{idx + 1}'
+
+    df = df.rename(columns={k: v for k, v in rename_map.items() if k in df.columns})
+
+    primary_cols = [
+        "algorithm",
+        "parameters",
+        "dataset",
+        "track",
+        "count",
+        "recall/ap",
+    ]
+    step_cols = [f'stepRecall_{idx + 1}' for idx in range(10)]
+    continuous_cols = []
+    for prefix in ("continuousRecall", "continuousLatency", "continuousThroughput"):
+        continuous_cols.extend([f'{prefix}_window_{idx + 1}' for idx in range(10)])
+
+    insert_cols = []
+    for prefix in ("insertLatency", "insertThroughput"):
+        insert_cols.extend([f'{prefix}_stage_{idx + 1}' for idx in range(10)])
+
+    query_cols = []
+    for prefix in ("queryLatency", "queryThroughput"):
+        query_cols.extend([f'{prefix}_stage_{idx + 1}' for idx in range(10)])
+
+    events_series = df.get('maintenanceEvents')
+    parsed_events = None
+    max_events = 0
+    if events_series is not None:
+        def _parse_events(val):
+            if pd.isna(val):
+                return []
+            if isinstance(val, (list, tuple)):
+                return list(val)
+            if isinstance(val, bytes):
+                val = val.decode()
+            if isinstance(val, str):
+                val = val.strip()
+                if not val:
+                    return []
+                try:
+                    return json.loads(val)
+                except json.JSONDecodeError:
+                    return []
+            return []
+
+        parsed_events = events_series.apply(_parse_events)
+        max_events = int(parsed_events.apply(len).max()) if len(parsed_events) else 0
+    else:
+        parsed_events = pd.Series([[] for _ in range(len(df))])
+        max_events = 0
+
+    if step_cols:
+        step_values_array = df[step_cols].to_numpy()
+    else:
+        step_values_array = None
+
+    rebuild_columns = []
+    for event_idx in range(max_events):
+        before_vals = []
+        after_vals = []
+        cost_vals = []
+        for row_idx, events in enumerate(parsed_events):
+            if event_idx < len(events):
+                event = events[event_idx]
+                step_number = event.get('step')
+                after_pos = 0
+                if isinstance(step_number, (int, float)):
+                    after_pos = max(int(step_number) - 1, 0)
+                if step_values_array is not None and step_values_array.shape[1] > 0:
+                    after_pos = min(after_pos, step_values_array.shape[1] - 1)
+                    before_pos = max(after_pos - 1, 0)
+                    after_val = step_values_array[row_idx, after_pos]
+                    before_val = step_values_array[row_idx, before_pos]
+                else:
+                    after_val = pd.NA
+                    before_val = pd.NA
+                before_vals.append(before_val)
+                after_vals.append(after_val)
+                cost_us = event.get('cost_us')
+                if cost_us is None:
+                    cost_vals.append(pd.NA)
+                else:
+                    try:
+                        cost_vals.append(float(cost_us) / 1e6)
+                    except (TypeError, ValueError):
+                        cost_vals.append(pd.NA)
+            else:
+                before_vals.append(pd.NA)
+                after_vals.append(pd.NA)
+                cost_vals.append(pd.NA)
+        base = f'rebuild{event_idx + 1}'
+        before_col = f'{base}_recallBefore'
+        after_col = f'{base}_recallAfter'
+        cost_col = f'{base}_rebuildCostSeconds'
+        df[before_col] = before_vals
+        df[after_col] = after_vals
+        df[cost_col] = cost_vals
+        rebuild_columns.extend([before_col, after_col, cost_col])
+
+    if 'maintenanceEvents' in df.columns:
+        df = df.drop(columns=['maintenanceEvents'])
+
+    ordered_cols = (
+        [col for col in primary_cols if col in df.columns]
+        + [col for col in step_cols if col in df.columns]
+        + [col for col in rebuild_columns if col in df.columns]
+        + [col for col in continuous_cols if col in df.columns]
+        + [col for col in insert_cols if col in df.columns]
+        + [col for col in query_cols if col in df.columns]
+    )
+
+    remaining_cols = [col for col in df.columns if col not in ordered_cols]
+
+    # Return a new DataFrame with the columns arranged.
+    return df[ordered_cols + remaining_cols]
 
 
 def write_stepwise_recall_to_csv(stepwise_recall, output_file):
@@ -245,6 +377,9 @@ if __name__ == "__main__":
         if "recall/ap" in data.columns:  
             sort_columns.append("recall/ap")
         
+        if args.track == 'congestion' and args.output == 'fairness':
+            data = format_fairness_dataframe(data)
+
         data = data.sort_values(by=sort_columns)
         
         if args.output is None:

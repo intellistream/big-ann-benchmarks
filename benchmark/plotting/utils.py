@@ -49,8 +49,13 @@ def _parse_attr(value, default=None):
 
 
 def _to_number(value, default=0.0):
-    if isinstance(value, (int, float)):
+    if isinstance(value, (int, float, numpy.generic)):
         return float(value)
+    if isinstance(value, (bytes, bytearray)):
+        try:
+            value = value.decode()
+        except Exception:
+            return float(default)
     if isinstance(value, str):
         try:
             return float(value)
@@ -243,7 +248,10 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
         insert_throughput_attr = _parse_attr(properties.get('insertThroughput'), [])
         latency_query_attr = _parse_attr(properties.get('latencyQuery'), [])
         query_size = _to_number(properties.get('querySize', 0), 0)
-        properties['count'] = int(_to_number(properties.get('count', 0), 0))
+        count_value = _to_number(properties.get('count', dataset.default_count()), dataset.default_count())
+        if count_value <= 0:
+            count_value = dataset.default_count()
+        properties['count'] = int(count_value)
         num_searches_value = int(_to_number(properties.get('num_searches', 0), 0))
         properties['num_searches'] = num_searches_value
         # cache distances to avoid access to hdf5 file
@@ -293,15 +301,15 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
             _in_memory_metrics_cache.pop(properties.get('filename'), None)
         metrics_cache = get_or_create_metrics(run, properties.get('filename'), properties.get('_read_only', False))
 
-        dataset = properties['dataset']
+        dataset_label = properties.get('dataset')
         try:
-            dataset = dataset.decode()
+            dataset_label = dataset_label.decode()
             algo = algo.decode()
             algo_name = algo_name.decode()
-        except:
+        except AttributeError:
             pass
 
-        dataset_info = dataset
+        dataset_info = dataset_label
         if neurips23track == 'congestion' and dataset_params:
             batchsize = dataset_params.get('batchSize', None)
             eventrate = dataset_params.get('eventRate', None)
@@ -315,6 +323,17 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
                         else dataset_info + '(' + os.path.split(runbook_path)[-1] + ')',
             'count': properties['count'],
         }
+        if neurips23track == 'congestion':
+            maintenance_events = properties.get('maintenanceEvents')
+            if maintenance_events is not None:
+                run_result['maintenanceEvents'] = maintenance_events
+            if 'maintenanceRebuilds' in properties:
+                run_result['maintenanceRebuilds'] = _to_number(properties.get('maintenanceRebuilds'), 0)
+            if 'maintenanceLatency' in properties:
+                run_result['maintenanceLatency'] = properties.get('maintenanceLatency')
+            if 'maintenanceDeletedPoints' in properties:
+                run_result['maintenanceDeletedPoints'] = properties.get('maintenanceDeletedPoints')
+
         for name, metric in metrics.items():
             if search_type == "knn" and name == "ap" or\
                 search_type == "range" and name == "k-nn" or\
