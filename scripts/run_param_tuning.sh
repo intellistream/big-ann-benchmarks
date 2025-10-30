@@ -221,7 +221,7 @@ def format_parts(entry, primary_key=None):
         value = entry[key]
         display = DISPLAY_NAMES.get(key, key)
         parts.append(f"{display}={value}")
-    return ", ".join(parts)
+    return " | ".join(parts)
 
 
 def derive_labels(args):
@@ -267,6 +267,7 @@ with combo_path.open("w", encoding="utf-8") as out:
     for args_entry in args_grid:
         base_label, label_numeric, primary_key = derive_labels(args_entry)
         args_json = json.dumps(args_entry, sort_keys=True)
+        args_display = format_parts(args_entry, primary_key)
         for query_entry in query_grid:
             query_json = json.dumps(query_entry, sort_keys=True)
             use_query = "1" if query_entry else "0"
@@ -277,7 +278,7 @@ with combo_path.open("w", encoding="utf-8") as out:
             record = sep.join([
                 args_json,
                 query_json,
-                base_label,
+                args_display,
                 display_label,
                 label_numeric,
                 use_query,
@@ -564,10 +565,21 @@ target = candidates[0]
 
 with target.open("r", encoding="utf-8") as fh:
     reader = csv.DictReader(fh)
-    try:
-        row = next(reader)
-    except StopIteration as exc:
-        raise SystemExit("ERR Empty result CSV.") from exc
+    row = next(reader, {})
+
+
+def safe_mean(path_obj, column):
+    values = []
+    with path_obj.open("r", encoding="utf-8") as fh_local:
+        reader_local = csv.DictReader(fh_local)
+        for entry_local in reader_local:
+            try:
+                values.append(float(entry_local[column]))
+            except (TypeError, ValueError, KeyError):
+                continue
+    if values:
+        return sum(values) / len(values)
+    return float("nan")
 
 
 def to_float(value):
@@ -593,6 +605,17 @@ def to_float(value):
         return float("nan")
 
 
+recall = float("nan")
+qps = float("nan")
+
+recall_file = target.with_name(f"{target.stem}_batch_recall.csv")
+if recall_file.exists():
+    recall = safe_mean(recall_file, "value")
+
+throughput_file = target.with_name(f"{target.stem}_batchqueryThroughput.csv")
+if throughput_file.exists():
+    qps = safe_mean(throughput_file, "batchThroughput")
+
 recall_keys = [
     "continuousRecall_0",
     "continuousRecall",
@@ -611,21 +634,20 @@ qps_keys = [
     "throughput",
 ]
 
-recall = float("nan")
-for key in recall_keys:
-    value = row.get(key)
-    fvalue = to_float(value)
-    if not math.isnan(fvalue):
-        recall = fvalue
-        break
+if math.isnan(recall) or math.isnan(qps):
+    for key in recall_keys:
+        value = row.get(key)
+        fvalue = to_float(value)
+        if not math.isnan(fvalue):
+            recall = fvalue
+            break
 
-qps = float("nan")
-for key in qps_keys:
-    value = row.get(key)
-    fvalue = to_float(value)
-    if not math.isnan(fvalue):
-        qps = fvalue
-        break
+    for key in qps_keys:
+        value = row.get(key)
+        fvalue = to_float(value)
+        if not math.isnan(fvalue):
+            qps = fvalue
+            break
 
 count_value = row.get("count")
 try:
@@ -711,22 +733,12 @@ if math.isnan(recall) or math.isnan(qps):
                         break
             break
 
-if math.isnan(qps):
-    throughput_file = target.with_name(target.stem + "_batchqueryThroughput.csv")
-    if throughput_file.exists():
-        values = []
-        with throughput_file.open("r", encoding="utf-8") as fh_bt:
-            reader_bt = csv.DictReader(fh_bt)
-            for row_bt in reader_bt:
-                val = to_float(row_bt.get("batchThroughput"))
-                if not math.isnan(val):
-                    values.append(val)
-        if values:
-            qps = sum(values) / len(values)
+if math.isnan(qps) and throughput_file.exists():
+    qps = safe_mean(throughput_file, "batchThroughput")
 
-if not math.isfinite(recall):
+if math.isnan(recall):
     recall = float("nan")
-if not math.isfinite(qps):
+if math.isnan(qps):
     qps = float("nan")
 
 
@@ -798,9 +810,9 @@ if baseline is None:
 
 recall_floor = max(baseline["recall"] * floor_factor, floor_min)
 
-eligible = [r for r in rows if r["recall"] >= recall_floor]
-eligible.sort(key=lambda r: (r["qps"], r["recall"], r["param"]), reverse=True)
-best = eligible[0] if eligible else None
+recall_floor = max(baseline["recall"] * floor_factor, floor_min)
+rows.sort(key=lambda r: (r["param"], r["param_numeric"]))
+trials = len(rows)
 
 jumps = []
 for left, right in zip(rows, rows[1:]):
@@ -813,13 +825,11 @@ for left, right in zip(rows, rows[1:]):
         (left["recall"] < recall_floor <= right["recall"]) or
         (right["recall"] < recall_floor <= left["recall"])
     )
-    near_best = bool(best) and (left["param"] == best["param"] or right["param"] == best["param"])
     jumps.append({
         "from": left["param"],
         "to": right["param"],
         "delta_qps_pct": delta_qps_pct,
         "delta_recall_pp": delta_recall_pp,
-        "near_best": near_best,
         "cross_floor": cross_floor,
     })
 
@@ -830,28 +840,24 @@ buf.write(f"Summary for {algorithm} on {dataset_display}\n")
 if dataset_label and dataset_label != dataset_id:
     buf.write(f"(dataset id: {dataset_id})\n")
 buf.write(f"Recall floor = max(baseline×{floor_factor:.2f}, {floor_min:.2f}) = {recall_floor:.6f}\n")
-if best:
-    buf.write(f"Best setting = {best['param']} | QPS = {best['qps']:.3f} | Recall = {best['recall']:.6f} | Trials = {len(rows)}\n")
-else:
-    buf.write("No feasible setting (all recall below floor).\n")
+buf.write(f"Total trials = {trials}\n")
 
 buf.write("\nPer-trial metrics (sorted by parameter):\n")
-buf.write(f"{'parameters':>16} {'Recall':>10} {'QPS':>12}\n")
+buf.write(f"{'parameters':<32} {'Recall':>10} {'QPS':>12}\n")
 for row in rows:
-    buf.write(f"{row['param']:<16} {row['recall']:>10.6f} {row['qps']:>12.3f}\n")
+    buf.write(f"{row['param']:<32} {row['recall']:>10.6f} {row['qps']:>12.3f}\n")
 
 buf.write("\nTop-3 ΔQPS% intervals:\n")
 if not jumps:
     buf.write("Not enough trials to compute jumps.\n")
 else:
-    buf.write(f"{'interval':<38} {'ΔQPS%':>10} {'ΔRecall(pp)':>14} {'near best?':>11} {'cross floor?':>14}\n")
+    buf.write(f"{'interval':<38} {'ΔQPS%':>10} {'ΔRecall(pp)':>14} {'cross floor?':>14}\n")
     for jump in jumps[:3]:
         dq = "∞" if not math.isfinite(jump['delta_qps_pct']) else f"{jump['delta_qps_pct']:.2f}"
         dr = f"{jump['delta_recall_pp']:.2f}"
         interval = f"{jump['from']} → {jump['to']}"
-        near = "Yes" if jump['near_best'] else "No"
         cross = "Yes" if jump['cross_floor'] else "No"
-        buf.write(f"{interval:<38} {dq:>10} {dr:>14} {near:>11} {cross:>14}\n")
+        buf.write(f"{interval:<38} {dq:>10} {dr:>14} {cross:>14}\n")
 
 report = buf.getvalue()
 print()
