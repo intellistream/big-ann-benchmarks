@@ -3,24 +3,28 @@ random-xs:
     docker-tag: neurips23-congestion-faiss_HNSW
     module: neurips23.congestion.faiss_HNSW.faiss_HNSW
     constructor: faiss_HNSW
-    base-args: ["@metric"]
+    base-args:
+    - '@metric'
     run-groups:
       base:
-        args: |
-          [{"indexkey": "HNSW32"}]
-        query-args: |
-          [{"ef":30}]
+        args: '[{"efConstruction": 120, "indexkey": "HNSW16"}]'
+        query-args: '[{"ef": 40}]'
 msturing-10M-clustered:
   faiss_HNSW:
     docker-tag: neurips23-congestion-faiss_HNSW
     module: neurips23.congestion.faiss_HNSW.faiss_HNSW
     constructor: faiss_HNSW
-    base-args: ["@metric"]
+    base-args:
+    - '@metric'
     run-groups:
       base:
-        args: |
-          [{"indexkey": "HNSW32"}]
-        query-args: |
-          [
+        args: '[{"indexkey": "HNSW32"}]
+
+          '
+        query-args: '[
+
           {"ef":100}
+
           ]
+
+          '
