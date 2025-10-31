@@ -1,0 +1,28 @@
+{
+  "algorithm": "candy_sptag",
+  "param_name": "indexkey",
+  "baseline_param": "SPTAG",
+  "args_axes": [
+    {
+      "key": "indexkey",
+      "values": ["SPTAG"]
+    },
+    {
+      "key": "threads",
+      "values": [1, 4, 8]
+    }
+  ],
+  "query_axes": [
+    {
+      "key": "ef",
+      "values": [30, 60, 90]
+    }
+  ],
+  "log_dir": "logs_param_tuning",
+  "summary_file": "param_tuning_raw.csv",
+  "summary_table": "param_tuning_summary.txt",
+  "results_root": "results/neurips23/congestion",
+  "runbook_template": "neurips23/runbooks/congestion/param_tuning/{algorithm}_{dataset}.yaml",
+  "recall_floor_factor": 0.9,
+  "recall_floor_min": 0.75
+}

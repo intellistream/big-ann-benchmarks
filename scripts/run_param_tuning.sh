@@ -1,11 +1,43 @@
 #!/bin/bash
 set -euo pipefail
 
-ALGORITHM_LIST_DEFAULT=("faiss_HNSW")
-DATASET_LIST_DEFAULT=("sift")
+ALGORITHM_LIST_DEFAULT=(
+  "faiss_HNSW"
+  "faiss_NSW"
+  "candy_mnru"
+  "FreshDiskANN"
+  "cufe"
+  "pyanns"
+  "gti"
+  "ipdiskann"
+  "candy_lsh"
+  "candy_lshapg"
+  "candy_sptag"
+  "faiss_pq"
+  "faiss_onlinepq"
+  "faiss_IVFPQ"
+  "puck"
+  "scann"
+)
+DATASET_LIST_DEFAULT=("sift" "glove" "mson")
 
 declare -A PARAM_GRID_MAP
 PARAM_GRID_MAP["faiss_HNSW"]="config/param_tuning/hnsw.json"
+PARAM_GRID_MAP["faiss_NSW"]="config/param_tuning/nsw.json"
+PARAM_GRID_MAP["candy_mnru"]="config/param_tuning/mnru.json"
+PARAM_GRID_MAP["FreshDiskANN"]="config/param_tuning/freshdiskann.json"
+PARAM_GRID_MAP["cufe"]="config/param_tuning/cufe.json"
+PARAM_GRID_MAP["pyanns"]="config/param_tuning/pyanns.json"
+PARAM_GRID_MAP["gti"]="config/param_tuning/gti.json"
+PARAM_GRID_MAP["ipdiskann"]="config/param_tuning/ipdiskann.json"
+PARAM_GRID_MAP["candy_lsh"]="config/param_tuning/lsh.json"
+PARAM_GRID_MAP["candy_lshapg"]="config/param_tuning/lshapg.json"
+PARAM_GRID_MAP["candy_sptag"]="config/param_tuning/sptag.json"
+PARAM_GRID_MAP["faiss_pq"]="config/param_tuning/faiss_pq.json"
+PARAM_GRID_MAP["faiss_onlinepq"]="config/param_tuning/faiss_onlinepq.json"
+PARAM_GRID_MAP["faiss_IVFPQ"]="config/param_tuning/faiss_ivfpq.json"
+PARAM_GRID_MAP["puck"]="config/param_tuning/puck.json"
+PARAM_GRID_MAP["scann"]="config/param_tuning/scann.json"
 
 DEFAULT_LOG_DIR="logs_param_tuning"
 DEFAULT_SUMMARY_FILE="param_tuning_raw.csv"
@@ -56,8 +88,14 @@ declare -A DATASET_LABEL_MAP
 declare -A DATASET_RUNBOOK_MAP
 declare -A DATASET_RESULTS_ROOT_MAP
 DATASET_LABEL_MAP["sift"]="sift"
+DATASET_LABEL_MAP["glove"]="glove"
+DATASET_LABEL_MAP["mson"]="mson"
 DATASET_RUNBOOK_MAP["sift"]=""
+DATASET_RUNBOOK_MAP["glove"]=""
+DATASET_RUNBOOK_MAP["mson"]=""
 DATASET_RESULTS_ROOT_MAP["sift"]=""
+DATASET_RESULTS_ROOT_MAP["glove"]=""
+DATASET_RESULTS_ROOT_MAP["mson"]=""
 
 if [[ -n "${DATASETS:-}" ]]; then
   IFS=',' read -r -a _requested <<< "${DATASETS}"

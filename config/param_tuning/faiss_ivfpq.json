@@ -1,0 +1,24 @@
+{
+  "algorithm": "faiss_IVFPQ",
+  "param_name": "indexkey",
+  "baseline_param": "IVF1024,SQ8",
+  "args_axes": [
+    {
+      "key": "indexkey",
+      "values": ["IVF512,SQ8", "IVF1024,SQ8", "IVF2048,SQ8"]
+    }
+  ],
+  "query_axes": [
+    {
+      "key": "nprobe",
+      "values": [8, 16, 32]
+    }
+  ],
+  "log_dir": "logs_param_tuning",
+  "summary_file": "param_tuning_raw.csv",
+  "summary_table": "param_tuning_summary.txt",
+  "results_root": "results/neurips23/congestion",
+  "runbook_template": "neurips23/runbooks/congestion/param_tuning/{algorithm}_{dataset}.yaml",
+  "recall_floor_factor": 0.9,
+  "recall_floor_min": 0.75
+}

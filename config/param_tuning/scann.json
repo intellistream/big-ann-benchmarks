@@ -1,0 +1,32 @@
+{
+  "algorithm": "scann",
+  "param_name": "tree_size",
+  "baseline_param": "tree_size=5000, leaves_to_search=700, reorder=317",
+  "args_axes": [
+    {
+      "key": "tree_size",
+      "values": [4000, 5000, 6000]
+    },
+    {
+      "key": "leaves_to_search",
+      "values": [500, 700, 900]
+    },
+    {
+      "key": "reorder",
+      "values": [200, 317, 400]
+    }
+  ],
+  "query_axes": [
+    {
+      "key": "dummy",
+      "values": [null]
+    }
+  ],
+  "log_dir": "logs_param_tuning",
+  "summary_file": "param_tuning_raw.csv",
+  "summary_table": "param_tuning_summary.txt",
+  "results_root": "results/neurips23/congestion",
+  "runbook_template": "neurips23/runbooks/congestion/param_tuning/{algorithm}_{dataset}.yaml",
+  "recall_floor_factor": 0.9,
+  "recall_floor_min": 0.75
+}
