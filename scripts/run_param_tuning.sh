@@ -19,7 +19,7 @@ ALGORITHM_LIST_DEFAULT=(
   "puck"
   "scann"
 )
-DATASET_LIST_DEFAULT=("sift" "glove" "mson")
+DATASET_LIST_DEFAULT=("sift")
 
 declare -A PARAM_GRID_MAP
 PARAM_GRID_MAP["faiss_HNSW"]="config/param_tuning/hnsw.json"
@@ -47,7 +47,6 @@ DEFAULT_RUNBOOK_TEMPLATE="neurips23/runbooks/congestion/param_tuning/{algorithm}
 DEFAULT_RECALL_FLOOR_FACTOR="0.9"
 DEFAULT_RECALL_FLOOR_MIN="0.75"
 
-# Resolve algorithm list (override with ALGORITHMS or ALGORITHM_LIST_OVERRIDE).
 declare -a ALGORITHM_LIST
 ALGORITHM_LIST=("${ALGORITHM_LIST_DEFAULT[@]}")
 if [[ -n "${ALGORITHMS:-${ALGORITHM_LIST_OVERRIDE:-}}" ]]; then
@@ -67,7 +66,6 @@ GROUNDTRUTH_TOOL=${GROUNDTRUTH_TOOL:-~/DiskANN/build/apps/utils/compute_groundtr
 GROUNDTRUTH_FORCE=${GROUNDTRUTH_FORCE:-false}
 GROUNDTRUTH_EXTRA_ARGS_JSON=${GROUNDTRUTH_EXTRA_ARGS_JSON:-"[]"}
 
-# Dataset inventory for the current sweep. Extend as needed.
 declare -a DATASET_LIST
 DATASET_LIST=("${DATASET_LIST_DEFAULT[@]}")
 
@@ -129,7 +127,6 @@ if [[ ${#SELECTED_DATASETS[@]} -eq 0 ]]; then
   exit 1
 fi
 
-# Resolve algorithm before loading parameter grid JSON.
 ALGORITHM=${ALGORITHM:-${ALGORITHM_LIST[0]}}
 if [[ -z "${ALGORITHM}" ]]; then
   echo "Algorithm list is empty; please populate ALGORITHM_LIST_DEFAULT." >&2
@@ -190,16 +187,6 @@ if not algorithm:
     raise SystemExit("Config must provide 'algorithm'.")
 
 
-DISPLAY_NAMES = {
-    "indexkey": "indexkey",
-    "efConstruction": "efc",
-    "ef": "ef",
-    "M": "M",
-    "degree": "degree",
-}
-PREFERRED_ORDER = ["indexkey", "M", "degree", "efConstruction"]
-
-
 def axis_value(axis, raw):
     if isinstance(raw, dict):
         return raw
@@ -238,31 +225,18 @@ label_key = data.get("label_key", param_name)
 baseline_param = data.get("baseline_param", "")
 
 
-def ordered_keys(keys, primary_key=None):
-    ordered = []
-    if primary_key and primary_key in keys:
-        ordered.append(primary_key)
-    for candidate in PREFERRED_ORDER:
-        if candidate in keys and candidate not in ordered:
-            ordered.append(candidate)
-    for key in sorted(keys):
-        if key not in ordered:
-            ordered.append(key)
-    return ordered
+def short_key(key: str) -> str:
+    mapping = {
+        "efConstruction": "efc",
+        "ef": "ef",
+        "indexkey": "",
+        "M": "M",
+        "degree": "deg",
+    }
+    return mapping.get(key, key)
 
 
-def format_parts(entry, primary_key=None):
-    if not entry:
-        return ""
-    parts = []
-    for key in ordered_keys(list(entry.keys()), primary_key):
-        value = entry[key]
-        display = DISPLAY_NAMES.get(key, key)
-        parts.append(f"{display}={value}")
-    return " | ".join(parts)
-
-
-def derive_labels(args):
+def derive_label(args):
     primary_key = None
     if label_key and label_key in args:
         primary_key = label_key
@@ -275,16 +249,20 @@ def derive_labels(args):
         primary_value = json.dumps(args, sort_keys=True)
     else:
         primary_value = args[primary_key]
-    base_label = format_parts(args, primary_key)
-    digit_source = str(primary_value)
-    digits = "".join(ch for ch in digit_source if ch.isdigit() or ch == ".")
-    if not digits:
-        digits = "0"
-    return base_label, digits, primary_key
+    primary_label = str(primary_value)
+    digits = "".join(ch for ch in primary_label if ch.isdigit() or ch == ".")
 
+    extras = []
+    for key in sorted(args):
+        if key == primary_key:
+            continue
+        extras.append(f"{short_key(key)}{args[key]}")
 
-def format_query(entry):
-    return format_parts(entry)
+    if extras:
+        label_str = "_".join([primary_label] + extras)
+    else:
+        label_str = primary_label
+    return label_str, digits
 
 
 args_grid = data.get("args_grid")
@@ -303,21 +281,15 @@ if not query_grid:
 
 with combo_path.open("w", encoding="utf-8") as out:
     for args_entry in args_grid:
-        base_label, label_numeric, primary_key = derive_labels(args_entry)
+        label, label_numeric = derive_label(args_entry)
         args_json = json.dumps(args_entry, sort_keys=True)
-        args_display = format_parts(args_entry, primary_key)
         for query_entry in query_grid:
             query_json = json.dumps(query_entry, sort_keys=True)
             use_query = "1" if query_entry else "0"
-            query_label = format_query(query_entry)
-            display_label = (
-                f"{base_label} | {query_label}" if query_label else base_label
-            )
             record = sep.join([
                 args_json,
                 query_json,
-                args_display,
-                display_label,
+                label,
                 label_numeric,
                 use_query,
             ])
@@ -603,21 +575,10 @@ target = candidates[0]
 
 with target.open("r", encoding="utf-8") as fh:
     reader = csv.DictReader(fh)
-    row = next(reader, {})
-
-
-def safe_mean(path_obj, column):
-    values = []
-    with path_obj.open("r", encoding="utf-8") as fh_local:
-        reader_local = csv.DictReader(fh_local)
-        for entry_local in reader_local:
-            try:
-                values.append(float(entry_local[column]))
-            except (TypeError, ValueError, KeyError):
-                continue
-    if values:
-        return sum(values) / len(values)
-    return float("nan")
+    try:
+        row = next(reader)
+    except StopIteration as exc:
+        raise SystemExit("ERR Empty result CSV.") from exc
 
 
 def to_float(value):
@@ -643,17 +604,6 @@ def to_float(value):
         return float("nan")
 
 
-recall = float("nan")
-qps = float("nan")
-
-recall_file = target.with_name(f"{target.stem}_batch_recall.csv")
-if recall_file.exists():
-    recall = safe_mean(recall_file, "value")
-
-throughput_file = target.with_name(f"{target.stem}_batchqueryThroughput.csv")
-if throughput_file.exists():
-    qps = safe_mean(throughput_file, "batchThroughput")
-
 recall_keys = [
     "continuousRecall_0",
     "continuousRecall",
@@ -672,20 +622,21 @@ qps_keys = [
     "throughput",
 ]
 
-if math.isnan(recall) or math.isnan(qps):
-    for key in recall_keys:
-        value = row.get(key)
-        fvalue = to_float(value)
-        if not math.isnan(fvalue):
-            recall = fvalue
-            break
+recall = float("nan")
+for key in recall_keys:
+    value = row.get(key)
+    fvalue = to_float(value)
+    if not math.isnan(fvalue):
+        recall = fvalue
+        break
 
-    for key in qps_keys:
-        value = row.get(key)
-        fvalue = to_float(value)
-        if not math.isnan(fvalue):
-            qps = fvalue
-            break
+qps = float("nan")
+for key in qps_keys:
+    value = row.get(key)
+    fvalue = to_float(value)
+    if not math.isnan(fvalue):
+        qps = fvalue
+        break
 
 count_value = row.get("count")
 try:
@@ -748,11 +699,9 @@ if math.isnan(recall) or math.isnan(qps):
         )
 
     candidate_labels = {label_full, base_label}
-    candidate_labels.add(label_full.replace(' ', '').replace('|', '_'))
     if query_entry:
         suffix = "_".join(f"{k}{query_entry[k]}" for k in sorted(query_entry))
         candidate_labels.add(f"{base_label}_{suffix}")
-        candidate_labels.add((label_full + '_' + suffix).replace(' ', '').replace('|', '_'))
 
     for entry in metrics_iter:
         params = entry.get("parameters")
@@ -771,12 +720,22 @@ if math.isnan(recall) or math.isnan(qps):
                         break
             break
 
-if math.isnan(qps) and throughput_file.exists():
-    qps = safe_mean(throughput_file, "batchThroughput")
-
-if math.isnan(recall):
-    recall = float("nan")
 if math.isnan(qps):
+    throughput_file = target.with_name(target.stem + "_batchqueryThroughput.csv")
+    if throughput_file.exists():
+        values = []
+        with throughput_file.open("r", encoding="utf-8") as fh_bt:
+            reader_bt = csv.DictReader(fh_bt)
+            for row_bt in reader_bt:
+                val = to_float(row_bt.get("batchThroughput"))
+                if not math.isnan(val):
+                    values.append(val)
+        if values:
+            qps = sum(values) / len(values)
+
+if not math.isfinite(recall):
+    recall = float("nan")
+if not math.isfinite(qps):
     qps = float("nan")
 
 
@@ -848,9 +807,9 @@ if baseline is None:
 
 recall_floor = max(baseline["recall"] * floor_factor, floor_min)
 
-recall_floor = max(baseline["recall"] * floor_factor, floor_min)
-rows.sort(key=lambda r: (r["param"], r["param_numeric"]))
-trials = len(rows)
+eligible = [r for r in rows if r["recall"] >= recall_floor]
+eligible.sort(key=lambda r: (r["qps"], r["recall"], r["param"]), reverse=True)
+best = eligible[0] if eligible else None
 
 jumps = []
 for left, right in zip(rows, rows[1:]):
@@ -863,11 +822,13 @@ for left, right in zip(rows, rows[1:]):
         (left["recall"] < recall_floor <= right["recall"]) or
         (right["recall"] < recall_floor <= left["recall"])
     )
+    near_best = bool(best) and (left["param"] == best["param"] or right["param"] == best["param"])
     jumps.append({
         "from": left["param"],
         "to": right["param"],
         "delta_qps_pct": delta_qps_pct,
         "delta_recall_pp": delta_recall_pp,
+        "near_best": near_best,
         "cross_floor": cross_floor,
     })
 
@@ -878,24 +839,25 @@ buf.write(f"Summary for {algorithm} on {dataset_display}\n")
 if dataset_label and dataset_label != dataset_id:
     buf.write(f"(dataset id: {dataset_id})\n")
 buf.write(f"Recall floor = max(baseline×{floor_factor:.2f}, {floor_min:.2f}) = {recall_floor:.6f}\n")
-buf.write(f"Total trials = {trials}\n")
+if best:
+    buf.write(f"Best {param_name} = {best['param']} | QPS = {best['qps']:.3f} | Recall = {best['recall']:.6f} | Trials = {len(rows)}\n")
+else:
+    buf.write("No feasible point (all recall below floor).\n")
 
 buf.write("\nPer-trial metrics (sorted by parameter):\n")
-buf.write(f"{'parameters':<32} {'Recall':>10} {'QPS':>12}\n")
+buf.write(f"{param_name:>16} {'Recall':>10} {'QPS':>12}\n")
 for row in rows:
-    buf.write(f"{row['param']:<32} {row['recall']:>10.6f} {row['qps']:>12.3f}\n")
+    buf.write(f"{row['param']:>16} {row['recall']:>10.6f} {row['qps']:>12.3f}\n")
 
 buf.write("\nTop-3 ΔQPS% intervals:\n")
 if not jumps:
     buf.write("Not enough trials to compute jumps.\n")
 else:
-    buf.write(f"{'interval':<38} {'ΔQPS%':>10} {'ΔRecall(pp)':>14} {'cross floor?':>14}\n")
+    buf.write(f"{'from→to':<20} {'ΔQPS%':>10} {'ΔRecall(pp)':>14} {'near p*':>10} {'cross floor':>12}\n")
     for jump in jumps[:3]:
         dq = "∞" if not math.isfinite(jump['delta_qps_pct']) else f"{jump['delta_qps_pct']:.2f}"
         dr = f"{jump['delta_recall_pp']:.2f}"
-        interval = f"{jump['from']} → {jump['to']}"
-        cross = "Yes" if jump['cross_floor'] else "No"
-        buf.write(f"{interval:<38} {dq:>10} {dr:>14} {cross:>14}\n")
+        buf.write(f"{jump['from']}→{jump['to']:<18} {dq:>10} {dr:>14} {str(jump['near_best']):>10} {str(jump['cross_floor']):>12}\n")
 
 report = buf.getvalue()
 print()
@@ -937,37 +899,49 @@ for DATASET in "${SELECTED_DATASETS[@]}"; do
   echo "=== Running ${ALGORITHM} on dataset ${DATASET} (${DATASET_LABEL}) ==="
   ensure_groundtruth "${DATASET}" "${RUNBOOK_PATH}"
 
-  while IFS=$'\x1f' read -r ARGS_JSON QUERY_JSON LABEL_BASE LABEL_DISPLAY LABEL_NUMERIC USE_QUERY_FLAG; do
+  while IFS=$'\x1f' read -r ARGS_JSON QUERY_JSON LABEL LABEL_NUMERIC USE_QUERY_FLAG; do
     [[ -z "${ARGS_JSON}" ]] && continue
     update_algorithm_config "${DATASET}" "${ARGS_JSON}" "${QUERY_JSON}" "${USE_QUERY_FLAG}"
 
-    if [[ "${SKIP_RUN:-}" == "1" ]]; then
-      start_ts=0
-      echo "    SKIP_RUN=1: reusing existing results"
-    else
-      start_ts=$(python3 - <<'PYTS'
+    start_ts=$(python3 - <<'PYTS'
 import time
 print(time.time())
 PYTS
-      )
-    fi
+    )
 
-    label_safe=$(printf '%s' "${LABEL_DISPLAY}" | tr -cs '[:alnum:]' '_')
-    LABEL_FULL="${LABEL_DISPLAY}"
+    label_safe=$(printf '%s' "${LABEL}" | tr -cs '[:alnum:]' '_')
+    query_suffix=$(python3 - "${QUERY_JSON}" <<'PYQ'
+import json
+import sys
+entry = json.loads(sys.argv[1])
+if not entry:
+    print("")
+else:
+    parts = []
+    for key in sorted(entry):
+        parts.append(f"{key}{entry[key]}")
+    print("_".join(parts))
+PYQ
+    )
+    if [[ -n "${query_suffix}" ]]; then
+      label_safe="${label_safe}_${query_suffix}"
+    fi
+    LABEL_FULL="${LABEL}"
+    if [[ -n "${query_suffix}" ]]; then
+      LABEL_FULL="${LABEL}_${query_suffix}"
+    fi
     LOG_FILE="${LOG_DIR}/${ALGORITHM}_${DATASET}_${label_safe}.log"
 
-    if [[ "${SKIP_RUN:-}" != "1" ]]; then
-      python3 run.py \
-        --neurips23track congestion \
-        --algorithm "${ALGORITHM}" \
-        --dataset "${DATASET}" \
-        --nodocker \
-        --rebuild \
-        --force \
-        --runbook_path "${RUNBOOK_PATH}" 2>&1 | tee "${LOG_FILE}"
-    fi
+    python3 run.py \
+      --neurips23track congestion \
+      --algorithm "${ALGORITHM}" \
+      --dataset "${DATASET}" \
+      --nodocker \
+      --rebuild \
+      --force \
+      --runbook_path "${RUNBOOK_PATH}" 2>&1 | tee "${LOG_FILE}"
 
-    METRICS=$(collect_metrics "${RESULTS_ROOT_CUR}" "${RUNBOOK_PATH}" "${DATASET}" "${ALGORITHM}" "${start_ts}" "${LABEL_BASE}" "${LABEL_FULL}" "${QUERY_JSON}")
+    METRICS=$(collect_metrics "${RESULTS_ROOT_CUR}" "${RUNBOOK_PATH}" "${DATASET}" "${ALGORITHM}" "${start_ts}" "${LABEL}" "${LABEL_FULL}" "${QUERY_JSON}")
 
     read -r RECALL QPS RESULT_FILE <<< "${METRICS}"
     printf "  -> recall=%s, qps=%s (source: %s)\n" "${RECALL}" "${QPS}" "${RESULT_FILE}"
@@ -978,8 +952,8 @@ PYTS
       continue
     fi
     printf "%s,%s,%s,%s\n" "${LABEL_FULL}" "${LABEL_NUMERIC}" "${QPS}" "${RECALL}" >> "${SUMMARY_FILE_CUR}"
-
   done < "${COMBO_TEMP}"
+
   DATA_ROW_COUNT=$(($(wc -l < "${SUMMARY_FILE_CUR}") - 1))
   if (( DATA_ROW_COUNT <= 0 )); then
     echo "warning: no successful trials recorded for ${ALGORITHM} on ${DATASET}" >&2
