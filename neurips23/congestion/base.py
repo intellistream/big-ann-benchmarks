@@ -104,6 +104,7 @@ class CongestionDropWorker(AbstractThread):
         self.delete_queue_capacity = self.delete_queue.capacity()
         self.query_queue_capacity = self.query_queue.capacity()
         self.cmd_queue_capacity = self.cmd_queue.capacity()
+        self.use_backpressure_logic = False
 
     def setup(self, dtype, max_pts, ndim):
         self.vec_dim=ndim
@@ -216,36 +217,67 @@ class CongestionDropWorker(AbstractThread):
                 dropped = 1
             self.drop_count_total += dropped
 
+        if self.use_backpressure_logic:
+            queue_full = self.insert_queue.size() >= self.insert_queue_capacity
 
-        queue_full = self.insert_queue.size() >= self.insert_queue_capacity
+            if not self.randomDrop:
+                if self.congestion_drop and queue_full:
+                    _record_drop(id)
+                    print(f"DROPPING DATA {id[0]}:{id[-1]} (queue full)")
+                    return
+                self.insert_queue.push(NumpyIdxPair(X, id))
+                return
 
-        if not self.randomDrop:
+            rand_drop = random.random()
+            if rand_drop < self.randomDropProb:
+                _record_drop(id)
+                print(f"RANDOM DROPPING DATA {id[0]}:{id[-1]}")
+                return
             if self.congestion_drop and queue_full:
                 _record_drop(id)
                 print(f"DROPPING DATA {id[0]}:{id[-1]} (queue full)")
                 return
             self.insert_queue.push(NumpyIdxPair(X, id))
             return
-
-        rand_drop = random.random()
-        if rand_drop < self.randomDropProb:
-            _record_drop(id)
-            print(f"RANDOM DROPPING DATA {id[0]}:{id[-1]}")
-            return
-        if self.congestion_drop and queue_full:
-            _record_drop(id)
-            print(f"DROPPING DATA {id[0]}:{id[-1]} (queue full)")
-            return
-        self.insert_queue.push(NumpyIdxPair(X, id))
-        return
+        
+        else:
+            if not self.randomDrop:
+                if self.insert_queue.empty() or (not self.congestion_drop):
+                    self.insert_queue.push(NumpyIdxPair(X, id))
+                    return
+                else:
+                    _record_drop(id)
+                    print(f"DROPPING DATA {id[0]}:{id[-1]}")
+                    return
+            else:
+                rand_drop = random.random()
+                if rand_drop < self.randomDropProb:
+                    _record_drop(id)
+                    print(f"RANDOM DROPPING DATA {id[0]}:{id[-1]}")
+                    return
+                if self.insert_queue.empty() or (not self.congestion_drop):
+                    self.insert_queue.push(NumpyIdxPair(X, id))
+                    return
+                else:
+                    _record_drop(id)
+                    print(f"DROPPING DATA {id[0]}:{id[-1]}")
+                    return
 
     def delete(self, id):
-        queue_full = self.delete_queue.size() >= self.delete_queue_capacity
-        if self.congestion_drop and queue_full:
-            print("Failed to process deletion! (queue full)")
+        if self.use_backpressure_logic:
+            queue_full = self.delete_queue.size() >= self.delete_queue_capacity
+            if self.congestion_drop and queue_full:
+                print("Failed to process deletion! (queue full)")
+                return
+            self.delete_queue.push(NumpyIdxPair(np.array([0.0]), id))
             return
-        self.delete_queue.push(NumpyIdxPair(np.array([0.0]), id))
-        return
+        
+        else:
+            if self.delete_queue.empty() or (not self.congestion_drop):
+                self.delete_queue.push(NumpyIdxPair(np.array([0.0]), id))
+            else:
+                print("Failed to process deletion!")
+            return
 
     def query(self, X, k):
         self.my_index_algo.query(X,k)
@@ -271,6 +303,13 @@ class CongestionDropWorker(AbstractThread):
         if(outOfOrder):
             print("Enabling outta order ingestion!")
         self.outOfOrder = outOfOrder
+    
+    def setBackpressureLogic(self, use_backpressure=True):
+        self.use_backpressure_logic = use_backpressure
+        if use_backpressure:
+            print(f"Worker {self.my_id}: Using backpressure logic (queue capacity-based)")
+        else:
+            print(f"Worker {self.my_id}: Using normal logic (empty queue only)")
 
 class BaseCongestionDropANN(BaseANN):
     workers: List[CongestionDropWorker]
@@ -441,6 +480,10 @@ class BaseCongestionDropANN(BaseANN):
         for i in range(self.parallel_workers):
             print(f'ANN contamination{randomContaminationProb}')
             self.workers[i].enableScenario(randomContamination, randomContaminationProb, randomDrop, randomDropProb, outOfOrder)
+
+    def setBackpressureLogic(self, use_backpressure=False):
+        for i in range(self.parallel_workers):
+            self.workers[i].setBackpressureLogic(use_backpressure)
 
     def get_drop_count_delta(self):
         total = 0

@@ -424,7 +424,7 @@ def compute_metrics_all_runs(dataset, dataset_name, res, recompute=False,
                         if neurips23track == 'congestion' and runbook_path:
                             last_part = runbook_path.split('/')[-1]
                             filename = os.path.join('results/neurips23/congestion', last_part)
-                            f3_prefix = os.path.join(filename, f"{dataset_name}/{properties['count']}/{algo_name}")
+                            f3_prefix = os.path.join(filename, f"{dataset_name}/{properties['count']}/{algo}")
                             os.makedirs(f3_prefix, exist_ok=True)
                             base_name = os.path.splitext(os.path.basename(properties["filename"]))[0]
                             f3 = os.path.join(

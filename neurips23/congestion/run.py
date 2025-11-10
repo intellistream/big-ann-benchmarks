@@ -1252,6 +1252,16 @@ class CongestionRunner(BaseRunner):
                             inserted_total = 0
 
                     # process the rest
+                    if(start+batch_step*batchSize<end and start+(batch_step+1)*batchSize>end):
+
+                        tNow = (time.time()-start_time)*1e6
+                        tExpectedArrival = eventTimeStamps[end-start-1]
+                        while tNow<tExpectedArrival:
+                            # busy waiting for a batch to arrive
+                            tNow = (time.time()-start_time)*1e6
+
+                        data = ds.get_data_in_range(start+batch_step*batchSize,end)
+                        insert_ids = ids[batch_step*batchSize:]
                         if(randomContamination):
                             if(random.random()<randomContaminationProb):
                                 print(f"RANDOM CONTAMINATING DATA {ids[0]}:{ids[-1]}")
@@ -1310,16 +1320,6 @@ class CongestionRunner(BaseRunner):
                     maintenance_state.record_insert_range(start, end)
 
                     num_batch +=1
-                    if(start+batch_step*batchSize<end and start+(batch_step+1)*batchSize>end):
-
-                        tNow = (time.time()-start_time)*1e6
-                        tExpectedArrival = eventTimeStamps[end-start-1]
-                        while tNow<tExpectedArrival:
-                            # busy waiting for a batch to arrive
-                            tNow = (time.time()-start_time)*1e6
-
-                        data = ds.get_data_in_range(start+batch_step*batchSize,end)
-                        insert_ids = ids[batch_step*batchSize:]
                
 
                 case 'insert':
@@ -1490,6 +1490,11 @@ class CongestionRunner(BaseRunner):
                 case 'stress_test':
                     config = StressTestConfig.from_entry(entry)
                     try:
+                        # 启用背压测试逻辑（队列有容量限制）
+                        if hasattr(algo, 'setBackpressureLogic'):
+                            algo.setBackpressureLogic(use_backpressure=True)
+                            print("Stress test: Enabled backpressure logic (queue capacity-based)")
+                        
                         controller = StressTestController(algo, ds, Q, count, config, attrs)
                         result = controller.run()
                         attrs.update(result)
