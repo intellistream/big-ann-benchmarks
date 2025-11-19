@@ -12,7 +12,7 @@ import pandas as pd
 
 from benchmark.datasets import DATASETS
 from benchmark.plotting.utils import compute_metrics_all_runs, compute_cc_metrics_all_runs
-from benchmark.results import load_all_results, load_all_attrs
+from benchmark.results import load_all_results, load_all_attrs, get_result_filename
 
 FAIRNESS_RUNBOOKS = ['neurips23/runbooks/congestion/fairness/fairness_static_10.yaml']
 FAIRNESS_DATASETS = {'sift'}
@@ -192,6 +192,51 @@ def write_stepwise_recall_to_csv(stepwise_recall, output_file):
         for step, recall in stepwise_recall:
             writer.writerow([step, recall])
 
+
+def load_cache_miss_metrics(result_dir, result_filename):
+    """
+    Load cache miss metrics from the result directory for a specific result file.
+    Returns a dict with aggregated cache miss statistics.
+    """
+    cache_miss_data = {
+        'avg_cache_miss_rate_insert': None,
+        'avg_cache_miss_rate_query': None,
+        'avg_tlb_misses_insert': None,
+        'avg_tlb_misses_query': None,
+        'avg_llc_misses_insert': None,
+        'avg_llc_misses_query': None,
+        'avg_l1_dcache_misses_insert': None,
+        'avg_l1_dcache_misses_query': None,
+    }
+    
+    try:
+        # Construct file paths based on result_filename
+        insert_file = os.path.join(result_dir, f"{result_filename}_cacheMissInsert.csv")
+        query_file = os.path.join(result_dir, f"{result_filename}_cacheMissQuery.csv")
+        
+        # Load and aggregate insert cache miss data
+        if os.path.exists(insert_file):
+            df = pd.read_csv(insert_file)
+            if not df.empty:
+                cache_miss_data['avg_cache_miss_rate_insert'] = df['cache_miss_rate'].mean()
+                cache_miss_data['avg_tlb_misses_insert'] = df['tlb_misses'].mean()
+                cache_miss_data['avg_llc_misses_insert'] = df['llc_misses'].mean()
+                cache_miss_data['avg_l1_dcache_misses_insert'] = df['l1_dcache_misses'].mean()
+        
+        # Load and aggregate query cache miss data
+        if os.path.exists(query_file):
+            df = pd.read_csv(query_file)
+            if not df.empty:
+                cache_miss_data['avg_cache_miss_rate_query'] = df['cache_miss_rate'].mean()
+                cache_miss_data['avg_tlb_misses_query'] = df['tlb_misses'].mean()
+                cache_miss_data['avg_llc_misses_query'] = df['llc_misses'].mean()
+                cache_miss_data['avg_l1_dcache_misses_query'] = df['l1_dcache_misses'].mean()
+    
+    except Exception as e:
+        print(f"Warning: Could not load cache miss metrics: {e}")
+    
+    return cache_miss_data
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -339,7 +384,66 @@ if __name__ == "__main__":
                     args.sensors, args.search_times, args.private_query, 
                     neurips23track=track, runbook_path=runbook_path)
                 
+                # Convert generator to list if needed
+                if hasattr(results, '__iter__') and not isinstance(results, list):
+                    results = list(results)
+                
                 results = cleaned_run_metric(results)
+                
+                # Add cache miss metrics for congestion track
+                if track == 'congestion':
+                    # Get filenames from the raw results before they were cleaned
+                    raw_results = list(load_all_results(dataset_name, neurips23track=track, runbook_path=runbook_path))
+                    filename_map = {}  # Map algorithm -> filename
+                    for props, _ in raw_results:
+                        algorithm_name = props.get('algo') or props.get('algorithm') or props.get('name')
+                        filename = props.get('filename', '').replace('.hdf5', '')
+                        if algorithm_name and filename:
+                            filename_map[algorithm_name] = filename
+                    
+                    for idx, result in enumerate(results):
+                        try:
+                            # Try to get filename from the map using algorithm name
+                            algorithm = result.get('algorithm', '')
+                            result_filename = filename_map.get(algorithm, '')
+                            
+                            if not result_filename:
+                                # Fallback: try to construct from algorithm and parameters
+                                parameters = result.get('parameters', '')
+                                if algorithm and parameters:
+                                    result_filename = f"{algorithm}_{parameters}"
+                                else:
+                                    result_filename = result.get('filename', '').replace('.hdf5', '')
+                            
+                            if not result_filename:
+                                continue
+                            
+                            # Build the result directory path
+                            result_dir = get_result_filename(
+                                dataset_name, 
+                                result.get('count', 10),
+                                neurips23track=track,
+                                runbook_path=runbook_path
+                            )
+                            
+                            # Walk through and find the matching directory
+                            if os.path.exists(result_dir):
+                                for root, dirs, files in os.walk(result_dir):
+                                    # Look for cache miss files with matching base name
+                                    insert_file = f"{result_filename}_cacheMissInsert.csv"
+                                    query_file = f"{result_filename}_cacheMissQuery.csv"
+                                    
+                                    if insert_file in files or query_file in files:
+                                        # Pass the root directory and result_filename
+                                        cache_metrics = load_cache_miss_metrics(root, result_filename)
+                                        # Only update if we got non-None values
+                                        non_none_metrics = {k: v for k, v in cache_metrics.items() if v is not None}
+                                        if non_none_metrics:
+                                            result.update(non_none_metrics)
+                                            print(f"  ✓ Added cache miss metrics for {result.get('algorithm', 'unknown')}")
+                                        break
+                        except Exception as e:
+                            print(f"  Warning: Could not load cache miss for {result.get('algorithm', 'unknown')}: {e}")
                     
                 if track == 'concurrent':
                     print("Looking for attrs ", runbook_path)

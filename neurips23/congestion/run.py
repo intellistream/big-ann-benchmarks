@@ -6,6 +6,7 @@ import pandas as pd
 from benchmark.algorithms.base_runner import BaseRunner
 from benchmark.datasets import DATASETS
 from benchmark.results import get_result_filename
+from benchmark.sensors.cache_miss import get_cache_monitor
 import tracemalloc
 import random
 from dataclasses import dataclass
@@ -1076,7 +1077,20 @@ class CongestionRunner(BaseRunner):
             'insertThroughput':[],
             'batchLatency':[],
             'batchThroughput':[],
-            'batchinsertThroughtput':[]
+            'batchinsertThroughtput':[],
+            # Cache miss metrics
+            'cache_misses_insert': [],
+            'cache_references_insert': [],
+            'cache_miss_rate_insert': [],
+            'l1_dcache_misses_insert': [],
+            'llc_misses_insert': [],
+            'tlb_misses_insert': [],
+            'cache_misses_query': [],
+            'cache_references_query': [],
+            'cache_miss_rate_query': [],
+            'l1_dcache_misses_query': [],
+            'llc_misses_query': [],
+            'tlb_misses_query': [],
         }
         attrs.update({
             'maintenanceLatency': 0.0,
@@ -1184,6 +1198,21 @@ class CongestionRunner(BaseRunner):
                     attrs['batchThroughput'].append([])
                     attrs['batchinsertThroughtput'].append([])
 
+                    # Initialize cache miss tracking for this batch_insert operation
+                    cache_monitor = get_cache_monitor()
+                    batch_cache_misses_insert = []
+                    batch_cache_refs_insert = []
+                    batch_cache_miss_rate_insert = []
+                    batch_l1_dcache_misses_insert = []
+                    batch_llc_misses_insert = []
+                    batch_tlb_misses_insert = []
+                    batch_cache_misses_query = []
+                    batch_cache_refs_query = []
+                    batch_cache_miss_rate_query = []
+                    batch_l1_dcache_misses_query = []
+                    batch_llc_misses_query = []
+                    batch_tlb_misses_query = []
+
                     # Begin
                     start_time = time.time()
                     continuous_counter = 0
@@ -1214,12 +1243,23 @@ class CongestionRunner(BaseRunner):
                         #print(f'step {start+i*batchSize}:{start+(i+1)*batchSize}')
 
                         t0 = time.time()
-                        algo.insert(data, insert_ids)
+                        # Measure cache misses during insert
+                        _, insert_cache_metrics = cache_monitor.measure_operation(
+                            algo.insert, data, insert_ids
+                        )
                         total_insertion_time = time.time() - t0
                         attrs["latencyInsert"][-1]+=total_insertion_time*1e6
                         attrs['batchinsertThroughtput'][-1].append(batchSize/total_insertion_time)
                         processedTimeStamps[i*batchSize:(i+1)*batchSize] = (time.time()-start_time)*1e6
                         inserted_total += len(insert_ids)
+                        
+                        # Store cache miss metrics for this insert operation
+                        batch_cache_misses_insert.append(insert_cache_metrics.get('cache_misses', 0))
+                        batch_cache_refs_insert.append(insert_cache_metrics.get('cache_references', 0))
+                        batch_cache_miss_rate_insert.append(insert_cache_metrics.get('cache_miss_rate', 0))
+                        batch_l1_dcache_misses_insert.append(insert_cache_metrics.get('l1_dcache_misses', 0))
+                        batch_llc_misses_insert.append(insert_cache_metrics.get('llc_misses', 0))
+                        batch_tlb_misses_insert.append(insert_cache_metrics.get('dtlb_misses', 0) + insert_cache_metrics.get('itlb_misses', 0))
 
                         #algo.waitPendingOperations()
                         # continuous query phase
@@ -1229,7 +1269,10 @@ class CongestionRunner(BaseRunner):
                             # attrs['batchThroughput'].append(0)
                             print(f"{i}: {start + i * batchSize}~{start + (i + 1) * batchSize} querying")
                             t1 = time.time()
-                            algo.query(Q, count)
+                            # Measure cache misses during query
+                            _, query_cache_metrics = cache_monitor.measure_operation(
+                                algo.query, Q, count
+                            )
                             t2 = time.time()
 
                             batch_latency = (t2 - t1) * 1e6
@@ -1243,6 +1286,14 @@ class CongestionRunner(BaseRunner):
                             attrs[f'continuousQueryResults'][-1].append(results)
                             #attrs[f'continuousQueryRecall{num_batch}_{i}'] = results
                             continuous_counter = 0
+                            
+                            # Store cache miss metrics for this query operation
+                            batch_cache_misses_query.append(query_cache_metrics.get('cache_misses', 0))
+                            batch_cache_refs_query.append(query_cache_metrics.get('cache_references', 0))
+                            batch_cache_miss_rate_query.append(query_cache_metrics.get('cache_miss_rate', 0))
+                            batch_l1_dcache_misses_query.append(query_cache_metrics.get('l1_dcache_misses', 0))
+                            batch_llc_misses_query.append(query_cache_metrics.get('llc_misses', 0))
+                            batch_tlb_misses_query.append(query_cache_metrics.get('dtlb_misses', 0) + query_cache_metrics.get('itlb_misses', 0))
 
 
 
@@ -1276,12 +1327,23 @@ class CongestionRunner(BaseRunner):
                         print(f'last {start+batch_step*batchSize}:{end}')
                         t0=time.time()
 
-                        algo.insert(data, insert_ids)
+                        # Measure cache misses during insert
+                        _, insert_cache_metrics = cache_monitor.measure_operation(
+                            algo.insert, data, insert_ids
+                        )
                         total_insertion_time = time.time() - t0
                         attrs["latencyInsert"][-1]+=total_insertion_time*1e6
                         attrs['batchinsertThroughtput'][-1].append((end-start-batch_step*batchSize)/total_insertion_time)
                         processedTimeStamps[batch_step*batchSize:end-start] = (time.time() - start_time) * 1e6
                         arrivalTimeStamps[batch_step*batchSize:end-start] = tExpectedArrival
+                        
+                        # Store cache miss metrics for this insert operation
+                        batch_cache_misses_insert.append(insert_cache_metrics.get('cache_misses', 0))
+                        batch_cache_refs_insert.append(insert_cache_metrics.get('cache_references', 0))
+                        batch_cache_miss_rate_insert.append(insert_cache_metrics.get('cache_miss_rate', 0))
+                        batch_l1_dcache_misses_insert.append(insert_cache_metrics.get('l1_dcache_misses', 0))
+                        batch_llc_misses_insert.append(insert_cache_metrics.get('llc_misses', 0))
+                        batch_tlb_misses_insert.append(insert_cache_metrics.get('dtlb_misses', 0) + insert_cache_metrics.get('itlb_misses', 0))
 
                         #algo.waitPendingOperations()
                         # continuous query phase
@@ -1291,7 +1353,10 @@ class CongestionRunner(BaseRunner):
                             # attrs['batchThroughput'].append(0)
                             print(f"{i}: {start + i * batchSize}~{end} querying")
                             t1 = time.time()
-                            algo.query(Q, count)
+                            # Measure cache misses during query
+                            _, query_cache_metrics = cache_monitor.measure_operation(
+                                algo.query, Q, count
+                            )
                             t2 = time.time()
 
                             batch_latency = (t2 - t1) * 1e6
@@ -1306,7 +1371,29 @@ class CongestionRunner(BaseRunner):
                             attrs['continuousQueryResults'][-1].append(results)
                             #attrs[f'continuousQueryRecall{num_batch}_{batch_step}'] = results
                             continuous_counter = 0
+                            
+                            # Store cache miss metrics for this query operation
+                            batch_cache_misses_query.append(query_cache_metrics.get('cache_misses', 0))
+                            batch_cache_refs_query.append(query_cache_metrics.get('cache_references', 0))
+                            batch_cache_miss_rate_query.append(query_cache_metrics.get('cache_miss_rate', 0))
+                            batch_l1_dcache_misses_query.append(query_cache_metrics.get('l1_dcache_misses', 0))
+                            batch_llc_misses_query.append(query_cache_metrics.get('llc_misses', 0))
+                            batch_tlb_misses_query.append(query_cache_metrics.get('dtlb_misses', 0) + query_cache_metrics.get('itlb_misses', 0))
 
+
+                    # Store accumulated cache miss metrics for this batch_insert operation
+                    attrs['cache_misses_insert'].append(batch_cache_misses_insert)
+                    attrs['cache_references_insert'].append(batch_cache_refs_insert)
+                    attrs['cache_miss_rate_insert'].append(batch_cache_miss_rate_insert)
+                    attrs['l1_dcache_misses_insert'].append(batch_l1_dcache_misses_insert)
+                    attrs['llc_misses_insert'].append(batch_llc_misses_insert)
+                    attrs['tlb_misses_insert'].append(batch_tlb_misses_insert)
+                    attrs['cache_misses_query'].append(batch_cache_misses_query)
+                    attrs['cache_references_query'].append(batch_cache_refs_query)
+                    attrs['cache_miss_rate_query'].append(batch_cache_miss_rate_query)
+                    attrs['l1_dcache_misses_query'].append(batch_l1_dcache_misses_query)
+                    attrs['llc_misses_query'].append(batch_llc_misses_query)
+                    attrs['tlb_misses_query'].append(batch_tlb_misses_query)
 
                     attrs['insertThroughput'].append((end-start)/((attrs['latencyInsert'][-1])/1e6))
                     filename = get_result_filename(dataset, count, definition, query_arguments, neurips23track="congestion", runbook_path=runbook_path)

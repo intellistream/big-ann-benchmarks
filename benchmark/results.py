@@ -13,6 +13,8 @@ def store_latency(f1, f2, f3, attrs):
     latency_data = []
     throughput_data = []
     insert_latency_data = []
+    cache_miss_insert_data = []
+    cache_miss_query_data = []
 
     # batchLatency
     for op_idx, op_latencies in enumerate(attrs.get('batchLatency', [])):
@@ -41,6 +43,48 @@ def store_latency(f1, f2, f3, attrs):
                 'batchinsertThroughtput': insert_latency,
             })
 
+    # Cache miss metrics for insert operations
+    for op_idx in range(len(attrs.get('cache_misses_insert', []))):
+        cache_misses_list = attrs.get('cache_misses_insert', [])[op_idx]
+        cache_refs_list = attrs.get('cache_references_insert', [])[op_idx]
+        cache_miss_rate_list = attrs.get('cache_miss_rate_insert', [])[op_idx]
+        l1_dcache_misses_list = attrs.get('l1_dcache_misses_insert', [])[op_idx]
+        llc_misses_list = attrs.get('llc_misses_insert', [])[op_idx]
+        tlb_misses_list = attrs.get('tlb_misses_insert', [])[op_idx]
+        
+        for batch_idx in range(len(cache_misses_list)):
+            cache_miss_insert_data.append({
+                'op_id': op_idx,
+                'batch_id': batch_idx,
+                'cache_misses': cache_misses_list[batch_idx] if batch_idx < len(cache_misses_list) else 0,
+                'cache_references': cache_refs_list[batch_idx] if batch_idx < len(cache_refs_list) else 0,
+                'cache_miss_rate': cache_miss_rate_list[batch_idx] if batch_idx < len(cache_miss_rate_list) else 0,
+                'l1_dcache_misses': l1_dcache_misses_list[batch_idx] if batch_idx < len(l1_dcache_misses_list) else 0,
+                'llc_misses': llc_misses_list[batch_idx] if batch_idx < len(llc_misses_list) else 0,
+                'tlb_misses': tlb_misses_list[batch_idx] if batch_idx < len(tlb_misses_list) else 0,
+            })
+
+    # Cache miss metrics for query operations
+    for op_idx in range(len(attrs.get('cache_misses_query', []))):
+        cache_misses_list = attrs.get('cache_misses_query', [])[op_idx]
+        cache_refs_list = attrs.get('cache_references_query', [])[op_idx]
+        cache_miss_rate_list = attrs.get('cache_miss_rate_query', [])[op_idx]
+        l1_dcache_misses_list = attrs.get('l1_dcache_misses_query', [])[op_idx]
+        llc_misses_list = attrs.get('llc_misses_query', [])[op_idx]
+        tlb_misses_list = attrs.get('tlb_misses_query', [])[op_idx]
+        
+        for batch_idx in range(len(cache_misses_list)):
+            cache_miss_query_data.append({
+                'op_id': op_idx,
+                'batch_id': batch_idx,
+                'cache_misses': cache_misses_list[batch_idx] if batch_idx < len(cache_misses_list) else 0,
+                'cache_references': cache_refs_list[batch_idx] if batch_idx < len(cache_refs_list) else 0,
+                'cache_miss_rate': cache_miss_rate_list[batch_idx] if batch_idx < len(cache_miss_rate_list) else 0,
+                'l1_dcache_misses': l1_dcache_misses_list[batch_idx] if batch_idx < len(l1_dcache_misses_list) else 0,
+                'llc_misses': llc_misses_list[batch_idx] if batch_idx < len(llc_misses_list) else 0,
+                'tlb_misses': tlb_misses_list[batch_idx] if batch_idx < len(tlb_misses_list) else 0,
+            })
+
     if latency_data:
         pd.DataFrame(latency_data).to_csv(f1, index=False)
 
@@ -49,6 +93,16 @@ def store_latency(f1, f2, f3, attrs):
 
     if insert_latency_data:
         pd.DataFrame(insert_latency_data).to_csv(f3, index=False)
+
+    # Store cache miss data to separate CSV files
+    if cache_miss_insert_data:
+        cache_insert_filename = f1.replace('_batchLatency.csv', '_cacheMissInsert.csv')
+        pd.DataFrame(cache_miss_insert_data).to_csv(cache_insert_filename, index=False)
+
+    if cache_miss_query_data:
+        cache_query_filename = f1.replace('_batchLatency.csv', '_cacheMissQuery.csv')
+        pd.DataFrame(cache_miss_query_data).to_csv(cache_query_filename, index=False)
+
 
 
 def get_result_filename(dataset=None, count=None, definition=None,
