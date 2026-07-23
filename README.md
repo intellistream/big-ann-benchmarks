@@ -1,5 +1,10 @@
 # Big ANN Benchmarks
 
+> **DataSys benchmark fork:** This repository preserves the billion-scale ANNS
+> evaluation baseline used by DataSys projects including CANDOR-Bench. The upstream
+> project is [harsha-simhadri/big-ann-benchmarks](https://github.com/harsha-simhadri/big-ann-benchmarks);
+> upstream authorship and licensing remain unchanged.
+
 <http://big-ann-benchmarks.com/>
 
 ## Datasets
